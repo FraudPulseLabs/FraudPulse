@@ -12,8 +12,6 @@ The system is designed as a full pipeline:
 * Case management workflow
 * Dashboard for monitoring and investigation
 
----
-
 # System Architecture
 
 The system is organized into the following components:
@@ -26,8 +24,6 @@ The system is organized into the following components:
 * **Case Management System** → investigation workflow
 * **Dashboard** → monitoring and analytics UI
 
----
-
 # Repository Structure
 
 ```
@@ -35,8 +31,6 @@ The system is organized into the following components:
 /frontend       → dashboard UI  
 /data           → datasets & schemas
 ```
-
----
 
 # Features
 
@@ -60,9 +54,7 @@ The system is organized into the following components:
 * Alert grouping
 * Analyst workflow support
 
----
-
-# ⚙️ Tech Stack (update as needed)
+# Tech Stack
 
 * Backend: Python
 * ML: 
@@ -71,8 +63,6 @@ The system is organized into the following components:
 * Frontend:  
 * CI/CD: GitHub Actions
 
----
-
 # Branch Protection Rules
 
 * No direct pushes to `main`
@@ -80,15 +70,11 @@ The system is organized into the following components:
 * At least 1 approval required
 * CI checks must pass before merge
 
----
-
 # Key Outputs
 
 * Fraud risk score (0–1)
 * Decision: ALLOW / REVIEW / BLOCK
 * Case creation for flagged transactions
-
----
 
 # Team
 
