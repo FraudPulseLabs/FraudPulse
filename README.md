@@ -59,8 +59,8 @@ The system is organized into the following components:
 * Backend: Python
 * ML: 
 * API: REST
-* Database: 
-* Frontend:  
+* Database: Supabase
+* Frontend:Angular v20, Tailwind v4
 * CI/CD: GitHub Actions
 
 # Branch Protection Rules
