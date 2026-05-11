@@ -1,0 +1,133 @@
+/* ─── Tailwind v4 ──────────────────────────────────────────────────── */
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+/* Tell Tailwind v4 where Angular templates live */
+@source "./app/**/*.ts";
+@source "./app/**/*.html";
+@source "./index.html";
+
+/* ─── FraudPulse design tokens ─────────────────────────────────────── */
+@theme {
+  /* Brand — dark navy sidebar, slate content area */
+  --color-fp-navy-950: #0a0f1e;
+  --color-fp-navy-900: #0f172a;
+  --color-fp-navy-800: #1e293b;
+  --color-fp-navy-700: #334155;
+  --color-fp-navy-600: #475569;
+  --color-fp-navy-400: #94a3b8;
+  --color-fp-navy-200: #e2e8f0;
+  --color-fp-navy-50:  #f8fafc;
+
+  /* Accent — indigo interactive elements */
+  --color-fp-accent-600: #4f46e5;
+  --color-fp-accent-500: #6366f1;
+  --color-fp-accent-100: #e0e7ff;
+  --color-fp-accent-50:  #eef2ff;
+
+  /* Decision semantic colours */
+  --color-fp-allow-bg:   #dcfce7;
+  --color-fp-allow-text: #15803d;
+  --color-fp-allow-ring: #16a34a;
+
+  --color-fp-review-bg:   #fef9c3;
+  --color-fp-review-text: #a16207;
+  --color-fp-review-ring: #ca8a04;
+
+  --color-fp-block-bg:   #fee2e2;
+  --color-fp-block-text: #b91c1c;
+  --color-fp-block-ring: #dc2626;
+
+  /* Alert severity */
+  --color-fp-high-bg:    #fee2e2;
+  --color-fp-high-text:  #b91c1c;
+  --color-fp-medium-bg:  #fef9c3;
+  --color-fp-medium-text:#a16207;
+  --color-fp-low-bg:     #dbeafe;
+  --color-fp-low-text:   #1d4ed8;
+
+  /* Case / alert status */
+  --color-fp-new-bg:            #ede9fe;
+  --color-fp-new-text:          #6d28d9;
+  --color-fp-acknowledged-bg:   #e0f2fe;
+  --color-fp-acknowledged-text: #0369a1;
+  --color-fp-resolved-bg:       #dcfce7;
+  --color-fp-resolved-text:     #15803d;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Spacing / radius */
+  --radius-card: 0.75rem;
+  --radius-badge: 9999px;
+}
+
+:root {
+  --color-fp-accent-500: #6366f1;
+  --color-fp-allow-ring: #16a34a;
+  --color-fp-review-ring: #ca8a04;
+  --color-fp-block-ring: #dc2626;
+}
+
+/* ─── Universal component classes ──────────────────────────────────── */
+
+/* Decision badges */
+.badge-allow  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset; background-color: var(--color-fp-allow-bg); color: var(--color-fp-allow-text); }
+.badge-review { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset; background-color: var(--color-fp-review-bg); color: var(--color-fp-review-text); }
+.badge-block  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset; background-color: var(--color-fp-block-bg); color: var(--color-fp-block-text); }
+
+/* Severity badges */
+.badge-high   { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; background-color: var(--color-fp-high-bg); color: var(--color-fp-high-text); }
+.badge-medium { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; background-color: var(--color-fp-medium-bg); color: var(--color-fp-medium-text); }
+.badge-low    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; background-color: var(--color-fp-low-bg); color: var(--color-fp-low-text); }
+
+/* Status badges */
+.badge-new          { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; background-color: var(--color-fp-new-bg); color: var(--color-fp-new-text); }
+.badge-acknowledged { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; background-color: var(--color-fp-acknowledged-bg); color: var(--color-fp-acknowledged-text); }
+.badge-resolved     { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; background-color: var(--color-fp-resolved-bg); color: var(--color-fp-resolved-text); }
+
+/* Layout primitives */
+.card         { @apply bg-white rounded-[--radius-card] shadow-sm border border-slate-200 p-6; }
+.card-compact { @apply bg-white rounded-[--radius-card] shadow-sm border border-slate-200 p-4; }
+.page-header  { @apply mb-6 flex items-center justify-between; }
+.page-title   { @apply text-xl font-semibold text-slate-900; }
+.section-title { @apply text-sm font-medium text-slate-500 uppercase tracking-wide mb-3; }
+
+/* Table */
+.fp-table           { @apply w-full text-sm text-slate-700; }
+.fp-table thead th  { @apply px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide bg-slate-50 border-b border-slate-200; }
+.fp-table tbody td  { @apply px-4 py-3 border-b border-slate-100; }
+.fp-table tbody tr  { @apply hover:bg-slate-50 transition-colors; }
+
+/* Buttons */
+.btn-primary   { @apply inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+.btn-secondary { @apply inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors; }
+.btn-danger    { @apply inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors; }
+.btn-ghost     { @apply inline-flex items-center gap-2 px-3 py-2 text-slate-500 text-sm font-medium rounded-lg hover:bg-slate-100 hover:text-slate-700 transition-colors; }
+
+/* Form inputs */
+.fp-input  { @apply block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow; }
+.fp-select { @apply block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent; }
+.fp-label  { @apply block text-sm font-medium text-slate-700 mb-1; }
+
+/* Score bar */
+.score-bar-track { @apply h-1.5 w-full rounded-full bg-slate-200 overflow-hidden; }
+.score-bar-fill  { @apply h-full rounded-full transition-all; }
+
+/* Sidebar nav link */
+.nav-link        { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 text-sm font-medium hover:bg-white/10 hover:text-white transition-colors; }
+.nav-link-active { @apply flex items-center gap-3 px-3 py-2 rounded-lg bg-white/15 text-white text-sm font-semibold; }
+
+/* Empty state */
+.empty-state { @apply flex flex-col items-center justify-center py-16 text-slate-400; }
+
+/* Divider */
+.fp-divider { @apply border-t border-slate-200 my-4; }
+
+/* ─── Body defaults ─────────────────────────────────────────────── */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-fp-navy-50);
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: frontend
+    runtime: node
+    buildCommand: cd frontend && npm ci && npm run build:prod
+    staticPublishPath: frontend/dist/fraudpulse/browser
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-store
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
