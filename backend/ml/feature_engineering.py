@@ -229,22 +229,35 @@ def add_velocity_features(df: pd.DataFrame) -> pd.DataFrame:
     """Batch version for training — counts prior transactions in rolling windows."""
     df = df.copy().sort_values(["card_id", "timestamp"]).reset_index(drop=True)
 
-    def rolling_count_prior(group: pd.DataFrame, window_seconds: int) -> pd.Series:
-        ts  = group["timestamp"].values
-        out = np.zeros(len(ts), dtype=int)
-        for i in range(1, len(ts)):
-            cutoff = ts[i] - np.timedelta64(window_seconds, "s")
-            out[i] = int(np.sum((ts[:i] >= cutoff) & (ts[:i] < ts[i])))
-        return pd.Series(out, index=group.index)
+    txn_count_1h = np.zeros(len(df), dtype=int)
+    txn_count_24h = np.zeros(len(df), dtype=int)
 
-    df["txn_count_1h"] = (
-        df.groupby("card_id", group_keys=False)
-          .apply(lambda g: rolling_count_prior(g, 3_600))
-    )
-    df["txn_count_24h"] = (
-        df.groupby("card_id", group_keys=False)
-          .apply(lambda g: rolling_count_prior(g, 86_400))
-    )
+    for card_id, group in df.groupby("card_id"):
+        idx = group.index
+        ts = group["timestamp"].values
+
+        for i in range(len(ts)):
+            if i == 0:
+                continue
+
+            current_ts = ts[i]
+
+            cutoff_1h = current_ts - np.timedelta64(3600, "s")
+            cutoff_24h = current_ts - np.timedelta64(86400, "s")
+
+            prior_ts = ts[:i]
+
+            txn_count_1h[idx[i]] = np.sum(
+                (prior_ts >= cutoff_1h) & (prior_ts < current_ts)
+            )
+
+            txn_count_24h[idx[i]] = np.sum(
+                (prior_ts >= cutoff_24h) & (prior_ts < current_ts)
+            )
+
+    df["txn_count_1h"] = txn_count_1h
+    df["txn_count_24h"] = txn_count_24h
+
     return df
 
 
