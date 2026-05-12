@@ -3,7 +3,7 @@ feature_engineering.py
 =======================
 Shared feature computation logic used by BOTH:
   - ml/preprocessing.py        (training pipeline)
-  - src/services/feature_service.py  (real-time inference)
+  - src/services/realtime_feature_builder.py  (real-time inference)
 
 Rules
 -----
@@ -12,7 +12,7 @@ Rules
   training dataset or require labels.
 - No function imports from preprocessing.py — dependency flows one way only:
     feature_engineering  ←  preprocessing.py
-    feature_engineering  ←  feature_service.py
+    feature_engineering  ←  realtime_feature_builder.py
 - Any change to logic here must be versioned and redeployed to both the
   training pipeline and the inference service simultaneously to prevent
   train/serve skew.
@@ -30,7 +30,7 @@ import pandas as pd
 
 # =============================================================================
 # ENCODING MAPS — module-level constants
-# Imported by feature_service.py at inference time.
+# Imported by realtime_feature_builder.py at inference time.
 # Any change here requires retraining the model.
 # =============================================================================
 
@@ -44,17 +44,25 @@ PAN_ENTRY_ORDER = {"CHIP": 0, "CONTACTLESS": 1, "ONLINE": 2, "MAGSTRIPE": 3}
 AUTH_ORDER = {"BIOMETRICS": 0, "OTP": 1, "PIN": 2, "CVV2": 3, "NONE": 4}
 
 # One-hot categories — defines which columns the model expects
-# Used by feature_service.py to build the correct inference vector
+# Used by realtime_feature_builder.py to build the correct inference vector
 CARD_TYPE_CATEGORIES    = ["Debit", "Credit", "Prepaid"]
 CHANNEL_CATEGORIES      = ["ATM", "ECOMMERCE", "POS"]
 TXN_TYPE_CATEGORIES     = ["purchase", "withdrawal"]
+
+# SCALING NOTE
+# Numeric features are intentionally NOT scaled.
+# Tree-based models (XGBoost / LightGBM / RandomForest) split on
+# thresholds (e.g. amount_zscore > 2.1) — scaling changes nothing
+# about where those splits land. Scaling is only required for
+# distance-based models (KNN, SVM) or linear models.
+# If the model type changes, add a scaling step in preprocessing.py.
 
 
 # =============================================================================
 # 1. TIME FEATURES
 # INFERENCE SOURCE: ISO 8583 DE 12 (time) / DE 13 (date)
 # =============================================================================
-def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_timestamp_cyclical_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Hour and day-of-week encoded as sine + cosine pairs to capture
     their circular nature — hour 23 and hour 0 are adjacent, not distant.
@@ -77,7 +85,7 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_time_features_single(timestamp: pd.Timestamp) -> dict:
+def compute_timestamp_cyclical_features_for_single_transaction(timestamp: pd.Timestamp) -> dict:
     """
     Inference convenience: compute time features for a single transaction.
     Returns a dict of feature_name → value for direct insertion into the
@@ -100,7 +108,7 @@ def add_time_features_single(timestamp: pd.Timestamp) -> dict:
 # INFERENCE SOURCE: ISO 8583 DE 43 (transaction_country) +
 #                   card profile (issuing_bank_country) from CMS/card store
 # =============================================================================
-def add_geography_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_cross_border_flag(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["cross_border"] = (
         df["issuing_bank_country"] != df["transaction_country"]
@@ -108,7 +116,7 @@ def add_geography_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_geography_features_single(
+def compute_cross_border_flag_for_single_transaction(
     issuing_bank_country: str,
     transaction_country: str,
 ) -> dict:
@@ -130,7 +138,7 @@ def add_geography_features_single(
 # Store is updated ASYNCHRONOUSLY after the API response is returned.
 # First-transaction defaults documented on each feature below.
 # =============================================================================
-def add_card_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_card_spend_history_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Batch version for training — computes expanding-window aggregates
     using only prior rows per card (shift(1) prevents leakage).
@@ -178,7 +186,7 @@ def add_card_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_card_features_single(
+def compute_card_spend_history_features_for_single_transaction(
     enriched_amount_usd: float,
     card_history: dict,
 ) -> dict:
@@ -225,7 +233,7 @@ def add_card_features_single(
 # INFERENCE SOURCE: card history store — list of recent transaction timestamps
 # The store must support querying: "timestamps for card X in last N seconds"
 # =============================================================================
-def add_velocity_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_card_transaction_velocity(df: pd.DataFrame) -> pd.DataFrame:
     """Batch version for training — counts prior transactions in rolling windows."""
     df = df.copy().sort_values(["card_id", "timestamp"]).reset_index(drop=True)
 
@@ -261,7 +269,7 @@ def add_velocity_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_velocity_features_single(
+def compute_card_transaction_velocity_for_single_transaction(
     recent_timestamps: list,
     current_ts: float,
 ) -> dict:
@@ -283,27 +291,38 @@ def add_velocity_features_single(
 # INFERENCE SOURCE: derived from features already computed above
 # No additional store needed — pure functions of other features.
 # =============================================================================
-def add_risk_flags(df: pd.DataFrame) -> pd.DataFrame:
+def compute_composite_fraud_signals(df: pd.DataFrame) -> pd.DataFrame:
     """
-    All thresholds relative to card history, not absolute USD values,
-    so they generalise across spend levels.
+    Composite signals derived from features already computed above.
+    Each flag is named to describe the specific fraud pattern it detects.
+    All amount thresholds are relative to card history, not absolute USD
+    values, so they generalise across different spend levels.
 
-    Note: cardholder_present is intentionally excluded — it reflects a
-    fixed terminal attribute (attended vs unattended per DE 22/DE 61),
-    not a per-transaction signal. Interaction mode is captured by
-    pan_entry_mode and channel instead.
+    Flags produced:
+      is_amount_spike_vs_card_history    — amount > 3× card average
+      is_cross_border_amount_spike        — cross-border + amount spike together
+      is_velocity_burst_last_1h           — more than 3 txns in past hour
+      is_weak_auth_on_above_average_amount— weak auth (NONE/CVV2) on 2× amount
+
+    Note: cardholder_present intentionally excluded — it is a fixed terminal
+    attribute (DE 22/DE 61), not a per-transaction behavioural signal.
     """
     df = df.copy()
 
-    df["high_amount_relative"] = (df["amount_vs_card_avg"] > 3.0).astype(int)
+    # 1 when this transaction is more than 3× the card's historical average spend
+    df["is_amount_spike_vs_card_history"] = (df["amount_vs_card_avg"] > 3.0).astype(int)
 
-    df["cross_border_high_amount"] = (
-        (df["cross_border"] == 1) & (df["high_amount_relative"] == 1)
+    # 1 when card is used outside its home country AND amount is a spike
+    df["is_cross_border_amount_spike"] = (
+        (df["cross_border"] == 1) & (df["is_amount_spike_vs_card_history"] == 1)
     ).astype(int)
 
-    df["velocity_spike_1h"] = (df["txn_count_1h"] > 3).astype(int)
+    # 1 when more than 3 transactions have occurred on this card in the past hour
+    df["is_velocity_burst_last_1h"] = (df["txn_count_1h"] > 3).astype(int)
 
-    df["weak_auth_high_value"] = (
+    # 1 when authentication is weak (NONE or CVV2) on a transaction
+    # that is more than 2× the card's historical average — elevated risk combination
+    df["is_weak_auth_on_above_average_amount"] = (
         df["authentication"].isin(["NONE", "CVV2"]) &
         (df["amount_vs_card_avg"] > 2.0)
     ).astype(int)
@@ -311,19 +330,19 @@ def add_risk_flags(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_risk_flags_single(features: dict) -> dict:
+def compute_composite_fraud_signals_for_single_transaction(features: dict) -> dict:
     """
     Inference version — pass the already-computed feature dict and
     this appends the derived risk flag values.
     """
-    high_rel = int(features.get("amount_vs_card_avg", 1.0) > 3.0)
+    is_amount_spike = int(features.get("amount_vs_card_avg", 1.0) > 3.0)
     return {
-        "high_amount_relative":    high_rel,
-        "cross_border_high_amount": int(
-            features.get("cross_border", 0) == 1 and high_rel == 1
+        "is_amount_spike_vs_card_history":    is_amount_spike,
+        "is_cross_border_amount_spike":        int(
+            features.get("cross_border", 0) == 1 and is_amount_spike == 1
         ),
-        "velocity_spike_1h":       int(features.get("txn_count_1h", 0) > 3),
-        "weak_auth_high_value":    int(
+        "is_velocity_burst_last_1h":           int(features.get("txn_count_1h", 0) > 3),
+        "is_weak_auth_on_above_average_amount": int(
             features.get("authentication", "") in ("NONE", "CVV2")
             and features.get("amount_vs_card_avg", 1.0) > 2.0
         ),
@@ -336,7 +355,7 @@ def add_risk_flags_single(features: dict) -> dict:
 # Assumption: tree-based model (XGBoost/LightGBM/RandomForest).
 # If switching to a linear model, replace ordinal encodings with one-hot.
 # =============================================================================
-def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
+def encode_categorical_features(df: pd.DataFrame) -> pd.DataFrame:
     """Batch version for training."""
     df = df.copy()
 
@@ -351,7 +370,7 @@ def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def encode_categoricals_single(
+def encode_categorical_features_for_single_transaction(
     cvv2_result: str,
     avs_result: str,
     pan_entry_mode: str,
