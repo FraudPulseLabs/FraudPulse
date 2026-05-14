@@ -1,0 +1,333 @@
+================================================================================
+BACKEND FILE GUIDE (simple overview)
+================================================================================
+Read this when you want to know what a file or folder is for. Paths are relative
+to the "backend/" folder unless noted.
+
+--------------------------------------------------------------------------------
+ROOT (backend/)
+--------------------------------------------------------------------------------
+
+run.py
+  Starts the web server in development (calls uvicorn on the FastAPI app).
+  Run from this folder:  python run.py
+
+requirements.txt
+  Python packages the backend needs (FastAPI, SQLAlchemy, pandas, etc.).
+
+pytest.ini
+  Tells pytest where tests live and how to find modules (pythonpath, testpaths).
+
+README.md
+  Short human notes: how to run the API, DATABASE_URL, tests.
+
+.gitignore
+  Files Git should not track (often includes .env with secrets).
+
+.env.example
+  Template for environment variables. Copy to .env and fill in real values.
+
+.env  (you create this locally; not in Git)
+  Real secrets like DATABASE_URL for Supabase/Postgres.
+
+
+--------------------------------------------------------------------------------
+src/  — main application code
+--------------------------------------------------------------------------------
+
+src/main.py
+  Creates the FastAPI "app", wires logging, mounts all API routes under /api/v1,
+  and exposes GET /health.
+
+src/config.py
+  Small re-export of paths/settings so older code can still do:
+  from src.config import DATA_DIR
+  (ML scripts use this.)
+
+src/__init__.py
+  Marks src as a Python package (often empty).
+
+
+--- src/core/  (settings and cross-cutting helpers) ---
+
+src/core/config.py
+  Loads .env, defines BASE_DIR, PROJECT_ROOT, DATA_DIR, reads DATABASE_URL,
+  API prefix constant.
+
+src/core/constants.py
+  App name/version strings for the OpenAPI docs.
+
+src/core/logging.py
+  Basic logging setup for the process.
+
+src/core/security.py
+  Small security helpers (e.g. safe string compare, token helpers).
+
+src/core/__init__.py
+  Re-exports common config symbols for convenience.
+
+
+--- src/api/  (HTTP layer: URLs and request handling) ---
+
+src/api/__init__.py
+  Package marker.
+
+src/api/v1/__init__.py
+  Builds one APIRouter and attaches all v1 route modules (transactions, scoring,
+  ... admin).
+
+src/api/v1/transactions.py
+  Endpoints under /api/v1/transactions (list, ingest).
+
+src/api/v1/scoring.py
+  Endpoint to request a fraud score (calls scoring service).
+
+src/api/v1/decisions.py
+  Endpoint for approve/review/block style decisions.
+
+src/api/v1/alerts.py
+  Endpoints for fraud alerts.
+
+src/api/v1/cases.py
+  Endpoints for investigation cases.
+
+src/api/v1/watchlist.py
+  Endpoints for watchlist data.
+
+src/api/v1/profiles.py
+  Endpoints for user/customer profiles (app profiles table).
+
+src/api/v1/metrics.py
+  Endpoint for dashboard-style metrics snapshot.
+
+src/api/v1/admin.py
+  Admin/settings style endpoints.
+
+
+--- src/services/  (business logic; called by API, not HTTP-specific) ---
+
+src/services/scoring_service.py
+  Orchestrates fraud scoring (stub or future ML hook).
+
+src/services/decision_service.py
+  Decision logic after scoring (stub).
+
+src/services/alerts_service.py
+  Alert listing / creation logic (stub).
+
+src/services/case_service.py
+  Case workflow logic (stub).
+
+src/services/watchlist_service.py
+  Watchlist logic (stub).
+
+src/services/profile_service.py
+  Profile logic (stub).
+
+src/services/metrics_service.py
+  Metrics aggregation (stub).
+
+src/services/admin_service.py
+  Admin summary (stub).
+
+src/services/rule_engine.py
+  Rule evaluation (velocity, amounts, etc.) — stub.
+
+src/services/__init__.py
+  Package marker.
+
+
+--- src/db/  (database connection and table shapes) ---
+
+src/db/session.py
+  Creates SQLAlchemy engine if DATABASE_URL is set; get_db() yields a session
+  for dependency injection in routes (when you wire it up).
+
+src/db/__init__.py
+  Re-exports session helpers.
+
+src/db/migrations/
+  Placeholder folder for Alembic/SQL migration scripts (.gitkeep keeps the
+  folder in Git). Your real schema may live in Supabase already.
+
+src/db/models/base.py
+  SQLAlchemy DeclarativeBase — shared parent for all ORM table classes.
+
+src/db/models/__init__.py
+  Imports all model classes so you can "from src.db.models import Transaction".
+
+src/db/models/transaction.py
+  ORM class for public.transactions (Supabase-aligned columns).
+
+src/db/models/case.py, case_note.py, case_event.py
+  ORM for cases and related notes/events.
+
+src/db/models/fraud_score.py, score_reason.py
+  ORM for scores and per-feature reasons.
+
+src/db/models/alert.py
+  ORM for alerts.
+
+src/db/models/watchlist.py, watchlist_history.py
+  ORM for watchlist and its history.
+
+src/db/models/transaction_lifecycle.py
+  ORM for status/history rows per transaction.
+
+src/db/models/rule_trigger.py
+  ORM for which rules fired on a transaction.
+
+src/db/models/profile.py
+  ORM for profiles (investigator/user style fields in your schema).
+
+src/db/models/rejected_request.py
+  ORM for bad/invalid API payloads you store for debugging.
+
+src/db/models/system_config.py
+  ORM for key/value config (key is primary key in Supabase).
+
+src/db/models/audit_log.py
+  ORM for audit events.
+
+
+--- src/schemas/  (Pydantic: JSON shapes for validation/serialization) ---
+
+Each file usually defines *Read* (and sometimes *Create*) models matching DB or
+API payloads. Used to validate incoming JSON and format outgoing JSON.
+
+src/schemas/__init__.py
+  Re-exports schema classes.
+
+src/schemas/transaction.py, case.py, alert.py, ... (one per domain)
+  Pydantic models aligned with your tables.
+
+
+--- src/utils/  (small reusable helpers) ---
+
+src/utils/geoip.py
+  Placeholder for IP → country (plug in a real provider later).
+
+src/utils/device_fingerprint.py
+  Normalizes device fingerprint dicts.
+
+src/utils/hashing.py
+  Hashing helpers for tokens or identifiers.
+
+src/utils/__init__.py
+  Package marker.
+
+
+--------------------------------------------------------------------------------
+ml/  (machine learning and data prep — not HTTP)
+--------------------------------------------------------------------------------
+
+ml/__init__.py
+  Package marker.
+
+ml/preprocessing.py
+  Splits, encoding, cleaning for tabular data (used by tests and pipelines).
+
+ml/feature_engineering.py
+  Builds features from raw transaction-style columns.
+
+ml/dataset_generator.py
+  Generates or transforms datasets (large script).
+
+ml/data_exploration.py
+  EDA: summaries, plots, exports (large script).
+
+ml/data/raw/
+  Input CSVs or raw dumps (e.g. transactions.csv).
+
+ml/data/processed/
+  Train/test matrices, encodings (X_train, y_train, JSON maps, etc.).
+
+ml/data/eda_outputs/
+  Tables and chart images produced by exploration scripts.
+
+
+--------------------------------------------------------------------------------
+tests/
+--------------------------------------------------------------------------------
+
+tests/unit/test_preprocessing.py
+  Unit tests for ml/preprocessing.py
+
+tests/unit/test_feature_engineering.py
+  Unit tests for ml/feature_engineering.py
+
+tests/integration/test_health.py
+  Hits GET /health on the FastAPI app (smoke test).
+
+
+--------------------------------------------------------------------------------
+scripts/
+--------------------------------------------------------------------------------
+
+scripts/seed.py
+  Placeholder for inserting seed data when DATABASE_URL is set.
+
+
+================================================================================
+FASTAPI — quick syntax notes (for beginners)
+================================================================================
+
+1) App object
+   You create one FastAPI application:
+     app = FastAPI()
+   Uvicorn runs it: it listens on a port and passes HTTP requests to "app".
+
+2) Routes (endpoints)
+   A route ties a URL + HTTP method to a Python function.
+   Example pattern in this project:
+     @router.get("")
+     async def list_items():
+         return []
+   - @router.get("")     → GET request
+   - @router.post("")    → POST request
+   - The path "" is relative to where the router is mounted.
+     If the router is mounted at "/transactions", GET "" becomes GET "/transactions".
+
+3) async def
+   Route functions are often "async" so FastAPI can handle many requests
+   efficiently. You can use regular "def" too for quick CPU-only work.
+
+4) APIRouter
+   Routers group related endpoints. In src/api/v1/__init__.py, many routers are
+   combined into one big router, then included in main.py under prefix "/api/v1".
+
+5) Return value = JSON
+   If you return a dict or list from a route, FastAPI serializes it to JSON.
+   If you return a Pydantic model, it becomes JSON using the model's fields.
+
+6) Request body
+   For POST, you can declare a body parameter with a type:
+     async def create_item(body: dict): ...
+   or use a Pydantic model for validation:
+     async def create_item(item: ItemCreate): ...
+
+7) Dependency injection (common next step)
+   FastAPI can inject a database session:
+     def get_db(): ...
+     @router.get("/x")
+     def read(db: Session = Depends(get_db)): ...
+   "Depends" runs get_db per request and passes the result into your function.
+
+8) Automatic docs
+   With the app running, open:
+     /docs   → Swagger UI
+     /redoc  → ReDoc
+
+9) Lifespan / startup
+   main.py uses a "lifespan" context to run code when the server starts/stops
+   (here: setup logging).
+
+10) Where to look first
+   - src/main.py          → app + /health + include_router
+   - src/api/v1/*.py      → URL handlers
+   - src/services/*.py    → logic those handlers call
+   - src/db/models/*.py   → database table shapes
+
+================================================================================
+END
+================================================================================
