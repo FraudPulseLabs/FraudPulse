@@ -1,17 +1,10 @@
-from pathlib import Path
-import os
-from dotenv import load_dotenv
+"""Backward-compatible exports for `from src.config import DATA_DIR` (e.g. ML modules)."""
 
-BASE_DIR = Path(__file__).resolve().parent   # backend/src
-PROJECT_ROOT = BASE_DIR.parent               # backend/
-DATA_DIR = PROJECT_ROOT / "data"
+from src.core.config import (
+    BASE_DIR,
+    DATA_DIR,
+    PROJECT_ROOT,
+    get_env,
+)
 
-load_dotenv(PROJECT_ROOT / ".env")
-
-
-def get_env(key: str, default: str = None) -> str:
-    value = os.getenv(key, default)
-    if value is None:
-        raise ValueError(f"Missing required environment variable: {key}")
-    return value
-
+__all__ = ["BASE_DIR", "DATA_DIR", "PROJECT_ROOT", "get_env"]
