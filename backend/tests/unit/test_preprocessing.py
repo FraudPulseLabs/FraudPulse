@@ -1,13 +1,13 @@
 import pandas as pd
 
 from ml.preprocessing import (
-    time_split,
+    split_chronologically,
     encode_high_cardinality_post_split,
-    finalise,
+    drop_raw_and_identifier_columns,
 )
 
 
-def test_time_split_is_chronological():
+def test_split_chronologically():
     df = pd.DataFrame({
         "timestamp": pd.to_datetime([
             "2025-01-01",
@@ -19,7 +19,7 @@ def test_time_split_is_chronological():
         "value": [1, 2, 3, 4, 5]
     })
 
-    train, test = time_split(df, test_frac=0.4)
+    train, test = split_chronologically(df, test_frac=0.4)
 
     assert train["timestamp"].max() < test["timestamp"].min()
 
@@ -45,7 +45,6 @@ def test_high_cardinality_encoding():
     assert "merchant_id_fraud_rate" in X_train_enc.columns
     assert "merchant_id" not in X_train_enc.columns
 
-    # Unknown category fallback
     global_rate = y_train.mean()
 
     assert (
@@ -54,7 +53,7 @@ def test_high_cardinality_encoding():
     )
 
 
-def test_finalise_drops_columns():
+def test_drop_raw_and_identifier_columns():
     df = pd.DataFrame({
         "transaction_id": [1],
         "card_id": ["A"],
@@ -62,7 +61,7 @@ def test_finalise_drops_columns():
         "feature_x": [123]
     })
 
-    result = finalise(df)
+    result = drop_raw_and_identifier_columns(df)
 
     assert "transaction_id" not in result.columns
     assert "card_id" not in result.columns
