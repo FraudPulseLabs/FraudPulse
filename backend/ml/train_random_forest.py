@@ -13,7 +13,7 @@ from sklearn.metrics import (
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / "data" / "processed"
-MODEL_DIR = BASE_DIR / "ml" / "models"
+MODEL_DIR = BASE_DIR / "ml" / "artefacts"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 
