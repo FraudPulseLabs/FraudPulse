@@ -12,7 +12,7 @@ from src.db.models.score_reason import ScoreReason
 from src.db.models.system_config import SystemConfig
 from src.db.models.transaction import Transaction
 from src.db.models.transaction_lifecycle import TransactionLifecycle
-from src.db.models.watchlist import Watchlist
+from src.db.models.watchlist_model import Watchlist
 from src.db.models.watchlist_history import WatchlistHistory
 
 __all__ = [
