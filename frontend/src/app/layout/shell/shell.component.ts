@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
 interface NavItem {
@@ -12,77 +12,93 @@ interface NavItem {
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="flex h-screen overflow-hidden">
+    <div class="min-h-screen bg-slate-50 md:flex md:h-screen md:overflow-hidden">
+      @if (navOpen()) {
+        <button
+          type="button"
+          class="fixed inset-0 z-30 bg-slate-950/40 md:hidden"
+          aria-label="Close navigation"
+          (click)="closeNav()"
+        ></button>
+      }
 
-      <!-- Sidebar -->
-      <aside class="w-60 shrink-0 flex flex-col"
-             style="background-color: var(--color-fp-navy-900)">
-        <!-- Logo -->
-        <div class="px-5 py-5 border-b border-white/10">
+      <aside
+        class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col transition-transform duration-200 md:static md:w-60 md:max-w-none md:translate-x-0"
+        [class.-translate-x-full]="!navOpen()"
+        style="background-color: var(--color-fp-navy-900)"
+      >
+        <div class="border-b border-white/10 px-5 py-5">
           <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center">
-              <span class="text-white text-xs font-bold">FP</span>
+            <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500">
+              <span class="text-xs font-bold text-white">FP</span>
             </div>
             <div>
-              <p class="text-white text-sm font-semibold">FraudPulse</p>
-              <p class="text-slate-400 text-xs">Detection System</p>
+              <p class="text-sm font-semibold text-white">FraudPulse</p>
+              <p class="text-xs text-slate-400">Detection System</p>
             </div>
           </div>
         </div>
 
-        <!-- Nav -->
-        <nav class="flex-1 px-3 py-4 space-y-0.5">
+        <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           @for (item of navItems; track item.path) {
-            <a [routerLink]="item.path"
-               routerLinkActive="nav-link-active"
-               [routerLinkActiveOptions]="{ exact: false }"
-               class="nav-link">
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="nav-link-active"
+              [routerLinkActiveOptions]="{ exact: false }"
+              class="nav-link"
+              (click)="closeNav()"
+            >
               <span class="text-base">{{ item.icon }}</span>
               {{ item.label }}
             </a>
           }
         </nav>
 
-        <!-- User pill -->
-        <div class="px-3 py-4 border-t border-white/10">
+        <div class="border-t border-white/10 px-3 py-4">
           <div class="flex items-center gap-2 px-2 py-2">
-            <div class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center">
-              <span class="text-white text-xs font-medium">A</span>
+            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500">
+              <span class="text-xs font-medium text-white">A</span>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-white text-xs font-medium truncate">Analyst</p>
-              <p class="text-slate-400 text-xs truncate">analyst&#64;fraudpulse.demo</p>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-xs font-medium text-white">Analyst</p>
+              <p class="truncate text-xs text-slate-400">analyst&#64;fraudpulse.demo</p>
             </div>
           </div>
         </div>
       </aside>
 
-      <!-- Main content -->
-      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        <!-- Topbar -->
-        <header class="h-14 shrink-0 bg-white border-b border-slate-200
-                        flex items-center justify-between px-6">
-          <h1 class="text-sm font-medium text-slate-700">FraudPulse Analytics</h1>
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
-                          bg-green-50 text-green-700 text-xs font-medium">
-              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-              System Active
-            </span>
+      <div class="flex min-h-screen min-w-0 flex-1 flex-col md:min-h-0 md:overflow-hidden">
+        <header class="sticky top-0 z-20 flex min-h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+          <div class="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 md:hidden"
+              aria-label="Open navigation"
+              (click)="toggleNav()"
+            >
+              ☰
+            </button>
+            <div class="min-w-0">
+              <h1 class="truncate text-sm font-medium text-slate-700 sm:text-base">FraudPulse Analytics</h1>
+              <p class="text-xs text-slate-400 md:hidden">Fraud operations console</p>
+            </div>
           </div>
+          <span class="hidden items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 sm:inline-flex">
+            <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+            System Active
+          </span>
         </header>
 
-        <!-- Page content -->
-        <main class="flex-1 overflow-auto p-6">
+        <main class="flex-1 overflow-auto p-4 sm:p-6">
           <router-outlet />
         </main>
-
       </div>
     </div>
   `,
 })
 export class ShellComponent {
+  navOpen = signal(false);
+
   navItems: NavItem[] = [
     { path: 'transactions', label: 'Transactions', icon: '💳' },
     { path: 'alerts',       label: 'Alert Queue',  icon: '🔔' },
@@ -90,4 +106,12 @@ export class ShellComponent {
     { path: 'watchlist',    label: 'Watchlist',    icon: '👁' },
     { path: 'metrics',      label: 'Metrics',      icon: '📊' },
   ];
+
+  toggleNav(): void {
+    this.navOpen.update((value) => !value);
+  }
+
+  closeNav(): void {
+    this.navOpen.set(false);
+  }
 }

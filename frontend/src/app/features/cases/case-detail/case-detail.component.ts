@@ -18,14 +18,14 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
       <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] gap-6">
         <div class="space-y-6">
           <section class="card">
-            <div class="flex items-start justify-between gap-4">
-              <div>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
                 <h2 class="text-xl font-semibold text-slate-900">{{ current.title }}</h2>
                 <p class="text-sm text-slate-500">
                   <span class="font-mono">{{ current.id }}</span> - created {{ current.createdAt | date: 'mediumDate' }}
                 </p>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <app-badge [value]="current.status" />
                 <app-badge [value]="current.riskLevel" />
               </div>
@@ -47,7 +47,7 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
                   </button>
                 }
                 @if (pendingStatus() === 'CLOSED') {
-                  <select #resolutionSelect class="fp-select w-56" [value]="pendingResolution() || ''" (change)="setResolution(resolutionSelect.value)">
+                  <select #resolutionSelect class="fp-select w-full sm:w-56" [value]="pendingResolution() || ''" (change)="setResolution(resolutionSelect.value)">
                     <option value="">Resolution</option>
                     <option value="CONFIRMED_FRAUD">CONFIRMED_FRAUD</option>
                     <option value="FALSE_POSITIVE">FALSE_POSITIVE</option>
@@ -86,12 +86,12 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
             <h3 class="section-title">Linked Alerts</h3>
             <div class="space-y-2">
               @for (alert of linkedAlerts(); track alert.id) {
-                <div class="flex items-center justify-between gap-4 rounded-lg border border-slate-200 p-3">
-                  <div>
+                <div class="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
                     <p class="font-mono text-sm text-slate-700">{{ alert.id }}</p>
                     <p class="text-sm text-slate-500">{{ alert.reason }}</p>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
                     <app-badge [value]="alert.severity" />
                     <app-badge [value]="alert.status" />
                   </div>
@@ -132,7 +132,7 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
             </div>
             <div class="mt-4">
               <textarea #noteInput class="fp-input min-h-28" rows="4" [value]="noteBody()" (input)="noteBody.set(noteInput.value)"></textarea>
-              <div class="mt-2 flex items-center justify-between">
+              <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span class="text-xs text-slate-400">{{ noteBody().length }} / 2000</span>
                 <button type="button" class="btn-primary" (click)="submitNote()">Add Note</button>
               </div>
