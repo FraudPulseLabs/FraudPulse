@@ -50,8 +50,4 @@ SETUP.md
 PROMPT.md
 db-secrets.txt
 
-# Environment files with real keys — never commit these
-src/environments/environment.ts
-src/environments/environment.prod.ts
-
 
