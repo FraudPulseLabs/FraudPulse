@@ -14,11 +14,16 @@ jobs:
       issues: write
 
     steps:
-      - name: Run Pull Request Agent
+      - uses: actions/checkout@v4
+
+      - name: Run PR Agent
         uses: qodo-ai/pr-agent@main
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # IMPORTANT
+          LITELLM_PROVIDER: gemini
 
           CONFIG.MODEL: gemini/gemini-1.5-flash
 
