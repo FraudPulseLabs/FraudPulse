@@ -7,11 +7,11 @@ train/test matrices.
 
 This script is NOT deployed to production. The real-time feature
 computation is in feature_engineering.py, which is shared with
-src/services/feature_service.py.
+src/services/realtime_feature_builder.py.
 
 Dependency flow:
     feature_engineering.py  ←  preprocessing.py   (training)
-    feature_engineering.py  ←  feature_service.py  (inference)
+    feature_engineering.py  ←  realtime_feature_builder.py  (inference)
 """
 
 import os
@@ -20,12 +20,12 @@ import pandas as pd
 from pathlib import Path
 from src.config import DATA_DIR
 from ml.feature_engineering import (
-    add_time_features,
-    add_geography_features,
-    add_card_features,
-    add_velocity_features,
-    add_risk_flags,
-    encode_categoricals,
+    compute_timestamp_cyclical_features,
+    compute_cross_border_flag,
+    compute_card_spend_history_features,
+    compute_card_transaction_velocity,
+    compute_composite_fraud_signals,
+    encode_categorical_features,
 )
 
 # =============================================================================
@@ -57,7 +57,9 @@ FINAL_DROP = [
 # These must also be loaded by the feature service at inference time.
 HIGH_CARD_COLS = [
     "merchant_category_code",   # identifier — not ordinal, not a number
-    "transaction_country",      # encode as fraud rate, not country identity
+    # transaction_country excluded: fraud rate differences across the 6
+    # synthetic countries are sampling noise from the random seed, not real
+    # country-level risk. cross_border already captures geographic mismatch.
     "merchant_id",              # fraud rate per merchant
 ]
 
@@ -65,7 +67,7 @@ HIGH_CARD_COLS = [
 # =============================================================================
 # LOAD
 # =============================================================================
-def load(path: Path) -> pd.DataFrame:
+def load_raw_transactions(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.sort_values("timestamp").reset_index(drop=True)
@@ -76,7 +78,7 @@ def load(path: Path) -> pd.DataFrame:
 # =============================================================================
 # SPLIT — chronological, never random
 # =============================================================================
-def time_split(df: pd.DataFrame, test_frac: float = 0.20):
+def split_chronologically(df: pd.DataFrame, test_frac: float = 0.20):
     """
     Split at the chronological quantile — model trains on past data and
     evaluates on future data, mirroring production deployment.
@@ -104,7 +106,7 @@ def encode_high_cardinality_post_split(
     fall back to the global train fraud rate.
 
     The returned encoding_maps dict must be saved alongside the model and
-    loaded by feature_service.py at startup. If it drifts from the model,
+    loaded by realtime_feature_builder.py at startup. If it drifts from the model,
     train/serve skew occurs.
     """
     train_tmp   = X_train.copy()
@@ -129,7 +131,7 @@ def encode_high_cardinality_post_split(
 # =============================================================================
 # FINALISE
 # =============================================================================
-def finalise(df: pd.DataFrame) -> pd.DataFrame:
+def drop_raw_and_identifier_columns(df: pd.DataFrame) -> pd.DataFrame:
     drop = [c for c in FINAL_DROP if c in df.columns]
     return df.drop(columns=drop)
 
@@ -137,7 +139,7 @@ def finalise(df: pd.DataFrame) -> pd.DataFrame:
 # =============================================================================
 # SAVE
 # =============================================================================
-def save_outputs(
+def save_train_test_matrices(
     X_train: pd.DataFrame,
     X_test:  pd.DataFrame,
     y_train: pd.Series,
@@ -162,26 +164,26 @@ def save_outputs(
 # =============================================================================
 def run():
     # --- Load ---
-    df = load(DATA_PATH)
+    df = load_raw_transactions(DATA_PATH)
 
     # --- Feature engineering (shared with inference via feature_engineering.py) ---
-    df = add_time_features(df)
-    df = add_geography_features(df)
-    df = add_card_features(df)
-    df = add_velocity_features(df)
-    df = add_risk_flags(df)
-    df = encode_categoricals(df)
+    df = compute_timestamp_cyclical_features(df)
+    df = compute_cross_border_flag(df)
+    df = compute_card_spend_history_features(df)
+    df = compute_card_transaction_velocity(df)
+    df = compute_composite_fraud_signals(df)
+    df = encode_categorical_features(df)
 
     # --- Chronological split ---
-    train_df, test_df = time_split(df)
+    train_df, test_df = split_chronologically(df)
 
     # --- Separate target ---
     y_train = train_df["is_fraud"].astype(int)
     y_test  = test_df["is_fraud"].astype(int)
 
     # --- Drop raw and identifier columns ---
-    train_df = finalise(train_df)
-    test_df  = finalise(test_df)
+    train_df = drop_raw_and_identifier_columns(train_df)
+    test_df  = drop_raw_and_identifier_columns(test_df)
 
     # --- Separate features ---
     X_train = train_df.drop(columns=["is_fraud"])
@@ -198,7 +200,7 @@ def run():
     X_test = X_test[X_train.columns]
 
     # --- Save ---
-    save_outputs(X_train, X_test, y_train, y_test, encoding_maps, OUTPUT_PATH)
+    save_train_test_matrices(X_train, X_test, y_train, y_test, encoding_maps, OUTPUT_PATH)
 
     print("\n--- PREPROCESSING SUMMARY ---")
     print(f"Train : {X_train.shape[0]:,} rows × {X_train.shape[1]} features")

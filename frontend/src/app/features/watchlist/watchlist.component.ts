@@ -70,7 +70,7 @@ interface WatchlistForm {
             Add to blacklist
           </label>
         </div>
-        <div class="mt-4 flex items-center gap-3">
+        <div class="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" class="btn-primary" (click)="addEntry()">Add to Watchlist</button>
           <button type="button" class="btn-secondary" (click)="cancelAdd()">Cancel</button>
         </div>
