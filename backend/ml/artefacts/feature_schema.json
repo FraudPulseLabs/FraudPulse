@@ -1,0 +1,74 @@
+{
+  "model_name": "calibrated_lightgbm",
+  "model_file": "fraud_model.pkl",
+  "target": "is_fraud",
+  "feature_count": 34,
+  "features": [
+    "enriched_amount_usd",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "is_weekend",
+    "is_night",
+    "cross_border",
+    "card_txn_count_prior",
+    "card_avg_amount_usd_prior",
+    "card_std_amount_usd_prior",
+    "amount_vs_card_avg",
+    "amount_zscore",
+    "seconds_since_last_txn",
+    "txn_count_1h",
+    "txn_count_24h",
+    "high_amount_relative",
+    "cross_border_high_amount",
+    "velocity_spike_1h",
+    "weak_auth_high_value",
+    "cvv2_result_enc",
+    "avs_result_enc",
+    "pan_entry_mode_enc",
+    "authentication_enc",
+    "card_type_Credit",
+    "card_type_Debit",
+    "card_type_Prepaid",
+    "channel_ATM",
+    "channel_ECOMMERCE",
+    "channel_POS",
+    "transaction_type_purchase",
+    "transaction_type_withdrawal",
+    "merchant_category_code_fraud_rate",
+    "transaction_country_fraud_rate"
+  ],
+  "thresholds": {
+    "approve_below": 0.011088466528553146,
+    "review_from": 0.011088466528553146,
+    "decline_from": 0.9946873249484744,
+    "optimisation": {
+      "fbeta_beta": 0.5,
+      "fbeta_threshold": {
+        "threshold": 0.9946873249484744,
+        "precision": 1.0,
+        "recall": 0.993006993006993,
+        "fbeta": 0.9985935302382964
+      },
+      "ks_threshold": {
+        "threshold": 0.011088466528553146,
+        "ks": 0.9998990306946688
+      }
+    },
+    "decision_policy": {
+      "APPROVE": "score < 0.011088",
+      "APPROVE_WITH_REVIEW": "0.011088 <= score < 0.994687",
+      "DECLINE": "score >= 0.994687"
+    }
+  },
+  "metrics": {
+    "roc_auc": 0.9999992939209418,
+    "pr_auc": 0.9999755915242867
+  },
+  "notes": [
+    "Features must be provided in exactly this order at inference time.",
+    "Model output is a calibrated fraud probability between 0 and 1.",
+    "Decision thresholds were generated from final test set probabilities."
+  ]
+}
