@@ -47,8 +47,6 @@ This project actively uses:
 - `src/environments/environment.ts` for production builds
 - `src/environments/environment.development.ts` for development builds via Angular file replacement
 
-`src/environments/environment.example.ts` is only a template for contributors.
-
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
