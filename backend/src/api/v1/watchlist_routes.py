@@ -20,7 +20,7 @@ from src.services.watchlist_service import (
     update_watchlist_entry,
 )
 
-router = APIRouter(prefix="/watchlist", tags=["Watchlist"])
+router = APIRouter(tags=["Watchlist"])
 
 
 @router.get("", response_model=ApiResponse)
