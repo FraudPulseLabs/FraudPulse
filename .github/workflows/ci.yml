@@ -1,10 +1,24 @@
 name: CI
 
+# Trigger rules:
+# - push: only on `main` so merges produce a build, but feature-branch pushes
+#   don't run twice (once for push, once for the open PR).
+# - pull_request: fires on every PR commit — this is the check used for
+#   branch protection / required reviews.
 on:
   push:
+    branches: [main]
   pull_request:
 
+# Cancel any in-flight run for the same ref (branch / PR) when a new commit
+# lands, so rapid pushes don't pile up runners.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Backend job: installs Python deps from backend/requirements.txt and runs
+  # pytest with coverage across the ml/ and src/ packages.
   backend-tests:
     name: Backend (pytest)
     runs-on: ubuntu-latest
@@ -21,6 +35,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          # Cache pip downloads keyed off requirements.txt to speed up reruns.
           cache: "pip"
           cache-dependency-path: backend/requirements.txt
 
@@ -33,6 +48,8 @@ jobs:
       - name: Run tests
         run: python -m pytest -v --cov=ml --cov=src
 
+  # Frontend job: installs Node deps and runs Jest. Jest picks up any
+  # *.spec.ts files via frontend/jest.config.js and tsconfig.spec.json.
   frontend-tests:
     name: Frontend (jest)
     runs-on: ubuntu-latest
@@ -49,13 +66,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          # Cache the npm store keyed off the lockfile for faster installs.
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
+      # `npm ci` does a strict, reproducible install from package-lock.json.
+      # The legacy-peer-deps flag is picked up automatically from frontend/.npmrc
+      # to tolerate the @angular-builders/jest peer-dep conflict.
       - name: Install dependencies
         run: npm ci
 
       - name: Run Jest tests
-        # --passWithNoTests so the job does not fail before any .spec.ts files exist;
-        # any failing test in the paths picked up by jest.config.js will still fail the job.
+        # --passWithNoTests keeps the job green when there are no spec files yet;
+        # any failing test in the paths picked up by jest.config.js will still
+        # fail the job and surface in the PR checks.
         run: npm test -- --ci --passWithNoTests --reporters=default
