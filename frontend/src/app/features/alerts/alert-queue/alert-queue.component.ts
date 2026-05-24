@@ -20,7 +20,7 @@ type StatusFilter = 'ALL' | AlertStatus;
     </div>
 
     <div class="card mb-4">
-      <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1">
           @for (status of statuses; track status) {
             <button
@@ -35,7 +35,7 @@ type StatusFilter = 'ALL' | AlertStatus;
             </button>
           }
         </div>
-        <div class="flex items-center gap-3 text-sm">
+        <div class="flex flex-wrap items-center gap-3 text-sm">
           <span class="text-red-700 font-medium">{{ newCounts().HIGH }} HIGH</span>
           <span class="text-yellow-700 font-medium">{{ newCounts().MEDIUM }} MEDIUM</span>
           <span class="text-blue-700 font-medium">{{ newCounts().LOW }} LOW</span>
@@ -70,7 +70,7 @@ type StatusFilter = 'ALL' | AlertStatus;
                   <td><app-badge [value]="alert.severity" /></td>
                   <td><app-badge [value]="alert.status" /></td>
                   <td>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                       @if (alert.status === 'NEW') {
                         <button type="button" class="btn-secondary" (click)="acknowledge(alert.id)">Acknowledge</button>
                         <button type="button" class="btn-ghost" (click)="startResolve(alert.id)">Resolve</button>
@@ -85,7 +85,7 @@ type StatusFilter = 'ALL' | AlertStatus;
                 @if (resolvingId() === alert.id) {
                   <tr>
                     <td colspan="7">
-                      <div class="flex items-center gap-3">
+                      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <input
                           #noteInput
                           class="fp-input"

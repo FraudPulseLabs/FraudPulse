@@ -98,11 +98,9 @@ interface PendingRemove {
             Add to blacklist
           </label>
         </div>
-        <div class="mt-4 flex items-center gap-3">
-          <button type="button" class="btn-primary" (click)="addEntry()" [disabled]="saving()">
-            {{ saving() ? 'Adding…' : 'Add to Watchlist' }}
-          </button>
-          <button type="button" class="btn-secondary" (click)="cancelAdd()" [disabled]="saving()">Cancel</button>
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" class="btn-primary" (click)="addEntry()">Add to Watchlist</button>
+          <button type="button" class="btn-secondary" (click)="cancelAdd()">Cancel</button>
         </div>
       </div>
     }
