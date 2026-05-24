@@ -46,6 +46,11 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run tests
+        # DATABASE_URL is read at import time by src/core/config.py; tests
+        # don't actually connect, so an in-memory sqlite URL is sufficient
+        # to let imports succeed in CI.
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
         run: python -m pytest -v --cov=ml --cov=src
 
   # Frontend job: installs Node deps and runs Jest. Jest picks up any
