@@ -2,8 +2,12 @@ services:
   - type: web
     name: frontend
     runtime: node
-    buildCommand: cd frontend && npm ci && npm run build:prod
-    staticPublishPath: frontend/dist/fraudpulse/browser
+    rootDir: frontend
+    buildFilter:
+      paths:
+        - frontend/**
+    buildCommand: npm ci && npm run build:prod
+    staticPublishPath: dist/fraudpulse/browser
     headers:
       - path: /*
         name: Cache-Control

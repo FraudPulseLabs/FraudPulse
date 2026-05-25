@@ -42,7 +42,7 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
             </div>
           </div>
         </div>
-        <div class="mt-4 flex items-center gap-3">
+        <div class="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" class="btn-primary" (click)="createCase()">Create Case</button>
           <button type="button" class="btn-secondary" (click)="cancelCreate()">Cancel</button>
         </div>
@@ -93,7 +93,7 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
                   <td>{{ c.linkedAlertIds.length }}</td>
                   <td>{{ c.createdAt | timeAgo }}</td>
                   <td>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                       <button type="button" class="btn-secondary" (click)="view(c.id)">View</button>
                       @if (c.status === 'OPEN') {
                         <button type="button" class="btn-ghost" (click)="startInvestigation(c.id)">Investigate</button>

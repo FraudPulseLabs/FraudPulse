@@ -10,7 +10,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   imports: [BadgeComponent, DecimalPipe],
   template: `
     <div class="page-header">
-      <div>
+      <div class="min-w-0">
         <h2 class="page-title">Metrics Dashboard</h2>
         <p class="text-sm text-slate-500">Operational snapshot for the fraud decision system.</p>
       </div>
@@ -18,7 +18,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
     </div>
 
     @if (metrics(); as m) {
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div class="fp-stat-grid">
         <div class="card-compact border-l-4" [style.border-left-color]="'var(--color-fp-accent-500)'">
           <p class="text-2xl font-bold text-slate-900">{{ m.transactionVolume.lastHour }}</p>
           <p class="text-sm text-slate-500">Transactions (1h)</p>
@@ -40,17 +40,17 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
       <section class="card mt-6">
         <h3 class="section-title">Score distribution</h3>
         <div class="space-y-4">
-          <div class="grid grid-cols-[90px_minmax(0,1fr)_60px] items-center gap-4">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[90px_minmax(0,1fr)_60px] sm:items-center sm:gap-4">
             <span class="text-sm text-slate-500">Mean</span>
             <div class="score-bar-track"><div class="score-bar-fill" [style.width.%]="m.scoreDistribution.mean * 100" [style.background-color]="scoreColour(m.scoreDistribution.mean)"></div></div>
             <span class="text-sm font-mono">{{ m.scoreDistribution.mean | number: '1.2-2' }}</span>
           </div>
-          <div class="grid grid-cols-[90px_minmax(0,1fr)_60px] items-center gap-4">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[90px_minmax(0,1fr)_60px] sm:items-center sm:gap-4">
             <span class="text-sm text-slate-500">Median</span>
             <div class="score-bar-track"><div class="score-bar-fill" [style.width.%]="m.scoreDistribution.median * 100" [style.background-color]="scoreColour(m.scoreDistribution.median)"></div></div>
             <span class="text-sm font-mono">{{ m.scoreDistribution.median | number: '1.2-2' }}</span>
           </div>
-          <div class="grid grid-cols-[90px_minmax(0,1fr)_60px] items-center gap-4">
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[90px_minmax(0,1fr)_60px] sm:items-center sm:gap-4">
             <span class="text-sm text-slate-500">P95</span>
             <div class="score-bar-track"><div class="score-bar-fill" [style.width.%]="m.scoreDistribution.p95 * 100" [style.background-color]="scoreColour(m.scoreDistribution.p95)"></div></div>
             <span class="text-sm font-mono">{{ m.scoreDistribution.p95 | number: '1.2-2' }}</span>
@@ -61,7 +61,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
       <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
         @for (decision of decisions; track decision) {
           <div class="card-compact">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <app-badge [value]="decision" />
               <span class="text-xl font-bold text-slate-900">{{ bucket(decision).pct | number: '1.1-1' }}%</span>
             </div>
