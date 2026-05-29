@@ -1,4 +1,4 @@
 """Shared constants."""
 
-API_TITLE = "Payment Fraud Engine API"
+API_TITLE = "Fraud Pulse API"
 API_VERSION = "1.0.0"
