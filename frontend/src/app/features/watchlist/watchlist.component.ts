@@ -1,14 +1,14 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { WatchlistService } from '../../core/services/watchlist.service';
 import type { WatchlistEntityType, WatchlistEntry } from '../../core/models';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
 type EntityFilter = 'ALL' | WatchlistEntityType;
 
 interface WatchlistForm {
-  entityType: WatchlistEntityType;
   entityId: string;
   reason: string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -16,41 +16,60 @@ interface WatchlistForm {
   expiresIn: '7' | '14' | '30' | 'NEVER';
 }
 
+interface PendingRemove {
+  entityType: WatchlistEntityType;
+  entityId: string;
+}
+
 @Component({
   selector: 'app-watchlist',
   standalone: true,
-  imports: [BadgeComponent, DatePipe, EmptyStateComponent],
+  imports: [BadgeComponent, ConfirmDialogComponent, DatePipe, EmptyStateComponent],
   template: `
     <div class="page-header">
       <div>
         <h2 class="page-title">Watchlist</h2>
-        <p class="text-sm text-slate-500">Entities requiring extra scrutiny in fraud decisions.</p>
+        <p class="text-sm text-slate-500">Merchants requiring extra scrutiny in fraud decisions.</p>
       </div>
-      <button type="button" class="btn-primary" (click)="showAddForm.set(true)">Add Entry</button>
+      <button type="button" class="btn-primary" (click)="showAddForm.set(true)" [disabled]="loading()">
+        Add Merchant
+      </button>
     </div>
+
+    @if (error()) {
+      <div class="card mb-4 border border-red-200 bg-red-50 text-sm text-red-700">{{ error() }}</div>
+    }
 
     @if (showAddForm()) {
       <div class="card mb-4">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <label>
-            <span class="fp-label">Entity Type</span>
-            <select #typeSelect class="fp-select" [value]="form().entityType" (change)="patchForm({ entityType: asEntityType(typeSelect.value) })">
-              <option value="USER">USER</option>
-              <option value="MERCHANT">MERCHANT</option>
-              <option value="TRANSACTION">TRANSACTION</option>
-            </select>
-          </label>
-          <label>
-            <span class="fp-label">Entity ID</span>
-            <input #entityInput class="fp-input" placeholder="USR-007 or merchant name" [value]="form().entityId" (input)="patchForm({ entityId: entityInput.value })" />
+            <span class="fp-label">Merchant ID</span>
+            <input
+              #entityInput
+              class="fp-input"
+              placeholder="MERCHANT_1001"
+              [value]="form().entityId"
+              (input)="patchForm({ entityId: entityInput.value })"
+            />
           </label>
           <label>
             <span class="fp-label">Reason</span>
-            <input #reasonInput class="fp-input" [value]="form().reason" (input)="patchForm({ reason: reasonInput.value })" />
+            <input
+              #reasonInput
+              class="fp-input"
+              [value]="form().reason"
+              (input)="patchForm({ reason: reasonInput.value })"
+            />
           </label>
           <label>
             <span class="fp-label">Severity</span>
-            <select #severitySelect class="fp-select" [value]="form().severity" (change)="patchForm({ severity: asSeverity(severitySelect.value) })">
+            <select
+              #severitySelect
+              class="fp-select"
+              [value]="form().severity"
+              (change)="patchForm({ severity: asSeverity(severitySelect.value) })"
+            >
               <option value="LOW">LOW</option>
               <option value="MEDIUM">MEDIUM</option>
               <option value="HIGH">HIGH</option>
@@ -58,7 +77,12 @@ interface WatchlistForm {
           </label>
           <label>
             <span class="fp-label">Expires in</span>
-            <select #expiresSelect class="fp-select" [value]="form().expiresIn" (change)="patchForm({ expiresIn: asExpiry(expiresSelect.value) })">
+            <select
+              #expiresSelect
+              class="fp-select"
+              [value]="form().expiresIn"
+              (change)="patchForm({ expiresIn: asExpiry(expiresSelect.value) })"
+            >
               <option value="7">7 days</option>
               <option value="14">14 days</option>
               <option value="30">30 days</option>
@@ -66,7 +90,11 @@ interface WatchlistForm {
             </select>
           </label>
           <label class="flex items-center gap-2 pt-7 text-sm text-slate-700">
-            <input type="checkbox" [checked]="form().isBlacklist" (change)="patchForm({ isBlacklist: !form().isBlacklist })" />
+            <input
+              type="checkbox"
+              [checked]="form().isBlacklist"
+              (change)="patchForm({ isBlacklist: !form().isBlacklist })"
+            />
             Add to blacklist
           </label>
         </div>
@@ -95,7 +123,9 @@ interface WatchlistForm {
     </div>
 
     <div class="card overflow-hidden">
-      @if (filtered().length === 0) {
+      @if (loading()) {
+        <p class="p-6 text-sm text-slate-500">Loading watchlist…</p>
+      } @else if (filtered().length === 0) {
         <app-empty-state message="No watchlist entries found" />
       } @else {
         <div class="overflow-auto">
@@ -127,7 +157,14 @@ interface WatchlistForm {
                   <td>{{ entry.addedBy }}</td>
                   <td>{{ entry.expiresAt ? (entry.expiresAt | date: 'dd MMM yy') : 'Never' }}</td>
                   <td>
-                    <button type="button" class="btn-ghost text-red-600" (click)="removeEntry(entry.id, entry.entityId)">Remove</button>
+                    <button
+                      type="button"
+                      class="btn-ghost text-red-600"
+                      (click)="confirmRemove(entry)"
+                      [disabled]="saving()"
+                    >
+                      Remove
+                    </button>
                   </td>
                 </tr>
               }
@@ -136,16 +173,24 @@ interface WatchlistForm {
         </div>
       }
     </div>
+
+    <app-confirm-dialog
+      [open]="!!pendingRemove()"
+      title="Remove from watchlist"
+      [message]="'Remove ' + (pendingRemove()?.entityId ?? '') + ' from the watchlist?'"
+      (confirmed)="onRemoveConfirmed($event)"
+    />
   `,
 })
-export class WatchlistComponent {
+export class WatchlistComponent implements OnInit {
   private watchlistService = inject(WatchlistService);
 
-  filters: EntityFilter[] = ['ALL', 'USER', 'MERCHANT', 'TRANSACTION'];
+  filters: EntityFilter[] = ['ALL', 'MERCHANT'];
   entityFilter = signal<EntityFilter>('ALL');
   showAddForm = signal(false);
+  saving = signal(false);
+  pendingRemove = signal<PendingRemove | null>(null);
   form = signal<WatchlistForm>({
-    entityType: 'USER',
     entityId: '',
     reason: '',
     severity: 'MEDIUM',
@@ -153,57 +198,78 @@ export class WatchlistComponent {
     expiresIn: '14',
   });
 
+  readonly loading = this.watchlistService.loading;
+  readonly error = this.watchlistService.error;
+
   filtered = computed(() =>
     this.entityFilter() === 'ALL'
       ? this.watchlistService.entries()
       : this.watchlistService.entries().filter((e) => e.entityType === this.entityFilter()),
   );
 
+  ngOnInit(): void {
+    void this.watchlistService.loadEntries();
+  }
+
   patchForm(patch: Partial<WatchlistForm>): void {
     this.form.update((current) => ({ ...current, ...patch }));
   }
 
-  addEntry(): void {
-    // TODO: validate all required fields
-    // TODO: POST /watchlist { ...form }
+  async addEntry(): Promise<void> {
     const form = this.form();
     if (!form.entityId.trim() || !form.reason.trim()) return;
+
     const entry: Omit<WatchlistEntry, 'id' | 'createdAt'> = {
-      entityType: form.entityType,
-      entityId: form.entityId,
-      reason: form.reason,
+      entityType: 'MERCHANT',
+      entityId: form.entityId.trim(),
+      reason: form.reason.trim(),
       severity: form.severity,
       isBlacklist: form.isBlacklist,
-      addedBy: 'analyst@fraudpulse.demo',
+      addedBy: 'fraud_analyst_01',
       ...(form.expiresIn === 'NEVER'
         ? {}
         : { expiresAt: new Date(Date.now() + Number(form.expiresIn) * 86_400_000).toISOString() }),
     };
-    this.watchlistService.add(entry);
-    this.cancelAdd();
+
+    this.saving.set(true);
+    try {
+      await this.watchlistService.add(entry);
+      this.cancelAdd();
+    } catch {
+      // error signal set in service
+    } finally {
+      this.saving.set(false);
+    }
   }
 
-  removeEntry(id: string, entityId: string): void {
-    // TODO: confirm dialog
-    // TODO: DELETE /watchlist/:id
-    console.warn('[TODO] remove watchlist entry', entityId);
-    this.watchlistService.remove(id);
+  confirmRemove(entry: WatchlistEntry): void {
+    this.pendingRemove.set({ entityType: entry.entityType, entityId: entry.entityId });
+  }
+
+  async onRemoveConfirmed(confirmed: boolean): Promise<void> {
+    const pending = this.pendingRemove();
+    this.pendingRemove.set(null);
+    if (!confirmed || !pending) return;
+
+    this.saving.set(true);
+    try {
+      await this.watchlistService.remove(pending.entityType, pending.entityId);
+    } catch {
+      // error signal set in service
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   cancelAdd(): void {
     this.showAddForm.set(false);
     this.form.set({
-      entityType: 'USER',
       entityId: '',
       reason: '',
       severity: 'MEDIUM',
       isBlacklist: false,
       expiresIn: '14',
     });
-  }
-
-  asEntityType(value: string): WatchlistEntityType {
-    return value as WatchlistEntityType;
   }
 
   asSeverity(value: string): WatchlistForm['severity'] {
