@@ -11,7 +11,7 @@ from src.schemas.score_reason import ScoreReasonRead
 from src.schemas.system_config import SystemConfigRead
 from src.schemas.transaction import TransactionCreate, TransactionRead
 from src.schemas.transaction_lifecycle import TransactionLifecycleRead
-from src.schemas.watchlist import WatchlistRead
+from src.schemas.watchlist_schemas import WatchlistRead
 from src.schemas.watchlist_history import WatchlistHistoryRead
 
 __all__ = [

@@ -36,17 +36,26 @@ def sample_df():
 def test_compute_timestamp_cyclical_features():
     df = compute_timestamp_cyclical_features(sample_df())
 
+    # is_weekend is intentionally excluded: it is fully subsumed by
+    # dow_sin / dow_cos (the cyclical encoding of day-of-week already
+    # encodes all the information is_weekend provides as a subset).
+    # Keeping it would create a collinear feature pair. See preprocessing.py
+    # FINAL_DROP Fix 2.
     expected_cols = [
         "hour_sin",
         "hour_cos",
         "dow_sin",
         "dow_cos",
-        "is_weekend",
         "is_night",
     ]
 
     for col in expected_cols:
         assert col in df.columns
+
+    assert "is_weekend" not in df.columns, (
+        "is_weekend must not be produced by compute_timestamp_cyclical_features — "
+        "it is collinear with dow_sin/dow_cos and is excluded from the feature set."
+    )
 
     assert df["is_night"].iloc[0] == 1
 
