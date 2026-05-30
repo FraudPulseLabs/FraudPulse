@@ -143,6 +143,8 @@ def compute_timestamp_cyclical_features_for_single_transaction(
     but is now explicitly documented to match the batch function above.
     is_weekend is not returned — it was removed from the feature set in v2.
     """
+    if not isinstance(timestamp, pd.Timestamp):
+        timestamp = pd.Timestamp(timestamp)
     hour = timestamp.hour
     dow  = timestamp.dayofweek
     return {

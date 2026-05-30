@@ -1,11 +1,12 @@
+from src.api.v1 import scoring_routes
 from src.api.v1 import watchlist_routes
 from fastapi import APIRouter
 
-from src.api.v1 import admin, alerts, cases, decisions, metrics, profiles, scoring, transactions
+from src.api.v1 import admin, alerts, cases, decisions, metrics, profiles, transactions
 
 api_router = APIRouter()
 api_router.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
-api_router.include_router(scoring.router, prefix="/scoring", tags=["scoring"])
+api_router.include_router(scoring_routes.router, prefix="/scoring", tags=["scoring"])
 api_router.include_router(decisions.router, prefix="/decisions", tags=["decisions"])
 api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
 api_router.include_router(cases.router, prefix="/cases", tags=["cases"])
