@@ -67,6 +67,8 @@ jobs:
       OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
       OCI_SSH_KNOWN_HOSTS: ${{ secrets.OCI_SSH_KNOWN_HOSTS }}
       BACKEND_DATABASE_URL: ${{ secrets.BACKEND_DATABASE_URL }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
       IMAGE_REPO: ${{ needs.build-and-push.outputs.image_repo }}
       IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
 
@@ -75,6 +77,7 @@ jobs:
         run: |
           echo "::add-mask::$OCI_SSH_PRIVATE_KEY"
           echo "::add-mask::$BACKEND_DATABASE_URL"
+          echo "::add-mask::$GHCR_READ_TOKEN"
 
       - name: Configure SSH
         run: |
@@ -109,6 +112,12 @@ jobs:
             '      retries: 5' \
             '      start_period: 20s' \
             | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/docker-compose.yml"
+
+          if [ -n "$GHCR_USERNAME" ] && [ -n "$GHCR_READ_TOKEN" ]; then
+            printf '%s\n' "$GHCR_READ_TOKEN" | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
+          else
+            echo "GHCR credentials not set; assuming package is public."
+          fi
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
