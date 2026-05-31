@@ -140,6 +140,25 @@ jobs:
 
       - name: Verify backend health
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
-            "curl -fsS http://localhost/health"
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "
+            set -e
+            ok=0
+            for i in \$(seq 1 20); do
+              if curl -fsS http://localhost/health >/dev/null; then
+                ok=1
+                break
+              fi
+              sleep 3
+            done
+
+            if [ \"\$ok\" -ne 1 ]; then
+              echo 'Backend health check failed after retries.'
+              docker ps -a --filter name=fraudpulse-backend
+              docker inspect --format='status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} restart={{.RestartCount}}' fraudpulse-backend || true
+              docker logs --tail 200 fraudpulse-backend || true
+              exit 1
+            fi
+
+            curl -fsS http://localhost/health
+          "
 
