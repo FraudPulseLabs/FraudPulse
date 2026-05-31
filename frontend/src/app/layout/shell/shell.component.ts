@@ -105,6 +105,7 @@ export class ShellComponent {
     { path: 'cases',        label: 'Cases',        icon: '📁' },
     { path: 'watchlist',    label: 'Watchlist',    icon: '👁' },
     { path: 'metrics',      label: 'Metrics',      icon: '📊' },
+    { path: 'model-demo',   label: 'Model Demo',   icon: '🧪' },
   ];
 
   toggleNav(): void {

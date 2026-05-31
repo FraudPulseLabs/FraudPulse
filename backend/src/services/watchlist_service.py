@@ -43,6 +43,26 @@ def _record_history(db: Session, entry: Watchlist, action: HistoryAction) -> Non
     )
 
 
+def is_merchant_blacklisted(db: Session, merchant_id: str) -> bool:
+    """
+    Exact-match blacklist check for the ingest short-circuit.
+
+    Unlike get_watchlist_entries (which does a substring ilike), this keys on the
+    exact (entity_type='MERCHANT', entity_id=merchant_id) pair, requires
+    is_blacklist=True, and ignores expired entries. Returns True only when an
+    active blacklist entry exists for this exact merchant.
+    """
+    entry = db.execute(
+        select(Watchlist).where(
+            Watchlist.watchlist_entity_type == EntityType.MERCHANT,
+            Watchlist.watchlist_entity_id == merchant_id,
+            Watchlist.is_blacklist.is_(True),
+        )
+    ).scalar_one_or_none()
+
+    return entry is not None and _is_active(entry)
+
+
 async def get_watchlist_entries(
     db: Session,
     include_expired: bool = False,

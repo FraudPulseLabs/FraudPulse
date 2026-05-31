@@ -5,20 +5,27 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-
-class Base(DeclarativeBase):
-    pass
+from src.db.models.base import Base
 
 
 class Watchlist(Base):
     __tablename__ = "watchlist"
     __table_args__ = (
-        UniqueConstraint("watchlist_entity_type", "watchlist_entity_id", name="uq_watchlist_entity"),
+        UniqueConstraint(
+            "watchlist_entity_type", "watchlist_entity_id", name="uq_watchlist_entity"
+        ),
         CheckConstraint(
             "risk_severity = ANY(ARRAY['LOW', 'MEDIUM', 'HIGH'])",
             name="watchlist_risk_severity_check",
@@ -27,7 +34,6 @@ class Watchlist(Base):
             "watchlist_entity_type = ANY(ARRAY['TRANSACTION', 'USER', 'MERCHANT'])",
             name="watchlist_watchlist_entity_type_check",
         ),
-        {"schema": "public"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -66,7 +72,6 @@ class WatchlistHistory(Base):
             "risk_severity = ANY(ARRAY['LOW', 'MEDIUM', 'HIGH'])",
             name="watchlist_history_risk_severity_check",
         ),
-        {"schema": "public"},
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -74,7 +79,7 @@ class WatchlistHistory(Base):
     )
     watchlist_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("public.watchlist.id", ondelete="CASCADE"),
+        ForeignKey("watchlist.id", ondelete="CASCADE"),
         nullable=False,
     )
     watchlist_entity_type: Mapped[str] = mapped_column(Text, nullable=False)
