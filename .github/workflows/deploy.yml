@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: [CI]
     types: [completed]
+    branches: [main]
 
 concurrency:
   group: deploy-backend-${{ github.event.workflow_run.head_branch }}
@@ -91,23 +92,23 @@ jobs:
 
           printf 'DATABASE_URL=%s\n' "$BACKEND_DATABASE_URL" | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
 
-          cat <<EOF_COMPOSE | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/docker-compose.yml"
-services:
-  backend:
-    image: $IMAGE_REPO:$IMAGE_TAG
-    container_name: fraudpulse-backend
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "80:8000"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-EOF_COMPOSE
+          printf '%s\n' \
+            'services:' \
+            '  backend:' \
+            "    image: $IMAGE_REPO:$IMAGE_TAG" \
+            '    container_name: fraudpulse-backend' \
+            '    restart: unless-stopped' \
+            '    env_file:' \
+            '      - .env' \
+            '    ports:' \
+            '      - "80:8000"' \
+            '    healthcheck:' \
+            '      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]' \
+            '      interval: 30s' \
+            '      timeout: 5s' \
+            '      retries: 5' \
+            '      start_period: 20s' \
+            | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/docker-compose.yml"
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
