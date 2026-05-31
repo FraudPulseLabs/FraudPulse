@@ -89,9 +89,7 @@ jobs:
           set +x
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "mkdir -p ~/fraudpulse && chmod 700 ~/fraudpulse"
 
-          cat <<EOF_ENV | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
-DATABASE_URL=$BACKEND_DATABASE_URL
-EOF_ENV
+          printf 'DATABASE_URL=%s\n' "$BACKEND_DATABASE_URL" | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
 
           cat <<EOF_COMPOSE | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/docker-compose.yml"
 services:
