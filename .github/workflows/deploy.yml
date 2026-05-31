@@ -126,6 +126,16 @@ jobs:
             docker rm -f fraudpulse-backend 2>/dev/null || true"
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
+            "set -e; \
+            echo 'Checking listeners on :80 before deploy'; \
+            sudo ss -ltnp '( sport = :80 )' || true; \
+            pids=\$(sudo lsof -ti tcp:80 2>/dev/null || true); \
+            if [ -n \"\$pids\" ]; then sudo kill -9 \$pids || true; fi; \
+            sudo fuser -k 80/tcp 2>/dev/null || true; \
+            echo 'Listeners on :80 after cleanup'; \
+            sudo ss -ltnp '( sport = :80 )' || true"
+
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
 
       - name: Verify backend health
