@@ -10,6 +10,7 @@ Covers the pure-Python pieces of decision_service that don't need a live DB:
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -201,8 +202,7 @@ def test_scoring_transaction_converts_enums_to_strings():
 # ingest() — blacklist short-circuit
 # =============================================================================
 
-@pytest.mark.asyncio
-async def test_ingest_blacklist_short_circuits_without_scoring():
+def test_ingest_blacklist_short_circuits_without_scoring():
     db = MagicMock()
     fake_id = uuid.uuid4()
 
@@ -215,7 +215,7 @@ async def test_ingest_blacklist_short_circuits_without_scoring():
 
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=True), \
          patch.object(decision_service, "score_transaction", new=AsyncMock()) as mock_score:
-        resp = await decision_service.ingest(db, _payload(), explain=False)
+        resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
     mock_score.assert_not_called()
     assert resp.decision == DECLINE
@@ -228,8 +228,7 @@ async def test_ingest_blacklist_short_circuits_without_scoring():
 # ingest() — clean scoring path
 # =============================================================================
 
-@pytest.mark.asyncio
-async def test_ingest_clean_path_scores_and_persists():
+def test_ingest_clean_path_scores_and_persists():
     db = MagicMock()
     db.execute.return_value.all.return_value = []  # no card history
 
@@ -247,7 +246,7 @@ async def test_ingest_clean_path_scores_and_persists():
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=False), \
          patch.object(decision_service, "score_transaction", new=AsyncMock(return_value=score_result)), \
          patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
-        resp = await decision_service.ingest(db, _payload(), explain=False)
+        resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
     assert resp.decision == APPROVE
     assert resp.score == 0.05
@@ -257,8 +256,7 @@ async def test_ingest_clean_path_scores_and_persists():
     db.commit.assert_called_once()
 
 
-@pytest.mark.asyncio
-async def test_ingest_explain_persists_score_reasons():
+def test_ingest_explain_persists_score_reasons():
     db = MagicMock()
     db.execute.return_value.all.return_value = []
 
@@ -279,7 +277,7 @@ async def test_ingest_explain_persists_score_reasons():
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=False), \
          patch.object(decision_service, "score_transaction", new=AsyncMock(return_value=score_result)), \
          patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
-        resp = await decision_service.ingest(db, _payload(), explain=True)
+        resp = asyncio.run(decision_service.ingest(db, _payload(), explain=True))
 
     assert resp.decision == DECLINE
     # txn + fraud_score + 2 score_reasons
@@ -298,8 +296,7 @@ async def test_ingest_explain_persists_score_reasons():
 # ingest() — scorer failure persists nothing
 # =============================================================================
 
-@pytest.mark.asyncio
-async def test_ingest_scorer_failure_writes_nothing():
+def test_ingest_scorer_failure_writes_nothing():
     from fastapi import HTTPException
 
     db = MagicMock()
@@ -308,7 +305,7 @@ async def test_ingest_scorer_failure_writes_nothing():
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=False), \
          patch.object(decision_service, "score_transaction", new=AsyncMock(side_effect=HTTPException(503, "model down"))):
         with pytest.raises(HTTPException):
-            await decision_service.ingest(db, _payload(), explain=False)
+            asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
     db.add.assert_not_called()
     db.commit.assert_not_called()
