@@ -49,7 +49,7 @@ The app is created in `src/main.py`. It includes the versioned router from `src/
 
 Current route modules:
 
-- `transactions.py` — transaction ingestion and listing.
+- `transactions.py` — `POST /transactions` runs the full ingest pipeline (merchant-blacklist short-circuit → card-history build → in-process scoring → threshold-mapped decision → persist `transactions` + `fraud_scores` + optional `score_reasons`). `?explain=true` returns SHAP contributions. `GET /transactions` lists the most recent rows. See `src/services/decision_service.py` for the wiring and `src/schemas/transaction_ingest.py` for the request/response shapes.
 - `scoring.py` — fraud score requests.
 - `decisions.py` — decision workflow stubs.
 - `alerts.py` — fraud alert endpoints.
@@ -68,6 +68,15 @@ SQLAlchemy models live in `src/db/models/`. They are aligned with the Supabase `
 - UUID primary keys where Supabase uses `uuid`.
 - Matching table names such as `audit_log`, `watchlist`, and `transactions`.
 - PostgreSQL types such as `JSONB`, `Numeric`, `Date`, and timezone-aware timestamps.
+
+The `transactions` table was aligned with the data-science 20-column view on
+2026-05-31 by adding three nullable columns: `transaction_type`,
+`transaction_country`, and `is_fraud`. `is_fraud` is the **ground-truth label**
+and is intentionally never written by the ingest path — it is reserved for
+review/backfill workflows. The live routing decision lives in the separate
+`decision` column (`APPROVE` / `APPROVE_WITH_REVIEW` / `DECLINE`). The DDL
+script is `scripts/apply_alignment.py` (idempotent; uses `ADD COLUMN IF NOT
+EXISTS`). Verify drift with `scripts/verify_models_vs_db.py`.
 
 Pydantic schemas live in `src/schemas/` and describe the JSON shapes used by the API.
 
@@ -100,8 +109,13 @@ pytest
 
 Test layout:
 
-- `tests/unit/` — focused tests for ML preprocessing and feature engineering.
+- `tests/unit/` — focused tests for ML preprocessing, feature engineering, the
+  decision-service ingest pipeline (`test_decision_service.py`), and the
+  exact-match merchant blacklist helper (`test_watchlist_service.py`).
 - `tests/integration/` — app-level smoke tests such as `/health`.
+
+The decision-service tests mock the SQLAlchemy session and the scorer, so the
+suite runs without a live database or model artefacts.
 
 ## Useful Files
 

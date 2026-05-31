@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent  # src/
 PROJECT_ROOT = BASE_DIR.parent                     # backend/
 DATA_DIR = PROJECT_ROOT / "ml" /"data"
+ML_ARTEFACTS_DIR = PROJECT_ROOT / "ml" / "artefacts" / "version2"
 
 load_dotenv(PROJECT_ROOT / ".env")
 
