@@ -1,0 +1,121 @@
+name: Deploy Backend (OCI)
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+concurrency:
+  group: deploy-backend-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_repo: ${{ steps.vars.outputs.image_repo }}
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+
+    steps:
+      - name: Checkout commit from CI run
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Prepare image variables
+        id: vars
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          repo="${repo,,}"
+          echo "image_repo=ghcr.io/${owner}/${repo}-backend" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.image_repo }}:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.image_repo }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    env:
+      OCI_SSH_HOST: ${{ secrets.OCI_SSH_HOST }}
+      OCI_SSH_USER: ${{ secrets.OCI_SSH_USER }}
+      OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+      OCI_SSH_KNOWN_HOSTS: ${{ secrets.OCI_SSH_KNOWN_HOSTS }}
+      BACKEND_DATABASE_URL: ${{ secrets.BACKEND_DATABASE_URL }}
+      IMAGE_REPO: ${{ needs.build-and-push.outputs.image_repo }}
+      IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+
+    steps:
+      - name: Mask sensitive values
+        run: |
+          echo "::add-mask::$OCI_SSH_PRIVATE_KEY"
+          echo "::add-mask::$BACKEND_DATABASE_URL"
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$OCI_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Write remote env and compose files
+        run: |
+          set +x
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "mkdir -p ~/fraudpulse && chmod 700 ~/fraudpulse"
+
+          cat <<EOF_ENV | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
+DATABASE_URL=$BACKEND_DATABASE_URL
+EOF_ENV
+
+          cat <<EOF_COMPOSE | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/docker-compose.yml"
+services:
+  backend:
+    image: $IMAGE_REPO:$IMAGE_TAG
+    container_name: fraudpulse-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "80:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+EOF_COMPOSE
+
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
+            "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
+
+      - name: Verify backend health
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
+            "curl -fsS http://localhost/health"
+
