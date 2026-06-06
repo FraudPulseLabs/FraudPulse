@@ -11,7 +11,7 @@ import type {
   WatchlistEntry,
   WatchlistUpdatePayload,
 } from '../models';
-import { mapWatchlistFromApi } from '../models/watchlist.model';
+import { isWatchlistEntryExpired, mapWatchlistFromApi } from '../models/watchlist.model';
 
 const CREATED_BY = 'fraud_analyst_01';
 
@@ -47,7 +47,10 @@ export class WatchlistService {
     this.loading.set(true);
     try {
       if (environment.useMock) {
-        watchlistStore.set([...MOCK_WATCHLIST]);
+        const rows = [...MOCK_WATCHLIST];
+        watchlistStore.set(
+          options?.includeExpired ? rows : rows.filter((e) => !isWatchlistEntryExpired(e)),
+        );
         return;
       }
 
@@ -65,7 +68,10 @@ export class WatchlistService {
       if (!res.success) {
         throw new Error(res.message || 'Failed to load watchlist');
       }
-      watchlistStore.set((res.data ?? []).map(mapWatchlistFromApi));
+      const mapped = (res.data ?? []).map(mapWatchlistFromApi);
+      watchlistStore.set(
+        options?.includeExpired ? mapped : mapped.filter((e) => !isWatchlistEntryExpired(e)),
+      );
     } catch (err: unknown) {
       const message = httpErrorMessage(err, 'Failed to load watchlist');
       this.error.set(message);

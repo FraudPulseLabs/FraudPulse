@@ -44,6 +44,11 @@ export interface WatchlistUpdatePayload {
   expires_at?: string | null;
 }
 
+export function isWatchlistEntryExpired(entry: WatchlistEntry): boolean {
+  if (!entry.expiresAt) return false;
+  return Date.parse(entry.expiresAt) <= Date.now();
+}
+
 export function mapWatchlistFromApi(row: WatchlistApiEntry): WatchlistEntry {
   return {
     id: row.id,
