@@ -37,6 +37,9 @@ from src.services.decision_service import (
     _build_card_history,
     _build_transaction,
     _map_decision,
+    _serialize_detail,
+    _serialize_list_item,
+    get_transaction,
 )
 
 
@@ -309,3 +312,115 @@ def test_ingest_scorer_failure_writes_nothing():
 
     db.add.assert_not_called()
     db.commit.assert_not_called()
+
+
+# =============================================================================
+# READ — list/detail serialization
+# =============================================================================
+
+def _txn_row(**overrides):
+    base = dict(
+        id=uuid.uuid4(),
+        transaction_amount=Decimal("1500.00"),
+        transaction_currency="KES",
+        merchant_id="MRCH-1001",
+        ts=datetime(2026, 5, 31, 12, 0, tzinfo=timezone.utc),
+        lifecycle_status="AUTHORIZED",
+        is_simulated=False,
+        is_manually_created=False,
+        created_at=datetime(2026, 5, 31, 12, 0, 1, tzinfo=timezone.utc),
+        decision=APPROVE,
+        card_id="CARD-42",
+    )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+class TestSerializeListItem:
+    def test_without_score(self):
+        data = _serialize_list_item(_txn_row(), None)
+        assert data["merchant_id"] == "MRCH-1001"
+        assert data["score"] is None
+        assert data["model_version"] is None
+
+    def test_with_score(self):
+        score = SimpleNamespace(
+            score=Decimal("0.42"),
+            model_version="version2",
+        )
+        data = _serialize_list_item(_txn_row(), score)
+        assert data["score"] == 0.42
+        assert data["model_version"] == "version2"
+
+
+class TestSerializeDetail:
+    def test_includes_reasons_and_features(self):
+        txn = _txn_row()
+        score = SimpleNamespace(
+            score=Decimal("0.82"),
+            model_version="version2",
+            features_snapshot={"amount_zscore": 2.1, "cross_border": True},
+        )
+        reasons = [
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                score_id=uuid.uuid4(),
+                feature="amount_zscore",
+                direction="HIGH",
+                contribution=Decimal("0.31"),
+            )
+        ]
+        data = _serialize_detail(txn, score, reasons)
+        assert data["score"] == 0.82
+        assert len(data["reasons"]) == 1
+        assert data["reasons"][0]["feature"] == "amount_zscore"
+        assert data["features"]["cross_border"] is True
+
+
+class TestGetTransaction:
+    def test_not_found_raises_404(self):
+        from fastapi import HTTPException
+
+        db = MagicMock()
+        db.get.return_value = None
+
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(get_transaction(db, uuid.uuid4()))
+
+        assert exc.value.status_code == 404
+
+    def test_returns_detail_payload(self):
+        txn_id = uuid.uuid4()
+        txn = _txn_row(id=txn_id)
+        score = SimpleNamespace(
+            id=uuid.uuid4(),
+            score=Decimal("0.55"),
+            model_version="version2",
+            features_snapshot={"is_night": False},
+            scored_at=datetime(2026, 5, 31, 12, 1, tzinfo=timezone.utc),
+            is_rescore=False,
+            transaction_id=txn_id,
+        )
+        reason = SimpleNamespace(
+            id=uuid.uuid4(),
+            score_id=score.id,
+            feature="velocity_spike_1h",
+            direction="HIGH",
+            contribution=Decimal("0.18"),
+        )
+
+        db = MagicMock()
+        db.get.return_value = txn
+
+        score_result = MagicMock()
+        score_result.scalar_one_or_none.return_value = score
+        reasons_result = MagicMock()
+        reasons_result.scalars.return_value.all.return_value = [reason]
+        db.execute.side_effect = [score_result, reasons_result]
+
+        data = asyncio.run(get_transaction(db, txn_id))
+
+        assert data["id"] == str(txn_id)
+        assert data["score"] == 0.55
+        assert data["reasons"][0]["feature"] == "velocity_spike_1h"
+        assert data["features"]["is_night"] is False
