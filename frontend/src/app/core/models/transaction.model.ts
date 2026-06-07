@@ -118,3 +118,152 @@ export interface Transaction {
   transaction_country?: string;
   is_fraud?: 0 | 1 | null;
 }
+
+/** Raw row from `GET /api/v1/transactions` (snake_case). */
+export interface TransactionApiRead {
+  id: string;
+  transaction_amount: number;
+  transaction_currency: string;
+  merchant_id: string;
+  ts: string;
+  user_ip?: string | null;
+  decision?: BackendDecision | string | null;
+  lifecycle_status: LifecycleStatus;
+  is_simulated: boolean;
+  is_manually_created: boolean;
+  card_id?: string | null;
+  score?: number | null;
+  model_version?: string | null;
+  transaction_type?: string | null;
+  transaction_country?: string | null;
+  is_fraud?: boolean | null;
+}
+
+/** Raw row from `GET /api/v1/transactions/:id` (includes detail fields). */
+export interface TransactionDetailApiRead extends TransactionApiRead {
+  reasons?: ReasonCodeApiRead[];
+  features?: Partial<TransactionFeatures> | null;
+}
+
+export interface ReasonCodeApiRead {
+  feature: string;
+  direction: 'HIGH' | 'LOW';
+  contribution: number;
+}
+
+export function mapBackendDecisionToUi(
+  decision: BackendDecision | string | null | undefined,
+): Decision {
+  switch (decision) {
+    case 'APPROVE':
+      return 'ALLOW';
+    case 'APPROVE_WITH_REVIEW':
+      return 'REVIEW';
+    case 'DECLINE':
+      return 'BLOCK';
+    default:
+      return 'ALLOW';
+  }
+}
+
+export function emptyTransactionFeatures(): TransactionFeatures {
+  return {
+    enriched_amount_usd: 0,
+    hour_sin: 0,
+    hour_cos: 0,
+    dow_sin: 0,
+    dow_cos: 0,
+    is_weekend: false,
+    is_night: false,
+    cross_border: false,
+    card_txn_count_prior: 0,
+    card_avg_amount_usd_prior: 0,
+    card_std_amount_usd_prior: 0,
+    amount_vs_card_avg: 0,
+    amount_zscore: 0,
+    seconds_since_last_txn: 0,
+    txn_count_1h: 0,
+    txn_count_24h: 0,
+    high_amount_relative: false,
+    cross_border_high_amount: false,
+    velocity_spike_1h: false,
+    weak_auth_high_value: false,
+    cvv2_result_enc: 0,
+    avs_result_enc: 0,
+    pan_entry_mode_enc: 0,
+    authentication_enc: 0,
+    card_type_Credit: 0,
+    card_type_Debit: 0,
+    card_type_Prepaid: 0,
+    channel_ATM: 0,
+    channel_ECOMMERCE: 0,
+    channel_POS: 0,
+    transaction_type_purchase: 0,
+    transaction_type_withdrawal: 0,
+    merchant_category_code_fraud_rate: 0,
+    transaction_country_fraud_rate: 0,
+  };
+}
+
+function mapFeaturesFromApi(raw: Partial<TransactionFeatures> | null | undefined): TransactionFeatures {
+  const features = emptyTransactionFeatures();
+  if (!raw) return features;
+
+  for (const key of Object.keys(features) as (keyof TransactionFeatures)[]) {
+    const value = raw[key];
+    if (value !== undefined && value !== null) {
+      features[key] = value as never;
+    }
+  }
+  return features;
+}
+
+function mapReasonsFromApi(reasons: ReasonCodeApiRead[] | null | undefined): ReasonCode[] {
+  return (reasons ?? []).map((reason) => ({
+    feature: reason.feature,
+    direction: reason.direction,
+    contribution: Number(reason.contribution),
+  }));
+}
+
+function fallbackScore(
+  score: number | null | undefined,
+  decision: BackendDecision | string | null | undefined,
+): number {
+  if (score != null) return Number(score);
+  if (decision === 'DECLINE') return 0.95;
+  if (decision === 'APPROVE_WITH_REVIEW') return 0.5;
+  return 0;
+}
+
+export function mapTransactionFromApi(row: TransactionApiRead): Transaction {
+  return {
+    id: row.id,
+    userId: row.card_id ?? 'unknown',
+    amount: Number(row.transaction_amount),
+    currency: row.transaction_currency,
+    merchant: row.merchant_id,
+    ts: row.ts,
+    userIp: row.user_ip ?? undefined,
+    decision: mapBackendDecisionToUi(row.decision),
+    score: fallbackScore(row.score, row.decision),
+    modelVersion: row.model_version ?? 'unknown',
+    lifecycleStatus: row.lifecycle_status,
+    reasons: [],
+    features: emptyTransactionFeatures(),
+    isSimulated: row.is_simulated,
+    isManual: row.is_manually_created,
+    transaction_type: row.transaction_type ?? undefined,
+    transaction_country: row.transaction_country ?? undefined,
+    is_fraud:
+      row.is_fraud == null ? undefined : row.is_fraud ? 1 : 0,
+  };
+}
+
+export function mapTransactionDetailFromApi(row: TransactionDetailApiRead): Transaction {
+  return {
+    ...mapTransactionFromApi(row),
+    reasons: mapReasonsFromApi(row.reasons),
+    features: mapFeaturesFromApi(row.features),
+  };
+}

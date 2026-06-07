@@ -1,11 +1,12 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TransactionService } from '../../../core/services/transaction.service';
 import type { Transaction, TransactionFeatures } from '../../../core/models';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { ScoreBarComponent } from '../../../shared/components/score-bar/score-bar.component';
+import { environment } from '../../../../environments/environment';
 
 type DecisionFilter = 'ALL' | 'ALLOW' | 'REVIEW' | 'BLOCK';
 type ScoreFilter = 'ANY' | 'LOW' | 'MEDIUM' | 'HIGH';
@@ -82,10 +83,20 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     <div class="page-header">
       <div class="min-w-0">
         <h2 class="page-title">Transaction Monitor</h2>
-        <p class="text-sm text-slate-500">Live fraud scoring decisions from the mock stream.</p>
+        <p class="text-sm text-slate-500">
+          {{
+            useMock
+              ? 'Live fraud scoring decisions from the mock stream.'
+              : 'Live fraud scoring decisions from the API.'
+          }}
+        </p>
       </div>
       <button type="button" class="btn-ghost" (click)="rescoreSelected()">Rescore selected</button>
     </div>
+
+    @if (error()) {
+      <div class="card mb-4 border border-red-200 bg-red-50 text-sm text-red-700">{{ error() }}</div>
+    }
 
     <div class="card mb-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -122,7 +133,9 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     </div>
 
     <div class="card overflow-hidden">
-      @if (filtered().length === 0) {
+      @if (loading()) {
+        <p class="p-6 text-sm text-slate-500">Loading transactions…</p>
+      } @else if (filtered().length === 0) {
         <app-empty-state message="No transactions match these filters" />
       } @else {
         <div class="space-y-3 md:hidden">
@@ -226,7 +239,10 @@ const FEATURE_SECTIONS: FeatureSection[] = [
           </div>
 
           <div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
-            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            @if (detailLoading()) {
+              <p class="text-sm text-slate-500">Loading transaction detail…</p>
+            }
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2" [class.opacity-50]="detailLoading()">
               <section>
                 <h4 class="section-title">Transaction fields</h4>
                 <dl class="fp-detail-grid">
@@ -316,17 +332,26 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     }
   `,
 })
-export class TransactionListComponent {
+export class TransactionListComponent implements OnInit {
   protected txService = inject(TransactionService);
   protected featureSections = FEATURE_SECTIONS;
+  protected useMock = environment.useMock;
 
   decisionFilter = signal<DecisionFilter>('ALL');
   userIdFilter = signal('');
   scoreFilter = signal<ScoreFilter>('ANY');
   page = signal(1);
   selectedTx = signal<Transaction | null>(null);
+  detailLoading = signal(false);
+
+  readonly loading = this.txService.loading;
+  readonly error = this.txService.error;
 
   private userDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  ngOnInit(): void {
+    void this.txService.loadTransactions();
+  }
 
   filtered = computed(() => {
     const bounds = this.scoreBounds();
@@ -389,6 +414,15 @@ export class TransactionListComponent {
 
   openTransaction(tx: Transaction): void {
     this.selectedTx.set(tx);
+    if (environment.useMock) return;
+
+    this.detailLoading.set(true);
+    void this.txService
+      .fetchTransactionById(tx.id)
+      .then((detail) => {
+        if (detail) this.selectedTx.set(detail);
+      })
+      .finally(() => this.detailLoading.set(false));
   }
 
   closeTransaction(): void {
