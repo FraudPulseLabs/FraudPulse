@@ -1,3 +1,4 @@
+#backend\tests\unit\test_decision_service.py
 """Unit tests for the /transactions ingest pipeline.
 
 Covers the pure-Python pieces of decision_service that don't need a live DB:
@@ -30,10 +31,8 @@ from src.schemas.scoring_schemas import (
 )
 from src.schemas.transaction_ingest import TransactionIngestRequest
 from src.services import decision_service
+from src.schemas.decision_schemas import Decision
 from src.services.decision_service import (
-    APPROVE,
-    APPROVE_WITH_REVIEW,
-    DECLINE,
     _build_card_history,
     _build_transaction,
     _map_decision,
@@ -74,20 +73,20 @@ def _payload(**overrides) -> TransactionIngestRequest:
 
 class TestMapDecision:
     def test_below_approve_threshold(self):
-        assert _map_decision(0.05, THRESHOLDS) == APPROVE
+        assert _map_decision(0.05, THRESHOLDS) == Decision.APPROVE
 
     def test_exactly_at_approve_below_is_review(self):
         # APPROVE is strictly less than approve_below
-        assert _map_decision(0.10, THRESHOLDS) == APPROVE_WITH_REVIEW
+        assert _map_decision(0.10, THRESHOLDS) == Decision.APPROVE_WITH_REVIEW
 
     def test_middle_zone_is_review(self):
-        assert _map_decision(0.50, THRESHOLDS) == APPROVE_WITH_REVIEW
+        assert _map_decision(0.50, THRESHOLDS) == Decision.APPROVE_WITH_REVIEW
 
     def test_exactly_at_decline_from_is_decline(self):
-        assert _map_decision(0.80, THRESHOLDS) == DECLINE
+        assert _map_decision(0.80, THRESHOLDS) == Decision.DECLINE
 
     def test_above_decline_threshold(self):
-        assert _map_decision(0.95, THRESHOLDS) == DECLINE
+        assert _map_decision(0.95, THRESHOLDS) == Decision.DECLINE
 
 
 # =============================================================================
@@ -151,28 +150,28 @@ class TestBuildTransaction:
     def test_amount_fallback_to_enriched_usd(self):
         payload = _payload(transaction_amount=None, transaction_currency=None)
 
-        txn = _build_transaction(payload, decision=APPROVE, reason_code=None)
+        txn = _build_transaction(payload, decision=Decision.APPROVE, reason_code=None)
 
         assert txn.transaction_amount == Decimal(str(payload.enriched_amount_usd))
         assert txn.transaction_currency == "USD"
-        assert txn.decision == APPROVE
+        assert txn.decision == Decision.APPROVE
         assert txn.reason_code is None
         assert txn.is_fraud is None  # never written by ingest
 
     def test_explicit_amount_and_currency_kept(self):
         payload = _payload(transaction_amount=Decimal("999.00"), transaction_currency="KES")
 
-        txn = _build_transaction(payload, decision=DECLINE, reason_code="MERCHANT_BLACKLISTED")
+        txn = _build_transaction(payload, decision=Decision.DECLINE, reason_code="MERCHANT_BLACKLISTED")
 
         assert txn.transaction_amount == Decimal("999.00")
         assert txn.transaction_currency == "KES"
-        assert txn.decision == DECLINE
+        assert txn.decision == Decision.DECLINE
         assert txn.reason_code == "MERCHANT_BLACKLISTED"
 
     def test_aligned_columns_persisted(self):
         payload = _payload(transaction_type=TransactionType.WITHDRAWAL, transaction_country="UG")
 
-        txn = _build_transaction(payload, decision=APPROVE, reason_code=None)
+        txn = _build_transaction(payload, decision=Decision.APPROVE, reason_code=None)
 
         assert txn.transaction_type == "withdrawal"
         assert txn.transaction_country == "UG"
@@ -218,11 +217,35 @@ def test_ingest_blacklist_short_circuits_without_scoring():
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
     mock_score.assert_not_called()
-    assert resp.decision == DECLINE
+    assert resp.decision == Decision.DECLINE
     assert resp.score is None
     assert resp.reason == "merchant_blacklisted"
     db.commit.assert_called_once()
 
+
+def test_ingest_blacklist_short_circuits_without_scoring_and_no_alert():
+    db = MagicMock()
+    fake_id = uuid.uuid4()
+
+    def _flush_assigns_id():
+        for call in db.add.call_args_list:
+            call.args[0].id = fake_id
+
+    db.flush.side_effect = _flush_assigns_id
+
+    with patch.object(decision_service, "is_merchant_blacklisted", return_value=True), \
+        patch.object(decision_service, "score_transaction", new=AsyncMock()) as mock_score:
+
+        resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
+
+    # scorer must NOT run
+    mock_score.assert_not_called()
+
+    assert resp.decision == Decision.DECLINE
+    assert resp.score is None
+    assert resp.reason == "merchant_blacklisted"
+
+    db.commit.assert_called_once()
 
 # =============================================================================
 # ingest() — clean scoring path
@@ -248,7 +271,7 @@ def test_ingest_clean_path_scores_and_persists():
          patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
-    assert resp.decision == APPROVE
+    assert resp.decision == Decision.APPROVE
     assert resp.score == 0.05
     assert resp.model_name == "calibrated_lightgbm_version2"
     # transactions row + fraud_score row added
@@ -279,10 +302,12 @@ def test_ingest_explain_persists_score_reasons():
          patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=True))
 
-    assert resp.decision == DECLINE
+    assert resp.decision == Decision.DECLINE
     # txn + fraud_score + 2 score_reasons
     assert db.add.call_count == 4
     added_types = [type(c.args[0]).__name__ for c in db.add.call_args_list]
+    assert added_types.count("Transaction") == 1
+    assert added_types.count("FraudScore") == 1
     assert added_types.count("ScoreReason") == 2
 
     # direction sign: positive SHAP -> HIGH, negative -> LOW
@@ -309,3 +334,5 @@ def test_ingest_scorer_failure_writes_nothing():
 
     db.add.assert_not_called()
     db.commit.assert_not_called()
+
+

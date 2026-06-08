@@ -76,7 +76,7 @@ class WatchlistHistoryRead(BaseModel):
     created_at: datetime
 
 
-class ApiResponse(BaseModel):
+class WatchlistApiResponse(BaseModel):
     success: bool
     message: str
     data: Any | None = None
