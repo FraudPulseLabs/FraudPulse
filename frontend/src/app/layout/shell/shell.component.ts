@@ -1,5 +1,8 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 interface NavItem {
   path:  string;
@@ -10,7 +13,7 @@ interface NavItem {
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConfirmDialogComponent],
   template: `
     <div class="min-h-screen bg-slate-50 md:flex md:h-screen md:overflow-hidden">
       @if (navOpen()) {
@@ -57,15 +60,30 @@ interface NavItem {
         <div class="border-t border-white/10 px-3 py-4">
           <div class="flex items-center gap-2 px-2 py-2">
             <div class="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500">
-              <span class="text-xs font-medium text-white">A</span>
+              <span class="text-xs font-medium text-white">{{ userInitial() }}</span>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-xs font-medium text-white">Analyst</p>
-              <p class="truncate text-xs text-slate-400">analyst&#64;fraudpulse.demo</p>
+              <p class="truncate text-xs font-medium text-white">{{ userEmail() || 'Signed in' }}</p>
+              <p class="truncate text-xs text-slate-400">FraudPulse analyst</p>
             </div>
           </div>
+          <button
+            type="button"
+            class="mt-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+            (click)="confirmingLogout.set(true)"
+          >
+            <span class="text-base">⎋</span>
+            Log out
+          </button>
         </div>
       </aside>
+
+      <app-confirm-dialog
+        [open]="confirmingLogout()"
+        title="Log out"
+        message="You'll need to sign in again to continue. Log out now?"
+        (confirmed)="onLogoutConfirmed($event)"
+      />
 
       <div class="flex min-h-screen min-w-0 flex-1 flex-col md:min-h-0 md:overflow-hidden">
         <header class="sticky top-0 z-20 flex min-h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
@@ -97,7 +115,23 @@ interface NavItem {
   `,
 })
 export class ShellComponent {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
+
   navOpen = signal(false);
+  confirmingLogout = signal(false);
+
+  readonly userEmail = computed(() => this.auth.user()?.email ?? '');
+  readonly userInitial = computed(() => (this.userEmail()[0] ?? 'U').toUpperCase());
+
+  async onLogoutConfirmed(confirmed: boolean): Promise<void> {
+    this.confirmingLogout.set(false);
+    if (!confirmed) return;
+    await this.auth.signOut();
+    await this.router.navigateByUrl('/login');
+    this.toast.success('You have been logged out');
+  }
 
   navItems: NavItem[] = [
     { path: 'transactions', label: 'Transactions', icon: '💳' },

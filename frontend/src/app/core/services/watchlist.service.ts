@@ -12,6 +12,7 @@ import type {
   WatchlistUpdatePayload,
 } from '../models';
 import { isWatchlistEntryExpired, mapWatchlistFromApi } from '../models/watchlist.model';
+import { ToastService } from './toast.service';
 
 const CREATED_BY = 'fraud_analyst_01';
 
@@ -32,6 +33,7 @@ function httpErrorMessage(err: unknown, fallback: string): string {
 @Injectable({ providedIn: 'root' })
 export class WatchlistService {
   private http = inject(HttpClient);
+  private toast = inject(ToastService);
   private readonly baseUrl = `${environment.apiUrl}/api/v1/watchlist`;
 
   readonly entries = watchlistStore.asReadonly();
@@ -101,6 +103,7 @@ export class WatchlistService {
         createdAt: new Date().toISOString(),
       };
       watchlistStore.update((list) => [newEntry, ...list]);
+      this.toast.success('Added to watchlist');
       return newEntry;
     }
 
@@ -112,6 +115,7 @@ export class WatchlistService {
     }
     const created = mapWatchlistFromApi(res.data);
     watchlistStore.update((list) => [created, ...list]);
+    this.toast.success('Added to watchlist');
     return created;
   }
 
@@ -140,6 +144,7 @@ export class WatchlistService {
           return updated;
         }),
       );
+      this.toast.success('Watchlist entry updated');
       return updated;
     }
 
@@ -155,6 +160,7 @@ export class WatchlistService {
         e.entityType === entityType && e.entityId === entityId ? updated : e,
       ),
     );
+    this.toast.success('Watchlist entry updated');
     return updated;
   }
 
@@ -166,6 +172,7 @@ export class WatchlistService {
       watchlistStore.update((list) =>
         list.filter((e) => !(e.entityType === entityType && e.entityId === entityId)),
       );
+      this.toast.success('Removed from watchlist');
       return;
     }
 
@@ -176,5 +183,6 @@ export class WatchlistService {
     watchlistStore.update((list) =>
       list.filter((e) => !(e.entityType === entityType && e.entityId === entityId)),
     );
+    this.toast.success('Removed from watchlist');
   }
 }
