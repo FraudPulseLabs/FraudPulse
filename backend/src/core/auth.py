@@ -86,4 +86,15 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return AuthUser(id=sub, email=claims.get("email"))
+    import uuid
+
+    try:
+        user_id = uuid.UUID(str(sub))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token has invalid subject.",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+
+    return AuthUser(id=user_id, email=claims.get("email"))
