@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -27,3 +28,42 @@ def get_optional_env(key: str, default: str | None = None) -> str | None:
 
 DATABASE_URL: str = get_env("DATABASE_URL")
 API_V1_PREFIX: str = "/api/v1"
+
+
+# ---- Supabase Auth (JWT verification) ---------------------------------------
+# The backend does NOT issue tokens; it only verifies the JWT minted by Supabase
+# Auth (GoTrue) on the frontend. Verification uses the project's public JWKS
+# (asymmetric ES256/RS256 keys — the modern Supabase default).
+
+
+def _derive_supabase_url() -> str | None:
+    """Project URL for token verification.
+
+    Prefers an explicit SUPABASE_URL; otherwise derives it from the Supabase
+    pooler username in DATABASE_URL (``postgres.<project_ref>``) so no extra
+    env config is needed for typical Supabase setups.
+    """
+    explicit = get_optional_env("SUPABASE_URL")
+    if explicit:
+        return explicit.rstrip("/")
+    try:
+        parsed = urlparse(DATABASE_URL)
+        user = parsed.username or ""
+        host = parsed.hostname or ""
+        if user.startswith("postgres.") and "pooler.supabase.com" in host:
+            ref = user.split("postgres.", 1)[1]
+            if ref:
+                return f"https://{ref}.supabase.co"
+    except Exception:
+        pass
+    return None
+
+
+SUPABASE_URL: str | None = _derive_supabase_url()
+SUPABASE_JWKS_URL: str | None = (
+    f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json" if SUPABASE_URL else None
+)
+SUPABASE_JWT_AUD: str = "authenticated"
+# Optional legacy fallback: set this to verify HS256-signed tokens with the
+# shared "JWT Secret" instead of the JWKS asymmetric keys. Leave unset to use JWKS.
+SUPABASE_JWT_SECRET: str | None = get_optional_env("SUPABASE_JWT_SECRET")

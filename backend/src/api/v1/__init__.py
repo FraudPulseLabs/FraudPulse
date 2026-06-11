@@ -1,19 +1,38 @@
-from src.api.v1 import scoring_routes
-from src.api.v1 import watchlist_routes
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from src.api.v1 import admin, alerts, cases, decisions, demo, metrics, profiles, transactions
+from src.api.v1 import (
+    admin,
+    alerts,
+    auth,
+    cases,
+    decisions,
+    demo,
+    metrics,
+    profiles,
+    scoring_routes,
+    transactions,
+    watchlist_routes,
+)
+from src.core.auth import get_current_user
 
 api_router = APIRouter()
-api_router.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
-api_router.include_router(scoring_routes.router, prefix="/scoring", tags=["scoring"])
-api_router.include_router(decisions.router, prefix="/decisions", tags=["decisions"])
-api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
-api_router.include_router(cases.router, prefix="/cases", tags=["cases"])
-api_router.include_router(watchlist_routes.router, prefix="/watchlist", tags=["watchlist"])
-api_router.include_router(profiles.router, prefix="/profiles", tags=["profiles"])
-api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
-api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+
+# Every route below requires a valid Supabase JWT, except the public /demo
+# showcase endpoints which stay open so the model demo works unauthenticated.
+_protected = [Depends(get_current_user)]
+
+api_router.include_router(transactions.router, prefix="/transactions", tags=["transactions"], dependencies=_protected)
+api_router.include_router(scoring_routes.router, prefix="/scoring", tags=["scoring"], dependencies=_protected)
+api_router.include_router(decisions.router, prefix="/decisions", tags=["decisions"], dependencies=_protected)
+api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"], dependencies=_protected)
+api_router.include_router(cases.router, prefix="/cases", tags=["cases"], dependencies=_protected)
+api_router.include_router(watchlist_routes.router, prefix="/watchlist", tags=["watchlist"], dependencies=_protected)
+api_router.include_router(profiles.router, prefix="/profiles", tags=["profiles"], dependencies=_protected)
+api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"], dependencies=_protected)
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"], dependencies=_protected)
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"], dependencies=_protected)
+
+# Public — no authentication required.
 api_router.include_router(demo.router, prefix="/demo", tags=["demo"])
 
 __all__ = ["api_router"]
