@@ -106,7 +106,7 @@ jobs:
             '    ports:' \
             '      - "127.0.0.1:8000:8000"' \
             '    healthcheck:' \
-            '      test: ["CMD", "curl", "-fsS", "https://fraudpulse.duckdns.org/docs/health"]' \
+            '      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]' \
             '      interval: 30s' \
             '      timeout: 5s' \
             '      retries: 5' \
@@ -120,6 +120,13 @@ jobs:
           fi
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
+            "set -e; \
+            docker rm -f fraudpulse-backend 2>/dev/null || true; \
+            stray=\$(docker ps -q --filter publish=8000); \
+            if [ -n \"\$stray\" ]; then docker rm -f \$stray; fi; \
+            sudo fuser -k 8000/tcp 2>/dev/null || true"
+
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
 
       - name: Verify backend health
@@ -128,7 +135,7 @@ jobs:
             set -e
             ok=0
             for i in \$(seq 1 20); do
-              if curl -fsS https://fraudpulse.duckdns.org/docs/health >/dev/null; then
+              if curl -fsS http://127.0.0.1:8000/health >/dev/null; then
                 ok=1
                 break
               fi
@@ -143,6 +150,6 @@ jobs:
               exit 1
             fi
 
-            curl -fsS http://localhost/health
+            curl -fsS http://127.0.0.1:8000/health
           "
 
