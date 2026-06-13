@@ -51,7 +51,12 @@ export class AuthService {
 
 
   async signOut(): Promise<void> {
-    await this.supabase.auth.signOut();
+    // Clear local session immediately so navigation/guards don't get stuck on network failures.
     this._session.set(null);
+    try {
+      await this.supabase.auth.signOut();
+    } catch {
+      // Best-effort remote sign-out (session already cleared locally).
+    }
   }
 }
