@@ -104,9 +104,9 @@ jobs:
             '    env_file:' \
             '      - .env' \
             '    ports:' \
-            '      - "80:8000"' \
+            '      - "127.0.0.1:8000:8000"' \
             '    healthcheck:' \
-            '      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]' \
+            '      test: ["CMD", "curl", "-fsS", "https://fraudpulse.duckdns.org/docs/health"]' \
             '      interval: 30s' \
             '      timeout: 5s' \
             '      retries: 5' \
@@ -120,22 +120,6 @@ jobs:
           fi
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
-            "set -e; \
-            old_ids=\$(docker ps -q --filter publish=80); \
-            if [ -n \"\$old_ids\" ]; then docker rm -f \$old_ids; fi; \
-            docker rm -f fraudpulse-backend 2>/dev/null || true"
-
-          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
-            "set -e; \
-            echo 'Checking listeners on :80 before deploy'; \
-            sudo ss -ltnp '( sport = :80 )' || true; \
-            pids=\$(sudo lsof -ti tcp:80 2>/dev/null || true); \
-            if [ -n \"\$pids\" ]; then sudo kill -9 \$pids || true; fi; \
-            sudo fuser -k 80/tcp 2>/dev/null || true; \
-            echo 'Listeners on :80 after cleanup'; \
-            sudo ss -ltnp '( sport = :80 )' || true"
-
-          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
 
       - name: Verify backend health
@@ -144,7 +128,7 @@ jobs:
             set -e
             ok=0
             for i in \$(seq 1 20); do
-              if curl -fsS http://localhost/health >/dev/null; then
+              if curl -fsS https://fraudpulse.duckdns.org/docs/health >/dev/null; then
                 ok=1
                 break
               fi
