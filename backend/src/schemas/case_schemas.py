@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CaseStatus(str, Enum):
@@ -52,3 +52,23 @@ class CaseUpdate(BaseModel):
     risk_level: CaseRiskLevel | None = None
     resolution_code: CaseResolutionCode | None = None
     assigned_to: uuid.UUID | None = None
+
+
+# =============================================================================
+# Case note schemas
+# =============================================================================
+ 
+class CaseNoteCreate(BaseModel):
+    author_id: str
+    body: str = Field(min_length=1, max_length=2000)
+ 
+ 
+class CaseNoteRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+ 
+    id: uuid.UUID
+    case_id: uuid.UUID
+    author_id: str
+    body: str
+    created_at: datetime
+ 

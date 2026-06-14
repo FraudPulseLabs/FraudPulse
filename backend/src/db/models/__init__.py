@@ -3,7 +3,6 @@ from src.db.models.alert_model import Alert
 from src.db.models.audit_log import AuditLog
 from src.db.models.case_model import Case
 from src.db.models.case_event import CaseEvent
-from src.db.models.case_note import CaseNote
 from src.db.models.fraud_score import FraudScore
 from src.db.models.profile import Profile
 from src.db.models.rejected_request import RejectedRequest

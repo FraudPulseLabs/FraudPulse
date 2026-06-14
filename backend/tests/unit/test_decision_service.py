@@ -299,11 +299,12 @@ def test_ingest_explain_persists_score_reasons():
 
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=False), \
          patch.object(decision_service, "score_transaction", new=AsyncMock(return_value=score_result)), \
-         patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
+         patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})), \
+         patch.object(decision_service.event_emitter, "emit"):
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=True))
 
     assert resp.decision == Decision.DECLINE
-    # txn + fraud_score + 2 score_reasons
+    # txn + fraud_score + 2 score_reasons (alert excluded: event_emitter is mocked)
     assert db.add.call_count == 4
     added_types = [type(c.args[0]).__name__ for c in db.add.call_args_list]
     assert added_types.count("Transaction") == 1
@@ -334,5 +335,3 @@ def test_ingest_scorer_failure_writes_nothing():
 
     db.add.assert_not_called()
     db.commit.assert_not_called()
-
-

@@ -1,20 +1,28 @@
 # src/api/v1/cases.py
 from __future__ import annotations
-
+ 
 import uuid
-
+ 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
+ 
 from src.db.session import get_db
 from src.schemas.case_schemas import (
+    CaseNoteCreate,
+    CaseNoteRead,
     CaseRead,
     CaseRiskLevel,
     CaseStatus,
     CaseUpdate,
 )
-from src.services.case_service import get_case, list_cases, update_case
-
+from src.services.case_service import (
+    create_case_note,
+    get_case,
+    list_case_notes,
+    list_cases,
+    update_case,
+)
+ 
 router = APIRouter(tags=["cases"])
 
 
@@ -48,3 +56,26 @@ async def patch_case(
     db: Session = Depends(get_db),
 ) -> CaseRead:
     return await update_case(db=db, case_id=case_id, payload=payload)
+
+
+# =============================================================================
+# Case notes
+# =============================================================================
+ 
+@router.get("/{case_id}/notes", response_model=list[CaseNoteRead])
+async def list_notes(
+    case_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> list[CaseNoteRead]:
+    return list_case_notes(db=db, case_id=case_id)
+ 
+ 
+@router.post("/{case_id}/notes", response_model=CaseNoteRead, status_code=201)
+async def add_note(
+    case_id: uuid.UUID,
+    payload: CaseNoteCreate,
+    db: Session = Depends(get_db),
+) -> CaseNoteRead:
+    note = create_case_note(db=db, case_id=case_id, payload=payload)
+    db.commit()
+    return note

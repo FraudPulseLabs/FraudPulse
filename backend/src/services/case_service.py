@@ -1,15 +1,20 @@
 #backend\src\services\case_service.py
-"""Investigation case workflows."""
+"""Investigation case workflows and case note management."""
 from __future__ import annotations
-
+ 
 import uuid
-
+ 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from src.db.models.case_model import Case
-from src.schemas.case_schemas import CaseRiskLevel, CaseStatus, CaseUpdate
+ 
+from src.db.models.case_model import Case, CaseNote
+from src.schemas.case_schemas import (
+    CaseNoteCreate,
+    CaseRiskLevel,
+    CaseStatus,
+    CaseUpdate,
+)
 from src.services.event_emitter import event_emitter
 
 
@@ -95,6 +100,45 @@ async def update_case(
     db.flush()
 
     return case
+
+
+# =============================================================================
+# Case notes
+# =============================================================================
+ 
+def create_case_note(
+    db: Session,
+    case_id: uuid.UUID,
+    payload: CaseNoteCreate,
+) -> CaseNote:
+    if db.get(Case, case_id) is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+ 
+    note = CaseNote(
+        case_id=case_id,
+        author_id=payload.author_id,
+        body=payload.body,
+    )
+ 
+    db.add(note)
+    db.flush()
+ 
+    return note
+ 
+ 
+def list_case_notes(
+    db: Session,
+    case_id: uuid.UUID,
+) -> list[CaseNote]:
+    return (
+        db.execute(
+            select(CaseNote)
+            .where(CaseNote.case_id == case_id)
+            .order_by(CaseNote.created_at)
+        )
+        .scalars()
+        .all()
+    )
 
 
 def handle_case_creation(

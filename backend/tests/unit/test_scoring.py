@@ -356,26 +356,26 @@ class TestScoreTransaction:
 
     def test_returns_score_in_range(self, txn_dict, history_dict, mock_model):
         mock_model.predict_proba.return_value = np.array([[0.92, 0.08]])
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict)
         )
         assert 0.0 <= result["score"] <= 1.0
 
     def test_score_matches_model_output(self, txn_dict, history_dict, mock_model):
         mock_model.predict_proba.return_value = np.array([[0.72, 0.28]])
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict)
         )
         assert result["score"] == pytest.approx(0.28)
 
     def test_model_name_in_response(self, txn_dict, history_dict):
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict)
         )
         assert result["model_name"] == "lgbm_v2"
 
     def test_contributions_none_when_explain_false(self, txn_dict, history_dict):
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict, explain=False)
         )
         assert result["contributions"] is None
@@ -390,7 +390,7 @@ class TestScoreTransaction:
         calibrated.estimator = estimator
         mock_model.calibrated_classifiers_ = [calibrated]
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict, explain=True)
         )
         assert result["contributions"] is not None
@@ -409,14 +409,14 @@ class TestScoreTransaction:
         calibrated.estimator = estimator
         mock_model.calibrated_classifiers_ = [calibrated]
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict, explain=True)
         )
         abs_vals = [abs(c["shap_value"]) for c in result["contributions"]]
         assert abs_vals == sorted(abs_vals, reverse=True)
 
     def test_response_keys(self, txn_dict, history_dict):
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_dict, history_dict)
         )
         assert set(result.keys()) == {"score", "model_name", "contributions"}
@@ -430,7 +430,7 @@ class TestScoreTransaction:
             side_effect=RuntimeError("Model artefact not found"),
         ):
             with pytest.raises(HTTPException) as exc_info:
-                asyncio.get_event_loop().run_until_complete(
+                asyncio.run(
                     score_transaction(txn_dict, history_dict)
                 )
             assert exc_info.value.status_code == 503
@@ -439,7 +439,7 @@ class TestScoreTransaction:
         mock_builder.build.side_effect = ValueError("unexpected")
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.run(
                 score_transaction(txn_dict, history_dict)
             )
         assert exc_info.value.status_code == 500
@@ -448,7 +448,7 @@ class TestScoreTransaction:
         mock_builder.build.side_effect = ValueError("unexpected")
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.run(
                 score_transaction(txn_dict, history_dict)
             )
         assert "fraud scoring failed" in exc_info.value.detail.lower()
@@ -470,7 +470,7 @@ class TestScoreTransaction:
             "merchant_category_code": "5411",
         }
         mock_model.predict_proba.return_value = np.array([[0.8, 0.2]])
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             score_transaction(txn_without_id, history_dict)
         )
         assert "score" in result
@@ -484,17 +484,17 @@ class TestGetFeatureSchema:
 
     def test_returns_schema_dict(self, mock_builder):
         with patch("src.services.scoring_service._get_builder", return_value=mock_builder):
-            result = asyncio.get_event_loop().run_until_complete(get_feature_schema())
+            result = asyncio.run(get_feature_schema())
         assert result == mock_builder._schema
 
     def test_schema_contains_model_name(self, mock_builder):
         with patch("src.services.scoring_service._get_builder", return_value=mock_builder):
-            result = asyncio.get_event_loop().run_until_complete(get_feature_schema())
+            result = asyncio.run(get_feature_schema())
         assert "model_name" in result
 
     def test_schema_contains_features(self, mock_builder):
         with patch("src.services.scoring_service._get_builder", return_value=mock_builder):
-            result = asyncio.get_event_loop().run_until_complete(get_feature_schema())
+            result = asyncio.run(get_feature_schema())
         assert "features" in result
         assert isinstance(result["features"], list)
 
