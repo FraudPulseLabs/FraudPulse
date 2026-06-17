@@ -1,3 +1,4 @@
+#backend\src\schemas\case_schemas.py
 from __future__ import annotations
 
 import uuid
@@ -24,6 +25,18 @@ class CaseResolutionCode(str, Enum):
     FALSE_POSITIVE = "FALSE_POSITIVE"
     INCONCLUSIVE = "INCONCLUSIVE"
 
+
+class CaseEventType(str, Enum):
+    ALERT_ADDED = "ALERT_ADDED"
+    STATUS_CHANGED = "STATUS_CHANGED"
+    NOTE_ADDED = "NOTE_ADDED"
+    ASSIGNMENT_CHANGED = "ASSIGNMENT_CHANGED"
+    RULE_TRIGGER = "RULE_TRIGGER"
+
+
+# =============================================================================
+# Case schemas
+# =============================================================================
 
 class CaseCreate(BaseModel):
     title: str
@@ -57,18 +70,32 @@ class CaseUpdate(BaseModel):
 # =============================================================================
 # Case note schemas
 # =============================================================================
- 
+
 class CaseNoteCreate(BaseModel):
     author_id: str
     body: str = Field(min_length=1, max_length=2000)
- 
- 
+
+
 class CaseNoteRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
- 
+
     id: uuid.UUID
     case_id: uuid.UUID
     author_id: str
     body: str
     created_at: datetime
- 
+
+
+# =============================================================================
+# Case event schemas
+# =============================================================================
+
+class CaseEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    case_id: uuid.UUID
+    event_type: CaseEventType
+    description: str
+    actor: str
+    created_at: datetime

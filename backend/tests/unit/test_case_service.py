@@ -1,40 +1,31 @@
 #backend\tests\unit\test_case_service.py
 """
-Unit tests for case_service.py — covers Case CRUD and CaseNote management.
-
-Both live in the same service module after the merge, so they share
-this test file following the same pattern as test_decision_service.py.
+Unit tests for case_service.py — covers Case CRUD, CaseNote, and CaseEvent management.
 
 Coverage:
     create_case()
-        - persists with correct defaults
-        - auto-generates title from transaction_id when none supplied
-        - accepts an explicit title and risk_level
+        - persists case with correct defaults
+        - auto-generates title from transaction_id
+        - accepts explicit title and risk_level
+        - writes an ALERT_ADDED event on creation
 
-    list_cases()
-        - returns all cases when no filters applied
-        - filters by status
-        - filters by risk_level
-        - filters by assigned_to
-
-    get_case()
-        - returns case when it exists
-        - raises 404 when not found
-
-    update_case()
-        - updates status, risk_level, resolution_code, assigned_to
-        - ignores None fields (partial update)
-        - raises 404 when case not found
+    list_cases()         - all / by status / by risk_level / by assigned_to
+    get_case()           - found / 404
+    update_case()        - status / risk_level / resolution_code / assigned_to
+                         - ignores None fields
+                         - 404 when not found
+                         - writes STATUS_CHANGED event on status update
+                         - writes ASSIGNMENT_CHANGED event on assignment
 
     create_case_note()
         - persists note linked to case
-        - raises 404 when case_id does not exist
-        - rejects body that is empty (Pydantic layer)
-        - rejects body over 2000 chars (Pydantic layer)
+        - writes NOTE_ADDED event alongside note
+        - 404 when case not found (no db.add called)
+        - Pydantic rejects empty / oversized body
 
-    list_case_notes()
-        - returns notes ordered oldest-first
-        - returns empty list when case has no notes
+    list_case_notes()    - oldest-first / empty / queries by case_id
+
+    list_case_events()   - newest-first / empty / queries by case_id
 """
 
 from __future__ import annotations
@@ -42,12 +33,13 @@ from __future__ import annotations
 import asyncio
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException
 
 from src.schemas.case_schemas import (
+    CaseEventType,
     CaseNoteCreate,
     CaseResolutionCode,
     CaseRiskLevel,
@@ -55,7 +47,7 @@ from src.schemas.case_schemas import (
     CaseUpdate,
 )
 from src.services import case_service
-from src.db.models.case_model import Case, CaseNote
+from src.db.models.case_model import Case, CaseEvent, CaseNote
 
 
 # =============================================================================
@@ -68,7 +60,6 @@ def _make_case(
     status: str = "OPEN",
     risk_level: str = "MEDIUM",
 ) -> Case:
-    """Build a Case ORM instance without a DB."""
     c = Case(
         transaction_id=transaction_id or uuid.uuid4(),
         title="Fraud Investigation – TXN ABCD1234",
@@ -88,18 +79,33 @@ def _make_note(case_id: uuid.UUID, body: str = "Looks suspicious.") -> CaseNote:
     return n
 
 
+def _make_event(
+    case_id: uuid.UUID,
+    event_type: str = "ALERT_ADDED",
+    description: str = "Case opened automatically from fraud alert",
+    actor: str = "system",
+) -> CaseEvent:
+    e = CaseEvent(case_id=case_id, event_type=event_type, description=description, actor=actor)
+    e.id = uuid.uuid4()
+    e.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    return e
+
+
 def _db_get_returns(obj):
-    """Mock db.get() to return obj."""
     db = MagicMock()
     db.get.return_value = obj
     return db
 
 
 def _db_execute_returns(rows: list):
-    """Mock db.execute().scalars().all() to return rows."""
     db = MagicMock()
     db.execute.return_value.scalars.return_value.all.return_value = rows
     return db
+
+
+def _added_types(db) -> list[str]:
+    """Return the class names of every object passed to db.add()."""
+    return [type(c.args[0]).__name__ for c in db.add.call_args_list]
 
 
 # =============================================================================
@@ -114,9 +120,9 @@ class TestCreateCase:
 
         case_service.create_case(db=db, transaction_id=txn_id)
 
-        db.add.assert_called_once()
-        added: Case = db.add.call_args.args[0]
-        assert isinstance(added, Case)
+        # First add is the Case, second is the ALERT_ADDED event
+        assert _added_types(db)[0] == "Case"
+        added: Case = db.add.call_args_list[0].args[0]
         assert added.transaction_id == txn_id
         assert added.status == CaseStatus.OPEN.value
         assert added.risk_level == CaseRiskLevel.MEDIUM.value
@@ -128,26 +134,33 @@ class TestCreateCase:
 
         case_service.create_case(db=db, transaction_id=txn_id)
 
-        added: Case = db.add.call_args.args[0]
+        added: Case = db.add.call_args_list[0].args[0]
         assert "ABCD1234" in added.title
 
     def test_accepts_explicit_title(self):
         db = MagicMock()
         case_service.create_case(db=db, transaction_id=uuid.uuid4(), title="Custom Title")
 
-        added: Case = db.add.call_args.args[0]
+        added: Case = db.add.call_args_list[0].args[0]
         assert added.title == "Custom Title"
 
     def test_accepts_explicit_risk_level(self):
         db = MagicMock()
-        case_service.create_case(
-            db=db,
-            transaction_id=uuid.uuid4(),
-            risk_level=CaseRiskLevel.HIGH,
-        )
+        case_service.create_case(db=db, transaction_id=uuid.uuid4(), risk_level=CaseRiskLevel.HIGH)
 
-        added: Case = db.add.call_args.args[0]
+        added: Case = db.add.call_args_list[0].args[0]
         assert added.risk_level == CaseRiskLevel.HIGH.value
+
+    def test_writes_alert_added_event_on_creation(self):
+        db = MagicMock()
+        case_service.create_case(db=db, transaction_id=uuid.uuid4())
+
+        types = _added_types(db)
+        assert "CaseEvent" in types
+
+        event: CaseEvent = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], CaseEvent))
+        assert event.event_type == CaseEventType.ALERT_ADDED.value
+        assert event.actor == "system"
 
 
 # =============================================================================
@@ -227,8 +240,7 @@ class TestUpdateCase:
         db = _db_get_returns(case)
 
         asyncio.run(case_service.update_case(
-            db=db,
-            case_id=case.id,
+            db=db, case_id=case.id,
             payload=CaseUpdate(status=CaseStatus.INVESTIGATING),
         ))
 
@@ -239,8 +251,7 @@ class TestUpdateCase:
         db = _db_get_returns(case)
 
         asyncio.run(case_service.update_case(
-            db=db,
-            case_id=case.id,
+            db=db, case_id=case.id,
             payload=CaseUpdate(risk_level=CaseRiskLevel.HIGH),
         ))
 
@@ -251,8 +262,7 @@ class TestUpdateCase:
         db = _db_get_returns(case)
 
         asyncio.run(case_service.update_case(
-            db=db,
-            case_id=case.id,
+            db=db, case_id=case.id,
             payload=CaseUpdate(resolution_code=CaseResolutionCode.CONFIRMED_FRAUD),
         ))
 
@@ -264,8 +274,7 @@ class TestUpdateCase:
         db = _db_get_returns(case)
 
         asyncio.run(case_service.update_case(
-            db=db,
-            case_id=case.id,
+            db=db, case_id=case.id,
             payload=CaseUpdate(assigned_to=analyst_id),
         ))
 
@@ -275,10 +284,8 @@ class TestUpdateCase:
         case = _make_case(status="OPEN", risk_level="LOW")
         db = _db_get_returns(case)
 
-        # Only pass risk_level — status must remain untouched
         asyncio.run(case_service.update_case(
-            db=db,
-            case_id=case.id,
+            db=db, case_id=case.id,
             payload=CaseUpdate(risk_level=CaseRiskLevel.HIGH),
         ))
 
@@ -290,8 +297,7 @@ class TestUpdateCase:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(case_service.update_case(
-                db=db,
-                case_id=uuid.uuid4(),
+                db=db, case_id=uuid.uuid4(),
                 payload=CaseUpdate(status=CaseStatus.CLOSED),
             ))
 
@@ -302,12 +308,53 @@ class TestUpdateCase:
         db = _db_get_returns(case)
 
         asyncio.run(case_service.update_case(
-            db=db,
-            case_id=case.id,
+            db=db, case_id=case.id,
             payload=CaseUpdate(status=CaseStatus.CLOSED),
         ))
 
         db.flush.assert_called_once()
+
+    def test_writes_status_changed_event_on_status_update(self):
+        case = _make_case(status="OPEN")
+        db = _db_get_returns(case)
+
+        asyncio.run(case_service.update_case(
+            db=db, case_id=case.id,
+            payload=CaseUpdate(status=CaseStatus.INVESTIGATING),
+        ))
+
+        types = _added_types(db)
+        assert "CaseEvent" in types
+
+        event: CaseEvent = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], CaseEvent))
+        assert event.event_type == CaseEventType.STATUS_CHANGED.value
+        assert "OPEN" in event.description
+        assert "INVESTIGATING" in event.description
+
+    def test_writes_assignment_changed_event_on_assign(self):
+        case = _make_case()
+        analyst_id = uuid.uuid4()
+        db = _db_get_returns(case)
+
+        asyncio.run(case_service.update_case(
+            db=db, case_id=case.id,
+            payload=CaseUpdate(assigned_to=analyst_id),
+        ))
+
+        event: CaseEvent = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], CaseEvent))
+        assert event.event_type == CaseEventType.ASSIGNMENT_CHANGED.value
+
+    def test_no_event_written_when_only_risk_level_updated(self):
+        # risk_level change has no event — only status and assignment do
+        case = _make_case()
+        db = _db_get_returns(case)
+
+        asyncio.run(case_service.update_case(
+            db=db, case_id=case.id,
+            payload=CaseUpdate(risk_level=CaseRiskLevel.HIGH),
+        ))
+
+        assert "CaseEvent" not in _added_types(db)
 
 
 # =============================================================================
@@ -323,13 +370,29 @@ class TestCreateCaseNote:
         payload = CaseNoteCreate(author_id="analyst@example.com", body="Confirmed pattern.")
         case_service.create_case_note(db=db, case_id=case.id, payload=payload)
 
-        db.add.assert_called_once()
-        added: CaseNote = db.add.call_args.args[0]
-        assert isinstance(added, CaseNote)
-        assert added.case_id == case.id
-        assert added.author_id == "analyst@example.com"
-        assert added.body == "Confirmed pattern."
+        types = _added_types(db)
+        assert "CaseNote" in types
+
+        note: CaseNote = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], CaseNote))
+        assert note.case_id == case.id
+        assert note.author_id == "analyst@example.com"
+        assert note.body == "Confirmed pattern."
         db.flush.assert_called_once()
+
+    def test_writes_note_added_event_alongside_note(self):
+        case = _make_case()
+        db = _db_get_returns(case)
+
+        payload = CaseNoteCreate(author_id="analyst@example.com", body="Review complete.")
+        case_service.create_case_note(db=db, case_id=case.id, payload=payload)
+
+        types = _added_types(db)
+        assert types.count("CaseNote") == 1
+        assert types.count("CaseEvent") == 1
+
+        event: CaseEvent = next(c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], CaseEvent))
+        assert event.event_type == CaseEventType.NOTE_ADDED.value
+        assert event.actor == "analyst@example.com"
 
     def test_raises_404_when_case_not_found(self):
         db = _db_get_returns(None)
@@ -350,7 +413,6 @@ class TestCreateCaseNote:
             CaseNoteCreate(author_id="analyst@example.com", body="x" * 2001)
 
     def test_accepts_body_at_max_length(self):
-        # 2000 chars is the exact limit — must not raise
         payload = CaseNoteCreate(author_id="analyst@example.com", body="x" * 2000)
         assert len(payload.body) == 2000
 
@@ -370,7 +432,6 @@ class TestListCaseNotes:
         note1 = _make_note(case_id, "First note")
         note2 = _make_note(case_id, "Second note")
         note2.created_at = datetime(2026, 1, 2, tzinfo=timezone.utc)
-
         db = _db_execute_returns([note1, note2])
 
         result = case_service.list_case_notes(db=db, case_id=case_id)
@@ -386,9 +447,54 @@ class TestListCaseNotes:
         assert result == []
 
     def test_queries_by_case_id(self):
-        case_id = uuid.uuid4()
         db = _db_execute_returns([])
 
-        case_service.list_case_notes(db=db, case_id=case_id)
+        case_service.list_case_notes(db=db, case_id=uuid.uuid4())
 
         db.execute.assert_called_once()
+
+
+# =============================================================================
+# list_case_events
+# =============================================================================
+
+class TestListCaseEvents:
+
+    def test_returns_events_newest_first(self):
+        case_id = uuid.uuid4()
+        event1 = _make_event(case_id, "ALERT_ADDED")
+        event2 = _make_event(case_id, "STATUS_CHANGED")
+        event2.created_at = datetime(2026, 1, 2, tzinfo=timezone.utc)
+        # Service orders desc so newest (event2) comes first
+        db = _db_execute_returns([event2, event1])
+
+        result = case_service.list_case_events(db=db, case_id=case_id)
+
+        assert result[0].event_type == "STATUS_CHANGED"
+        assert result[1].event_type == "ALERT_ADDED"
+
+    def test_returns_empty_list_when_no_events(self):
+        db = _db_execute_returns([])
+
+        result = case_service.list_case_events(db=db, case_id=uuid.uuid4())
+
+        assert result == []
+
+    def test_queries_by_case_id(self):
+        db = _db_execute_returns([])
+
+        case_service.list_case_events(db=db, case_id=uuid.uuid4())
+
+        db.execute.assert_called_once()
+
+    def test_event_fields_are_correct(self):
+        case_id = uuid.uuid4()
+        event = _make_event(case_id, "NOTE_ADDED", "Note added", "analyst@example.com")
+        db = _db_execute_returns([event])
+
+        result = case_service.list_case_events(db=db, case_id=case_id)
+
+        assert result[0].event_type == "NOTE_ADDED"
+        assert result[0].description == "Note added"
+        assert result[0].actor == "analyst@example.com"
+        assert result[0].case_id == case_id
