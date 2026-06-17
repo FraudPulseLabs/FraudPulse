@@ -11,7 +11,8 @@ import type {
   WatchlistEntry,
   WatchlistUpdatePayload,
 } from '../models';
-import { mapWatchlistFromApi } from '../models/watchlist.model';
+import { isWatchlistEntryExpired, mapWatchlistFromApi } from '../models/watchlist.model';
+import { ToastService } from './toast.service';
 
 const CREATED_BY = 'fraud_analyst_01';
 
@@ -32,6 +33,7 @@ function httpErrorMessage(err: unknown, fallback: string): string {
 @Injectable({ providedIn: 'root' })
 export class WatchlistService {
   private http = inject(HttpClient);
+  private toast = inject(ToastService);
   private readonly baseUrl = `${environment.apiUrl}/api/v1/watchlist`;
 
   readonly entries = watchlistStore.asReadonly();
@@ -47,7 +49,10 @@ export class WatchlistService {
     this.loading.set(true);
     try {
       if (environment.useMock) {
-        watchlistStore.set([...MOCK_WATCHLIST]);
+        const rows = [...MOCK_WATCHLIST];
+        watchlistStore.set(
+          options?.includeExpired ? rows : rows.filter((e) => !isWatchlistEntryExpired(e)),
+        );
         return;
       }
 
@@ -65,7 +70,10 @@ export class WatchlistService {
       if (!res.success) {
         throw new Error(res.message || 'Failed to load watchlist');
       }
-      watchlistStore.set((res.data ?? []).map(mapWatchlistFromApi));
+      const mapped = (res.data ?? []).map(mapWatchlistFromApi);
+      watchlistStore.set(
+        options?.includeExpired ? mapped : mapped.filter((e) => !isWatchlistEntryExpired(e)),
+      );
     } catch (err: unknown) {
       const message = httpErrorMessage(err, 'Failed to load watchlist');
       this.error.set(message);
@@ -95,6 +103,7 @@ export class WatchlistService {
         createdAt: new Date().toISOString(),
       };
       watchlistStore.update((list) => [newEntry, ...list]);
+      this.toast.success('Added to watchlist');
       return newEntry;
     }
 
@@ -106,6 +115,7 @@ export class WatchlistService {
     }
     const created = mapWatchlistFromApi(res.data);
     watchlistStore.update((list) => [created, ...list]);
+    this.toast.success('Added to watchlist');
     return created;
   }
 
@@ -134,6 +144,7 @@ export class WatchlistService {
           return updated;
         }),
       );
+      this.toast.success('Watchlist entry updated');
       return updated;
     }
 
@@ -149,6 +160,7 @@ export class WatchlistService {
         e.entityType === entityType && e.entityId === entityId ? updated : e,
       ),
     );
+    this.toast.success('Watchlist entry updated');
     return updated;
   }
 
@@ -160,6 +172,7 @@ export class WatchlistService {
       watchlistStore.update((list) =>
         list.filter((e) => !(e.entityType === entityType && e.entityId === entityId)),
       );
+      this.toast.success('Removed from watchlist');
       return;
     }
 
@@ -170,5 +183,6 @@ export class WatchlistService {
     watchlistStore.update((list) =>
       list.filter((e) => !(e.entityType === entityType && e.entityId === entityId)),
     );
+    this.toast.success('Removed from watchlist');
   }
 }

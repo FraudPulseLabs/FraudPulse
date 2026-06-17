@@ -104,7 +104,7 @@ jobs:
             '    env_file:' \
             '      - .env' \
             '    ports:' \
-            '      - "80:8000"' \
+            '      - "127.0.0.1:8000:8000"' \
             '    healthcheck:' \
             '      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]' \
             '      interval: 30s' \
@@ -121,19 +121,10 @@ jobs:
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "set -e; \
-            old_ids=\$(docker ps -q --filter publish=80); \
-            if [ -n \"\$old_ids\" ]; then docker rm -f \$old_ids; fi; \
-            docker rm -f fraudpulse-backend 2>/dev/null || true"
-
-          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
-            "set -e; \
-            echo 'Checking listeners on :80 before deploy'; \
-            sudo ss -ltnp '( sport = :80 )' || true; \
-            pids=\$(sudo lsof -ti tcp:80 2>/dev/null || true); \
-            if [ -n \"\$pids\" ]; then sudo kill -9 \$pids || true; fi; \
-            sudo fuser -k 80/tcp 2>/dev/null || true; \
-            echo 'Listeners on :80 after cleanup'; \
-            sudo ss -ltnp '( sport = :80 )' || true"
+            docker rm -f fraudpulse-backend 2>/dev/null || true; \
+            stray=\$(docker ps -q --filter publish=8000); \
+            if [ -n \"\$stray\" ]; then docker rm -f \$stray; fi; \
+            sudo fuser -k 8000/tcp 2>/dev/null || true"
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
@@ -144,7 +135,7 @@ jobs:
             set -e
             ok=0
             for i in \$(seq 1 20); do
-              if curl -fsS http://localhost/health >/dev/null; then
+              if curl -fsS http://127.0.0.1:8000/health >/dev/null; then
                 ok=1
                 break
               fi
@@ -159,6 +150,6 @@ jobs:
               exit 1
             fi
 
-            curl -fsS http://localhost/health
+            curl -fsS http://127.0.0.1:8000/health
           "
 

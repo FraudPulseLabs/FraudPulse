@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { WatchlistService } from '../../core/services/watchlist.service';
 import type { WatchlistEntityType, WatchlistEntry } from '../../core/models';
+import { isWatchlistEntryExpired } from '../../core/models/watchlist.model';
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -106,7 +107,8 @@ interface PendingRemove {
     }
 
     <div class="card mb-4">
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap gap-2">
         @for (filter of filters; track filter) {
           <button
             type="button"
@@ -119,6 +121,16 @@ interface PendingRemove {
             {{ filter }}
           </button>
         }
+        </div>
+        <label class="ml-auto inline-flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            class="h-4 w-4"
+            [checked]="showExpired()"
+            (change)="toggleShowExpired($event)"
+          />
+          Include expired
+        </label>
       </div>
     </div>
 
@@ -144,7 +156,7 @@ interface PendingRemove {
             </thead>
             <tbody>
               @for (entry of filtered(); track entry.id) {
-                <tr>
+                <tr [class.opacity-60]="isWatchlistEntryExpired(entry)">
                   <td><span [class]="typeClass(entry.entityType)">{{ entry.entityType }}</span></td>
                   <td><span class="font-mono">{{ entry.entityId }}</span></td>
                   <td>{{ entry.reason }}</td>
@@ -152,6 +164,9 @@ interface PendingRemove {
                   <td>
                     @if (entry.isBlacklist) {
                       <span class="badge-block">Blacklisted</span>
+                    }
+                    @if (isWatchlistEntryExpired(entry)) {
+                      <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Expired</span>
                     }
                   </td>
                   <td>{{ entry.addedBy }}</td>
@@ -187,6 +202,7 @@ export class WatchlistComponent implements OnInit {
 
   filters: EntityFilter[] = ['ALL', 'MERCHANT'];
   entityFilter = signal<EntityFilter>('ALL');
+  showExpired = signal(false);
   showAddForm = signal(false);
   saving = signal(false);
   pendingRemove = signal<PendingRemove | null>(null);
@@ -201,15 +217,31 @@ export class WatchlistComponent implements OnInit {
   readonly loading = this.watchlistService.loading;
   readonly error = this.watchlistService.error;
 
-  filtered = computed(() =>
-    this.entityFilter() === 'ALL'
-      ? this.watchlistService.entries()
-      : this.watchlistService.entries().filter((e) => e.entityType === this.entityFilter()),
-  );
+  filtered = computed(() => {
+    let rows = this.watchlistService.entries();
+    if (!this.showExpired()) {
+      rows = rows.filter((e) => !isWatchlistEntryExpired(e));
+    }
+    if (this.entityFilter() !== 'ALL') {
+      rows = rows.filter((e) => e.entityType === this.entityFilter());
+    }
+    return rows;
+  });
 
   ngOnInit(): void {
-    void this.watchlistService.loadEntries();
+    void this.reloadEntries();
   }
+
+  toggleShowExpired(event: Event): void {
+    this.showExpired.set((event.target as HTMLInputElement).checked);
+    void this.reloadEntries();
+  }
+
+  private reloadEntries(): Promise<void> {
+    return this.watchlistService.loadEntries({ includeExpired: this.showExpired() });
+  }
+
+  protected readonly isWatchlistEntryExpired = isWatchlistEntryExpired;
 
   patchForm(patch: Partial<WatchlistForm>): void {
     this.form.update((current) => ({ ...current, ...patch }));

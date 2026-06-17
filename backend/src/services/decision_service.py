@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import statistics
+import uuid
 from decimal import Decimal
+from typing import Any
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,11 +32,83 @@ from src.services.watchlist_service import is_merchant_blacklisted
 # =============================================================================
 
 async def list_transactions(db: Session, limit: int = 50) -> list[dict]:
+    """Most recent transactions, newest first."""
     rows = db.execute(
         select(Transaction).order_by(Transaction.created_at.desc()).limit(limit)
     ).scalars().all()
+    latest_scores = _latest_scores_by_txn(db, [r.id for r in rows])
+    return [_serialize_list_item(r, latest_scores.get(r.id)) for r in rows]
 
-    return [TransactionRead.model_validate(r).model_dump(mode="json") for r in rows]
+
+async def get_transaction(db: Session, transaction_id: uuid.UUID) -> dict[str, Any]:
+    """Single transaction with latest score, SHAP reasons, and feature snapshot."""
+    txn = db.get(Transaction, transaction_id)
+    if txn is None:
+        raise HTTPException(status_code=404, detail="Transaction not found.")
+
+    fraud_score = db.execute(
+        select(FraudScore)
+        .where(FraudScore.transaction_id == transaction_id)
+        .order_by(FraudScore.scored_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+    reasons: list[ScoreReason] = []
+    if fraud_score is not None:
+        reasons = db.execute(
+            select(ScoreReason).where(ScoreReason.score_id == fraud_score.id)
+        ).scalars().all()
+
+    return _serialize_detail(txn, fraud_score, reasons)
+
+
+def _latest_scores_by_txn(
+    db: Session,
+    txn_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, FraudScore]:
+    if not txn_ids:
+        return {}
+
+    rows = db.execute(
+        select(FraudScore)
+        .where(FraudScore.transaction_id.in_(txn_ids))
+        .order_by(FraudScore.transaction_id, FraudScore.scored_at.desc())
+    ).scalars().all()
+
+    latest: dict[uuid.UUID, FraudScore] = {}
+    for row in rows:
+        if row.transaction_id not in latest:
+            latest[row.transaction_id] = row
+    return latest
+
+
+def _serialize_list_item(
+    txn: Transaction,
+    fraud_score: FraudScore | None,
+) -> dict[str, Any]:
+    data = TransactionRead.model_validate(txn).model_dump(mode="json")
+    if fraud_score is not None:
+        data["score"] = float(fraud_score.score)
+        data["model_version"] = fraud_score.model_version
+    else:
+        data["score"] = None
+        data["model_version"] = None
+    return data
+
+
+def _serialize_detail(
+    txn: Transaction,
+    fraud_score: FraudScore | None,
+    reasons: list[ScoreReason],
+) -> dict[str, Any]:
+    data = _serialize_list_item(txn, fraud_score)
+    data["reasons"] = [
+        ScoreReasonRead.model_validate(r).model_dump(mode="json") for r in reasons
+    ]
+    data["features"] = (
+        fraud_score.features_snapshot if fraud_score is not None else None
+    )
+    return data
 
 
 # =============================================================================
