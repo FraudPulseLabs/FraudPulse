@@ -17,6 +17,7 @@ from src.db.models.transaction import Transaction
 from src.schemas.alert_schemas import AlertReason
 from src.schemas.decision_schemas import Decision
 from src.schemas.transaction import TransactionRead
+from src.schemas.score_reason import ScoreReasonRead
 from src.schemas.transaction_ingest import (
     TransactionDecisionResponse,
     TransactionIngestRequest,

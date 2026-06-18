@@ -1,5 +1,4 @@
-# src/api/v1/profiles_routes.py — add GET /analysts to your existing profiles router
-
+# src/api/v1/profiles_routes.py
 from __future__ import annotations
 
 import uuid
@@ -11,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.db.session import get_db
+
+# Direct import — not via src.db.models.__init__ to avoid circular imports
 from src.db.models.profile import Profile
 
 router = APIRouter(tags=["profiles"])

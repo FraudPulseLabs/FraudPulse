@@ -1,13 +1,4 @@
-"""Unit tests for the /transactions ingest pipeline.
-
-Covers the pure-Python pieces of decision_service that don't need a live DB:
-    * _map_decision threshold boundaries
-    * _build_card_history cold-start vs with-history
-    * _build_transaction field mapping (amount fallback, is_fraud always None)
-    * TransactionIngestRequest.scoring_transaction enum -> str conversion
-    * ingest() flow with the scorer + watchlist mocked
-"""
-
+"""Unit tests for the /transactions ingest pipeline."""
 from __future__ import annotations
 
 import asyncio
@@ -19,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from src.schemas.decision_schemas import Decision
 from src.schemas.scoring_schemas import (
     AuthenticationMethod,
     AvsResult,
@@ -31,9 +23,6 @@ from src.schemas.scoring_schemas import (
 from src.schemas.transaction_ingest import TransactionIngestRequest
 from src.services import decision_service
 from src.services.decision_service import (
-    APPROVE,
-    APPROVE_WITH_REVIEW,
-    DECLINE,
     _build_card_history,
     _build_transaction,
     _map_decision,
@@ -42,6 +31,10 @@ from src.services.decision_service import (
     get_transaction,
 )
 
+# Convenience aliases matching the Decision enum values
+APPROVE            = Decision.APPROVE.value
+APPROVE_WITH_REVIEW = Decision.APPROVE_WITH_REVIEW.value
+DECLINE            = Decision.DECLINE.value
 
 # =============================================================================
 # Helpers
@@ -71,26 +64,43 @@ def _payload(**overrides) -> TransactionIngestRequest:
     return TransactionIngestRequest(**base)
 
 
+def _txn_row(**overrides):
+    base = dict(
+        id=uuid.uuid4(),
+        transaction_amount=Decimal("1500.00"),
+        transaction_currency="KES",
+        merchant_id="MRCH-1001",
+        ts=datetime(2026, 5, 31, 12, 0, tzinfo=timezone.utc),
+        lifecycle_status="AUTHORIZED",
+        is_simulated=False,
+        is_manually_created=False,
+        created_at=datetime(2026, 5, 31, 12, 0, 1, tzinfo=timezone.utc),
+        decision=APPROVE,
+        card_id="CARD-42",
+    )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
 # =============================================================================
 # _map_decision
 # =============================================================================
 
 class TestMapDecision:
     def test_below_approve_threshold(self):
-        assert _map_decision(0.05, THRESHOLDS) == APPROVE
+        assert _map_decision(0.05, THRESHOLDS) == Decision.APPROVE
 
     def test_exactly_at_approve_below_is_review(self):
-        # APPROVE is strictly less than approve_below
-        assert _map_decision(0.10, THRESHOLDS) == APPROVE_WITH_REVIEW
+        assert _map_decision(0.10, THRESHOLDS) == Decision.APPROVE_WITH_REVIEW
 
     def test_middle_zone_is_review(self):
-        assert _map_decision(0.50, THRESHOLDS) == APPROVE_WITH_REVIEW
+        assert _map_decision(0.50, THRESHOLDS) == Decision.APPROVE_WITH_REVIEW
 
     def test_exactly_at_decline_from_is_decline(self):
-        assert _map_decision(0.80, THRESHOLDS) == DECLINE
+        assert _map_decision(0.80, THRESHOLDS) == Decision.DECLINE
 
     def test_above_decline_threshold(self):
-        assert _map_decision(0.95, THRESHOLDS) == DECLINE
+        assert _map_decision(0.95, THRESHOLDS) == Decision.DECLINE
 
 
 # =============================================================================
@@ -110,7 +120,7 @@ class TestBuildCardHistory:
         history = _build_card_history(db, payload)
 
         assert history["txn_count"] == 0
-        assert history["mean_amt"] == 123.0  # falls back to current
+        assert history["mean_amt"] == 123.0
         assert history["std_amt"] == 1.0
         assert history["last_ts"] is None
         assert history["recent_timestamps"] == []
@@ -143,7 +153,7 @@ class TestBuildCardHistory:
 
         assert history["txn_count"] == 1
         assert history["mean_amt"] == 50.0
-        assert history["std_amt"] == 1.0  # stdev undefined for n=1
+        assert history["std_amt"] == 1.0
 
 
 # =============================================================================
@@ -154,28 +164,28 @@ class TestBuildTransaction:
     def test_amount_fallback_to_enriched_usd(self):
         payload = _payload(transaction_amount=None, transaction_currency=None)
 
-        txn = _build_transaction(payload, decision=APPROVE, reason_code=None)
+        txn = _build_transaction(payload, decision=Decision.APPROVE, reason_code=None)
 
         assert txn.transaction_amount == Decimal(str(payload.enriched_amount_usd))
         assert txn.transaction_currency == "USD"
-        assert txn.decision == APPROVE
+        assert txn.decision == Decision.APPROVE.value
         assert txn.reason_code is None
-        assert txn.is_fraud is None  # never written by ingest
+        assert txn.is_fraud is None
 
     def test_explicit_amount_and_currency_kept(self):
         payload = _payload(transaction_amount=Decimal("999.00"), transaction_currency="KES")
 
-        txn = _build_transaction(payload, decision=DECLINE, reason_code="MERCHANT_BLACKLISTED")
+        txn = _build_transaction(payload, decision=Decision.DECLINE, reason_code="MERCHANT_BLACKLISTED")
 
         assert txn.transaction_amount == Decimal("999.00")
         assert txn.transaction_currency == "KES"
-        assert txn.decision == DECLINE
+        assert txn.decision == Decision.DECLINE.value
         assert txn.reason_code == "MERCHANT_BLACKLISTED"
 
     def test_aligned_columns_persisted(self):
         payload = _payload(transaction_type=TransactionType.WITHDRAWAL, transaction_country="UG")
 
-        txn = _build_transaction(payload, decision=APPROVE, reason_code=None)
+        txn = _build_transaction(payload, decision=Decision.APPROVE, reason_code=None)
 
         assert txn.transaction_type == "withdrawal"
         assert txn.transaction_country == "UG"
@@ -189,13 +199,10 @@ def test_scoring_transaction_converts_enums_to_strings():
     payload = _payload()
     scorer_dict = payload.scoring_transaction()
 
-    # All enum-typed fields must come out as plain strings for the feature builder
     assert isinstance(scorer_dict["card_type"], str)
     assert isinstance(scorer_dict["channel"], str)
     assert isinstance(scorer_dict["transaction_type"], str)
     assert scorer_dict["transaction_type"] == "purchase"
-
-    # merchant_id and persistence-only fields must NOT leak into the scorer payload
     assert "merchant_id" not in scorer_dict
     assert "transaction_amount" not in scorer_dict
     assert "user_ip" not in scorer_dict
@@ -210,7 +217,6 @@ def test_ingest_blacklist_short_circuits_without_scoring():
     fake_id = uuid.uuid4()
 
     def _flush_assigns_id():
-        # mimic SQLAlchemy populating the PK on flush
         for call in db.add.call_args_list:
             call.args[0].id = fake_id
 
@@ -221,9 +227,29 @@ def test_ingest_blacklist_short_circuits_without_scoring():
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
     mock_score.assert_not_called()
-    assert resp.decision == DECLINE
+    assert resp.decision == Decision.DECLINE.value
     assert resp.score is None
     assert resp.reason == "merchant_blacklisted"
+    db.commit.assert_called_once()
+
+
+def test_ingest_blacklist_short_circuits_without_scoring_and_no_alert():
+    db = MagicMock()
+    fake_id = uuid.uuid4()
+
+    def _flush_assigns_id():
+        for call in db.add.call_args_list:
+            call.args[0].id = fake_id
+
+    db.flush.side_effect = _flush_assigns_id
+
+    with patch.object(decision_service, "is_merchant_blacklisted", return_value=True), \
+         patch.object(decision_service, "score_transaction", new=AsyncMock()) as mock_score:
+        resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
+
+    mock_score.assert_not_called()
+    assert resp.decision == Decision.DECLINE.value
+    assert resp.score is None
     db.commit.assert_called_once()
 
 
@@ -233,11 +259,12 @@ def test_ingest_blacklist_short_circuits_without_scoring():
 
 def test_ingest_clean_path_scores_and_persists():
     db = MagicMock()
-    db.execute.return_value.all.return_value = []  # no card history
+    db.execute.return_value.all.return_value = []
 
     fake_id = uuid.uuid4()
     db.flush.side_effect = lambda: [
-        setattr(c.args[0], "id", fake_id) for c in db.add.call_args_list if not getattr(c.args[0], "id", None)
+        setattr(c.args[0], "id", fake_id) for c in db.add.call_args_list
+        if not getattr(c.args[0], "id", None)
     ]
 
     score_result = {
@@ -248,14 +275,14 @@ def test_ingest_clean_path_scores_and_persists():
 
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=False), \
          patch.object(decision_service, "score_transaction", new=AsyncMock(return_value=score_result)), \
-         patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
+         patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})), \
+         patch.object(decision_service.event_emitter, "emit"):
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
 
-    assert resp.decision == APPROVE
+    assert resp.decision == Decision.APPROVE.value
     assert resp.score == 0.05
     assert resp.model_name == "calibrated_lightgbm_version2"
-    # transactions row + fraud_score row added
-    assert db.add.call_count == 2
+    assert db.add.call_count == 2   # Transaction + FraudScore
     db.commit.assert_called_once()
 
 
@@ -265,7 +292,8 @@ def test_ingest_explain_persists_score_reasons():
 
     fake_id = uuid.uuid4()
     db.flush.side_effect = lambda: [
-        setattr(c.args[0], "id", fake_id) for c in db.add.call_args_list if not getattr(c.args[0], "id", None)
+        setattr(c.args[0], "id", fake_id) for c in db.add.call_args_list
+        if not getattr(c.args[0], "id", None)
     ]
 
     score_result = {
@@ -273,22 +301,24 @@ def test_ingest_explain_persists_score_reasons():
         "model_name": "calibrated_lightgbm_version2",
         "contributions": [
             {"feature": "amount_zscore", "value": 2.5, "shap_value": 0.4},
-            {"feature": "cross_border", "value": 1.0, "shap_value": -0.1},
+            {"feature": "cross_border",  "value": 1.0, "shap_value": -0.1},
         ],
     }
 
     with patch.object(decision_service, "is_merchant_blacklisted", return_value=False), \
          patch.object(decision_service, "score_transaction", new=AsyncMock(return_value=score_result)), \
-         patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})):
+         patch.object(decision_service, "get_feature_schema", new=AsyncMock(return_value={"thresholds": THRESHOLDS})), \
+         patch.object(decision_service.event_emitter, "emit"):   # mock emitter — no alert db.add
         resp = asyncio.run(decision_service.ingest(db, _payload(), explain=True))
 
-    assert resp.decision == DECLINE
-    # txn + fraud_score + 2 score_reasons
+    assert resp.decision == Decision.DECLINE.value
+    # Transaction + FraudScore + 2 ScoreReasons = 4
     assert db.add.call_count == 4
     added_types = [type(c.args[0]).__name__ for c in db.add.call_args_list]
+    assert added_types.count("Transaction") == 1
+    assert added_types.count("FraudScore") == 1
     assert added_types.count("ScoreReason") == 2
 
-    # direction sign: positive SHAP -> HIGH, negative -> LOW
     reasons = [c.args[0] for c in db.add.call_args_list if type(c.args[0]).__name__ == "ScoreReason"]
     directions = {r.feature: r.direction for r in reasons}
     assert directions["amount_zscore"] == "HIGH"
@@ -315,26 +345,8 @@ def test_ingest_scorer_failure_writes_nothing():
 
 
 # =============================================================================
-# READ — list/detail serialization
+# READ — serialization helpers
 # =============================================================================
-
-def _txn_row(**overrides):
-    base = dict(
-        id=uuid.uuid4(),
-        transaction_amount=Decimal("1500.00"),
-        transaction_currency="KES",
-        merchant_id="MRCH-1001",
-        ts=datetime(2026, 5, 31, 12, 0, tzinfo=timezone.utc),
-        lifecycle_status="AUTHORIZED",
-        is_simulated=False,
-        is_manually_created=False,
-        created_at=datetime(2026, 5, 31, 12, 0, 1, tzinfo=timezone.utc),
-        decision=APPROVE,
-        card_id="CARD-42",
-    )
-    base.update(overrides)
-    return SimpleNamespace(**base)
-
 
 class TestSerializeListItem:
     def test_without_score(self):
@@ -344,10 +356,7 @@ class TestSerializeListItem:
         assert data["model_version"] is None
 
     def test_with_score(self):
-        score = SimpleNamespace(
-            score=Decimal("0.42"),
-            model_version="version2",
-        )
+        score = SimpleNamespace(score=Decimal("0.42"), model_version="version2")
         data = _serialize_list_item(_txn_row(), score)
         assert data["score"] == 0.42
         assert data["model_version"] == "version2"
@@ -411,7 +420,6 @@ class TestGetTransaction:
 
         db = MagicMock()
         db.get.return_value = txn
-
         score_result = MagicMock()
         score_result.scalar_one_or_none.return_value = score
         reasons_result = MagicMock()

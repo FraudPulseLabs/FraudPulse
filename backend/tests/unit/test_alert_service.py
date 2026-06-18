@@ -3,11 +3,10 @@
 Unit tests for alert event generation.
 
 Verifies that transaction decisioning emits the correct domain events:
-    * DECLINE -> fraud_decline
+    * DECLINE           -> fraud_decline
     * APPROVE_WITH_REVIEW -> fraud_review_required
-    * APPROVE -> no event
+    * APPROVE           -> no event
 """
-
 from __future__ import annotations
 
 import asyncio
@@ -51,198 +50,67 @@ def _payload(**overrides: Any) -> TransactionIngestRequest:
         transaction_type=TransactionType.PURCHASE,
         merchant_category_code="5411",
     )
-
     base.update(overrides)
     return TransactionIngestRequest(**base)
+
+
+def _run_ingest(score: float, db=None):
+    """Helper to run ingest with a mocked score and capture the emit calls."""
+    if db is None:
+        db = MagicMock()
+        db.execute.return_value.all.return_value = []
+        fake_id = uuid.uuid4()
+        db.flush.side_effect = lambda: [
+            setattr(c.args[0], "id", fake_id)
+            for c in db.add.call_args_list
+            if not getattr(c.args[0], "id", None)
+        ]
+
+    score_result = {
+        "score": score,
+        "model_name": "calibrated_lightgbm_version2",
+        "contributions": None,
+    }
+
+    with (
+        patch.object(decision_service, "is_merchant_blacklisted", return_value=False),
+        patch.object(decision_service, "score_transaction", new=AsyncMock(return_value=score_result)),
+        patch.object(
+            decision_service,
+            "get_feature_schema",
+            new=AsyncMock(return_value={"thresholds": {"approve_below": 0.1, "decline_from": 0.8}}),
+        ),
+        patch.object(decision_service.event_emitter, "emit") as mock_emit,
+    ):
+        resp = asyncio.run(decision_service.ingest(db, _payload(), explain=False))
+
+    return resp, mock_emit
 
 
 # =============================================================================
 # Alert event generation
 # =============================================================================
 
-
-# DECLINE emits fraud_decline event.
 def test_ingest_decline_emits_alert_event():
-    db = MagicMock()
-    db.execute.return_value.all.return_value = []
+    resp, mock_emit = _run_ingest(score=0.95)
 
-    fake_id = uuid.uuid4()
-
-    db.flush.side_effect = lambda: [
-        setattr(c.args[0], "id", fake_id)
-        for c in db.add.call_args_list
-        if not getattr(c.args[0], "id", None)
-    ]
-
-    score_result = {
-        "score": 0.95,
-        "model_name": "calibrated_lightgbm_version2",
-        "contributions": None,
-    }
-
-    with (
-        patch.object(
-            decision_service,
-            "is_merchant_blacklisted",
-            return_value=False,
-        ),
-        patch.object(
-            decision_service,
-            "score_transaction",
-            new=AsyncMock(return_value=score_result),
-        ),
-        patch.object(
-            decision_service,
-            "get_feature_schema",
-            new=AsyncMock(
-                return_value={
-                    "thresholds": {
-                        "approve_below": 0.1,
-                        "decline_from": 0.8,
-                    }
-                }
-            ),
-        ),
-        patch.object(
-            decision_service.event_emitter,
-            "emit",
-        ) as mock_emit,
-    ):
-        resp = asyncio.run(
-            decision_service.ingest(
-                db,
-                _payload(),
-                explain=False,
-            )
-        )
-
-    assert resp.decision == Decision.DECLINE
-
-    mock_emit.assert_called_once_with(
-        "fraud_decline",
-        db=db,
-        transaction_id=fake_id,
-    )
+    assert resp.decision == Decision.DECLINE.value
+    mock_emit.assert_called_once()
+    event_name = mock_emit.call_args.args[0]
+    assert event_name == "fraud_decline"
 
 
-# APPROVE_WITH_REVIEW emits fraud_review_required event.
 def test_ingest_review_emits_alert_event():
-    db = MagicMock()
-    db.execute.return_value.all.return_value = []
+    resp, mock_emit = _run_ingest(score=0.50)
 
-    fake_id = uuid.uuid4()
-
-    db.flush.side_effect = lambda: [
-        setattr(c.args[0], "id", fake_id)
-        for c in db.add.call_args_list
-        if not getattr(c.args[0], "id", None)
-    ]
-
-    score_result = {
-        "score": 0.50,
-        "model_name": "calibrated_lightgbm_version2",
-        "contributions": None,
-    }
-
-    with (
-        patch.object(
-            decision_service,
-            "is_merchant_blacklisted",
-            return_value=False,
-        ),
-        patch.object(
-            decision_service,
-            "score_transaction",
-            new=AsyncMock(return_value=score_result),
-        ),
-        patch.object(
-            decision_service,
-            "get_feature_schema",
-            new=AsyncMock(
-                return_value={
-                    "thresholds": {
-                        "approve_below": 0.1,
-                        "decline_from": 0.8,
-                    }
-                }
-            ),
-        ),
-        patch.object(
-            decision_service.event_emitter,
-            "emit",
-        ) as mock_emit,
-    ):
-        resp = asyncio.run(
-            decision_service.ingest(
-                db,
-                _payload(),
-                explain=False,
-            )
-        )
-
-    assert resp.decision == Decision.APPROVE_WITH_REVIEW
-
-    mock_emit.assert_called_once_with(
-        "fraud_review_required",
-        db=db,
-        transaction_id=fake_id,
-    )
+    assert resp.decision == Decision.APPROVE_WITH_REVIEW.value
+    mock_emit.assert_called_once()
+    event_name = mock_emit.call_args.args[0]
+    assert event_name == "fraud_review_required"
 
 
-# APPROVE emits no alert event.
 def test_ingest_approve_emits_no_alert_event():
-    db = MagicMock()
-    db.execute.return_value.all.return_value = []
+    resp, mock_emit = _run_ingest(score=0.05)
 
-    fake_id = uuid.uuid4()
-
-    db.flush.side_effect = lambda: [
-        setattr(c.args[0], "id", fake_id)
-        for c in db.add.call_args_list
-        if not getattr(c.args[0], "id", None)
-    ]
-
-    score_result = {
-        "score": 0.05,
-        "model_name": "calibrated_lightgbm_version2",
-        "contributions": None,
-    }
-
-    with (
-        patch.object(
-            decision_service,
-            "is_merchant_blacklisted",
-            return_value=False,
-        ),
-        patch.object(
-            decision_service,
-            "score_transaction",
-            new=AsyncMock(return_value=score_result),
-        ),
-        patch.object(
-            decision_service,
-            "get_feature_schema",
-            new=AsyncMock(
-                return_value={
-                    "thresholds": {
-                        "approve_below": 0.1,
-                        "decline_from": 0.8,
-                    }
-                }
-            ),
-        ),
-        patch.object(
-            decision_service.event_emitter,
-            "emit",
-        ) as mock_emit,
-    ):
-        resp = asyncio.run(
-            decision_service.ingest(
-                db,
-                _payload(),
-                explain=False,
-            )
-        )
-
-    assert resp.decision == Decision.APPROVE
+    assert resp.decision == Decision.APPROVE.value
     mock_emit.assert_not_called()

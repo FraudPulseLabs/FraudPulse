@@ -1,60 +1,75 @@
-# src/api/v1/transactions.py
+#src\db\models\transaction.py
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import Boolean, DateTime, Numeric, String, Text, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql import func
 
-from src.db.session import get_db
-from src.db.models.fraud_score import FraudScore
-from src.db.models.transaction import Transaction
-from src.schemas.transaction import TransactionRead
-from src.schemas.transaction_ingest import (
-    TransactionDecisionResponse,
-    TransactionIngestRequest,
-)
-from src.services import decision_service
-
-router = APIRouter()
+from src.db.models.base import Base
 
 
-@router.get("")
-async def list_transactions(
-    db: Session = Depends(get_db),
-) -> list[dict[str, Any]]:
-    return await decision_service.list_transactions(db)
+class Transaction(Base):
+    """Maps to `public.transactions` (Supabase). Columns mirror the live schema."""
 
+    __tablename__ = "transactions"
 
-@router.get("/{transaction_id}")
-async def get_transaction_by_id(
-    transaction_id: uuid.UUID,
-    db: Session = Depends(get_db),
-) -> dict[str, Any]:
-    txn = db.get(Transaction, transaction_id)
-    if txn is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
 
-    score_row = db.execute(
-        select(FraudScore)
-        .where(FraudScore.transaction_id == transaction_id)
-        .order_by(FraudScore.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
+    # --- Core ---
+    transaction_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    transaction_currency: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'KES'")
+    )
+    merchant_id: Mapped[str] = mapped_column(Text, nullable=False)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    result = TransactionRead.model_validate(txn).model_dump(mode="json")
-    result["fraud_score"]   = float(score_row.score)         if score_row else None
-    result["model_version"] = score_row.model_version        if score_row else None
+    user_ip: Mapped[str | None] = mapped_column(Text, nullable=True)
+    device_info: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    decision: Mapped[str | None] = mapped_column(Text, nullable=True)
+    lifecycle_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'AUTHORIZED'")
+    )
+    is_simulated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    is_manually_created: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    annotation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
-    return result
+    # --- Payment / card metadata ---
+    billing_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    channel: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    card_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    card_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    cardholder_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    card_present: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    card_entry_mode: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    merchant_category_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    issuing_bank_country: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transaction_city: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enriched_amount_usd: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    pan_entry_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
+    terminal_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    authentication: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reason_code: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-
-@router.post("", response_model=TransactionDecisionResponse)
-async def ingest_transaction(
-    payload: TransactionIngestRequest,
-    explain: bool = False,
-    db: Session = Depends(get_db),
-) -> TransactionDecisionResponse:
-    return await decision_service.ingest(db, payload, explain=explain)
+    # --- Data-science alignment (added 2026-05-31) ---
+    # transaction_type / transaction_country: scorer fields, now persisted
+    # (previously body-only) for full feature parity in re-training/analytics.
+    transaction_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transaction_country: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # is_fraud: GROUND-TRUTH label, NOT the live decision. Never written by the
+    # ingest/scoring path; populated later by review/chargeback backfill.
+    is_fraud: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
