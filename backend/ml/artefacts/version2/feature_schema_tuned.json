@@ -1,0 +1,90 @@
+{
+  "model_name": "tuned_calibrated_lightgbm_version2",
+  "model_file": "fraud_model_tuned.pkl",
+  "dataset_version": "version2",
+  "target": "is_fraud",
+  "feature_count": 32,
+  "features": [
+    "enriched_amount_usd",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "is_night",
+    "cross_border",
+    "card_txn_count_prior",
+    "card_avg_amount_usd_prior",
+    "card_std_amount_usd_prior",
+    "amount_vs_card_avg",
+    "amount_zscore",
+    "seconds_since_last_txn",
+    "txn_count_1h",
+    "txn_count_24h",
+    "is_amount_spike_vs_card_history",
+    "is_cross_border_amount_spike",
+    "is_velocity_burst_last_1h",
+    "is_weak_auth_on_above_average_amount",
+    "cvv2_result_enc",
+    "avs_result_enc",
+    "pan_entry_mode_enc",
+    "authentication_enc",
+    "card_type_Credit",
+    "card_type_Debit",
+    "card_type_Prepaid",
+    "channel_ATM",
+    "channel_ECOMMERCE",
+    "channel_POS",
+    "transaction_type_purchase",
+    "transaction_type_withdrawal",
+    "merchant_category_code_fraud_rate"
+  ],
+  "best_params": {
+    "subsample": 0.8,
+    "reg_lambda": 5.0,
+    "reg_alpha": 0.1,
+    "num_leaves": 15,
+    "n_estimators": 300,
+    "min_child_samples": 100,
+    "max_depth": 12,
+    "learning_rate": 0.08,
+    "colsample_bytree": 0.8
+  },
+  "thresholds": {
+    "approve_below": 0.01654134840344672,
+    "review_from": 0.01654134840344672,
+    "decline_from": 0.5929318274087262,
+    "optimisation": {
+      "fbeta_beta": 0.5,
+      "fbeta_threshold": {
+        "threshold": 0.5929318274087262,
+        "precision": 0.8664383561643836,
+        "recall": 0.4737827715355805,
+        "fbeta": 0.7432432432421667
+      },
+      "ks_threshold": {
+        "threshold": 0.01654134840344672,
+        "ks": 0.8004737626765724
+      }
+    },
+    "decision_policy": {
+      "APPROVE": "score < 0.016541",
+      "APPROVE_WITH_REVIEW": "0.016541 <= score < 0.592932",
+      "DECLINE": "score >= 0.592932"
+    }
+  },
+  "metrics": {
+    "accuracy": 0.9793082149474984,
+    "fraud_precision": 0.7308584686774942,
+    "fraud_recall": 0.5898876404494382,
+    "fraud_f1": 0.6528497409326425,
+    "roc_auc": 0.9656550766574995,
+    "pr_auc": 0.720934490295165
+  },
+  "notes": [
+    "Tuned Version 2 model trained on X_train2/y_train2.",
+    "Hyperparameters selected using a time-aware validation split.",
+    "Calibration performed using the last 15% of X_train2/y_train2.",
+    "X_test2/y_test2 was used only for final evaluation.",
+    "Features must be provided in exactly this order at inference time."
+  ]
+}
