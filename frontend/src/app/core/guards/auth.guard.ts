@@ -15,11 +15,11 @@ export const authGuard: CanMatchFn = async () => {
 
 /**
  * Show the public landing page only to unauthenticated visitors.
- * Signed-in users are sent straight to the transactions workspace.
+ * Signed-in users are sent straight to the operations overview.
  */
 export const guestGuard: CanMatchFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const session = await auth.resolveSession();
-  return session ? router.createUrlTree(['/transactions']) : true;
+  return session ? router.createUrlTree(['/overview']) : true;
 };

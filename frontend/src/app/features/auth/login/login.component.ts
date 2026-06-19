@@ -35,7 +35,7 @@ export class LoginComponent {
     try {
       const email = this.email().trim();
       await this.auth.signIn(email, this.password());
-      await this.router.navigateByUrl('/transactions');
+      await this.router.navigateByUrl('/overview');
       this.toast.success(`Welcome back, ${email}`);
     } catch (err: unknown) {
       this.error.set(err instanceof Error ? err.message : 'Sign in failed. Check your credentials.');

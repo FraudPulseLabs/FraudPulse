@@ -148,12 +148,12 @@ export class ShellComponent {
   }
 
   navItems: NavItem[] = [
-    { path: 'transactions', label: 'Transactions', icon: 'credit-card' },
-    { path: 'alerts',       label: 'Alert Queue',  icon: 'bell' },
-    { path: 'cases',        label: 'Cases',        icon: 'folder-open' },
-    { path: 'watchlist',    label: 'Watchlist',    icon: 'eye' },
-    { path: 'metrics',      label: 'Metrics',      icon: 'bar-chart-3' },
-    { path: 'model-demo',   label: 'Model Demo',   icon: 'flask-conical' },
+    { path: 'overview',     label: 'Overview',          icon: 'activity' },
+    { path: 'transactions', label: 'Transactions',      icon: 'credit-card' },
+    { path: 'alerts',       label: 'Alert Queue',         icon: 'bell' },
+    { path: 'cases',        label: 'Cases',             icon: 'folder-open' },
+    { path: 'watchlist',    label: 'Watchlist',         icon: 'eye' },
+    { path: 'model-demo',   label: 'Model Validation',  icon: 'flask-conical' },
   ];
 
   toggleNav(): void {
