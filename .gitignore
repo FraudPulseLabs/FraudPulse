@@ -3,4 +3,3 @@ node_modules
 /backend/ml/__pycache__
 /backend/ml/__pycache__
 /backend/src/__pycache__
-frontend/src/environments/environment.development.ts
