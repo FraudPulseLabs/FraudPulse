@@ -1,0 +1,182 @@
+/* ─── Type scale (4 tiers) ─────────────────────────────────────────── */
+.type-display {
+  font-size: clamp(2.5rem, 5vw, 3.75rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.type-heading {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.type-subheading {
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.type-body {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* ─── Layout ───────────────────────────────────────────────────────── */
+.section-pad {
+  padding-block: clamp(4rem, 8vw, 8rem);
+}
+
+.section-pad-lg {
+  padding-block: clamp(6rem, 12vw, 10rem);
+}
+
+.nav-link {
+  font-size: 0.875rem;
+  color: var(--color-neutral-400, #a3a3a3);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.nav-link:hover {
+  color: var(--color-neutral-100, #f5f5f5);
+}
+
+/* ─── Pulse terminal ───────────────────────────────────────────────── */
+.pulse-terminal {
+  border: 1px solid var(--color-neutral-800, #262626);
+  background-color: #0c0c0c;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pulse-terminal__chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--color-neutral-800, #262626);
+  background-color: #0a0a0a;
+}
+
+.pulse-terminal__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #dc2626;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.pulse-terminal__title {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-500, #737373);
+}
+
+.pulse-terminal__live {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #dc2626;
+}
+
+.pulse-terminal__head,
+.pulse-terminal__row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 6.5rem 5.5rem 3.5rem;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.6875rem;
+}
+
+.pulse-terminal__head {
+  border-bottom: 1px solid var(--color-neutral-800, #262626);
+  color: var(--color-neutral-600, #525252);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pulse-terminal__body {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow: hidden;
+}
+
+.pulse-terminal__row {
+  border-bottom: 1px solid var(--color-neutral-800, #262626);
+  animation: row-enter 0.35s ease-out;
+}
+
+.pulse-terminal__row:last-child {
+  border-bottom: none;
+}
+
+.pulse-terminal__row--unverified {
+  color: var(--color-neutral-500, #737373);
+}
+
+.pulse-terminal__row--secured .status-pill {
+  color: var(--color-neutral-300, #d4d4d4);
+}
+
+.pulse-terminal__row--flagged .status-pill {
+  color: #dc2626;
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-pill[data-status='unverified'] {
+  color: var(--color-neutral-600, #525252);
+}
+
+/* ─── Feature cells ────────────────────────────────────────────────── */
+.feature-cell {
+  background-color: var(--color-neutral-950, #0a0a0a);
+  padding: 2rem;
+}
+
+/* ─── Trust logos ──────────────────────────────────────────────────── */
+.trust-logo {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-neutral-100, #f5f5f5);
+  opacity: 0.4;
+  filter: grayscale(100%);
+  user-select: none;
+}
