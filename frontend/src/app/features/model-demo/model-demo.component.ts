@@ -22,15 +22,15 @@ interface DemoRow {
   imports: [CommonModule, DatePipe, DecimalPipe],
   template: `
     <div class="space-y-4">
-      <header class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h1 class="text-lg font-semibold text-slate-800">Model Demo — held-out test split</h1>
-        <p class="mt-1 text-sm text-slate-600">
+      <header class="card">
+        <h1 class="text-lg font-semibold fp-text-primary">Model Demo — held-out test split</h1>
+        <p class="mt-1 text-sm fp-text-secondary">
           These {{ rows().length }} transactions come from the chronological 20% test
           split of the raw training dataset. The active model (version2 calibrated
           LightGBM) has <strong>never seen them</strong>. Each row is POSTed through
           the real pipeline at
-          <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">POST /api/v1/transactions?explain=true</code>;
-          the ground-truth <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">is_fraud</code>
+          <code class="rounded bg-[var(--fp-hover)] px-1 py-0.5 text-xs">POST /api/v1/transactions?explain=true</code>;
+          the ground-truth <code class="rounded bg-[var(--fp-hover)] px-1 py-0.5 text-xs">is_fraud</code>
           label is stripped before sending and is only used here for display.
         </p>
         <p class="mt-2 rounded border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -42,10 +42,10 @@ interface DemoRow {
         </p>
       </header>
 
-      <div class="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <div class="card flex flex-wrap items-center gap-3 !p-3">
         <button
           type="button"
-          class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+          class="btn-primary !min-h-0 px-3 py-1.5"
           [disabled]="batchScoring()"
           (click)="scoreAll()"
         >
@@ -53,12 +53,12 @@ interface DemoRow {
         </button>
         <button
           type="button"
-          class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          class="btn-secondary !min-h-0 px-3 py-1.5"
           (click)="reset()"
         >
           Reset
         </button>
-        <label class="ml-2 inline-flex items-center gap-2 text-xs text-slate-600">
+        <label class="ml-2 inline-flex items-center gap-2 text-xs fp-text-secondary">
           <input
             type="checkbox"
             class="h-4 w-4"
@@ -69,12 +69,12 @@ interface DemoRow {
         </label>
 
         @if (summary(); as s) {
-          <div class="ml-auto flex flex-wrap items-center gap-4 text-xs text-slate-700">
+          <div class="ml-auto flex flex-wrap items-center gap-4 text-xs fp-text-secondary">
             <span>Scored: <strong>{{ s.scored }}/{{ s.total }}</strong></span>
             <span class="text-emerald-700">TP: <strong>{{ s.tp }}</strong></span>
             <span class="text-rose-700">FN: <strong>{{ s.fn }}</strong></span>
             <span class="text-amber-700">FP: <strong>{{ s.fp }}</strong></span>
-            <span class="text-slate-600">TN: <strong>{{ s.tn }}</strong></span>
+            <span class="fp-text-secondary">TN: <strong>{{ s.tn }}</strong></span>
             <span>
               Accuracy:
               <strong>{{ s.scored ? ((s.tp + s.tn) / s.scored | number:'1.0-2') : '—' }}</strong>
@@ -83,45 +83,45 @@ interface DemoRow {
         }
       </div>
 
-      <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="min-w-full text-left text-xs">
-          <thead class="bg-slate-50 text-slate-600">
+      <div class="card overflow-x-auto !p-0">
+        <table class="fp-table fp-table--compact min-w-full">
+          <thead>
             <tr>
-              <th class="px-3 py-2">Timestamp</th>
-              <th class="px-3 py-2">Card</th>
-              <th class="px-3 py-2">Merchant</th>
-              <th class="px-3 py-2 text-right">Amount (USD)</th>
-              <th class="px-3 py-2">Channel</th>
-              <th class="px-3 py-2">Auth</th>
-              <th class="px-3 py-2">Country</th>
-              <th class="px-3 py-2">Actual</th>
-              <th class="px-3 py-2">Predicted</th>
-              <th class="px-3 py-2 text-right">Score</th>
-              <th class="px-3 py-2">Match</th>
-              <th class="px-3 py-2"></th>
+              <th>Timestamp</th>
+              <th>Card</th>
+              <th>Merchant</th>
+              <th class="text-right">Amount (USD)</th>
+              <th>Channel</th>
+              <th>Auth</th>
+              <th>Country</th>
+              <th>Actual</th>
+              <th>Predicted</th>
+              <th class="text-right">Score</th>
+              <th>Match</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody>
             @for (row of rows(); track row.data.transaction_id) {
               <tr class="align-top">
-                <td class="px-3 py-2 font-mono text-[11px] text-slate-600">
+                <td class="fp-data-mono">
                   {{ row.data.timestamp | date:'short' }}
                 </td>
-                <td class="px-3 py-2 font-mono text-[11px] text-slate-600">
+                <td class="fp-data-mono">
                   {{ row.data.card_id }}
                 </td>
-                <td class="px-3 py-2 font-mono text-[11px] text-slate-600">
+                <td class="fp-data-mono">
                   {{ row.data.merchant_id }}
                 </td>
-                <td class="px-3 py-2 text-right font-mono">
+                <td class="text-right fp-data-mono">
                   {{ row.data.enriched_amount_usd | number:'1.2-2' }}
                 </td>
-                <td class="px-3 py-2">{{ row.data.channel }}</td>
-                <td class="px-3 py-2">{{ row.data.authentication }}</td>
-                <td class="px-3 py-2">
+                <td>{{ row.data.channel }}</td>
+                <td>{{ row.data.authentication }}</td>
+                <td>
                   {{ row.data.issuing_bank_country }} → {{ row.data.transaction_country }}
                 </td>
-                <td class="px-3 py-2">
+                <td>
                   <span
                     class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
                     [class.bg-rose-100]="row.data.is_fraud === 1"
@@ -132,26 +132,26 @@ interface DemoRow {
                     {{ row.data.is_fraud === 1 ? 'Fraud' : 'Legit' }}
                   </span>
                 </td>
-                <td class="px-3 py-2">
+                <td>
                   @if (row.result?.decision; as d) {
                     <span
                       class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
                       [class]="decisionClass(d)"
                     >{{ d }}</span>
                   } @else if (row.status === 'scoring') {
-                    <span class="text-slate-500">…</span>
+                    <span class="fp-text-muted">…</span>
                   } @else if (row.status === 'error') {
-                    <span class="text-rose-600" [title]="row.error">error</span>
+                    <span class="text-rose-600 font-medium" [title]="row.error">error</span>
                   } @else {
-                    <span class="text-slate-400">unscored</span>
+                    <span class="fp-text-muted">unscored</span>
                   }
                 </td>
-                <td class="px-3 py-2 text-right font-mono">
+                <td class="text-right fp-data-mono">
                   @if (row.result?.score != null) {
                     {{ row.result!.score | number:'1.4-4' }}
                   } @else { — }
                 </td>
-                <td class="px-3 py-2">
+                <td>
                   @if (row.result) {
                     @if (matches(row)) {
                       <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">✓ correct</span>
@@ -160,10 +160,10 @@ interface DemoRow {
                     }
                   }
                 </td>
-                <td class="px-3 py-2 text-right">
+                <td class="text-right">
                   <button
                     type="button"
-                    class="rounded-md border border-slate-300 px-2 py-1 text-[11px] hover:bg-slate-50 disabled:opacity-50"
+                    class="btn-secondary !min-h-0 px-2 py-1 text-[11px]"
                     [disabled]="row.status === 'scoring'"
                     (click)="scoreOne(row)"
                   >
@@ -173,10 +173,10 @@ interface DemoRow {
               </tr>
               @if (row.result?.contributions?.length) {
                 <tr>
-                  <td colspan="12" class="bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-                    <span class="font-medium text-slate-700">Top contributions:</span>
+                  <td colspan="12" class="bg-[var(--fp-surface-muted)] px-3 py-2 text-[11px] fp-text-secondary border-b fp-row-divider">
+                    <span class="fp-data-cell !text-[11px]">Top contributions:</span>
                     @for (c of topContribs(row.result!.contributions!); track c.feature) {
-                      <span class="ml-3 inline-flex items-center gap-1 font-mono">
+                      <span class="ml-3 inline-flex items-center gap-1 fp-data-mono !text-[11px]">
                         {{ c.feature }}
                         <span [class.text-rose-700]="c.shap_value > 0" [class.text-emerald-700]="c.shap_value < 0">
                           ({{ c.shap_value > 0 ? '+' : '' }}{{ c.shap_value | number:'1.3-3' }})
@@ -184,14 +184,14 @@ interface DemoRow {
                       </span>
                     }
                     @if (row.result?.reason) {
-                      <span class="ml-3 italic text-slate-500">reason: {{ row.result?.reason }}</span>
+                      <span class="ml-3 italic fp-text-secondary">reason: {{ row.result?.reason }}</span>
                     }
                   </td>
                 </tr>
               }
             } @empty {
               <tr>
-                <td colspan="12" class="px-3 py-6 text-center text-slate-500">
+                <td colspan="12" class="px-3 py-6 text-center fp-data-cell">
                   @if (loading()) { Loading demo transactions… }
                   @else if (loadError()) { <span class="text-rose-600">{{ loadError() }}</span> }
                   @else { No demo transactions available. }

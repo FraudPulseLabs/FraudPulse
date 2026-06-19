@@ -23,13 +23,13 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
           <section class="card">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0">
-                <h2 class="text-xl font-semibold text-slate-900">{{ current.title }}</h2>
-                <p class="text-sm text-slate-500 mt-1">
-                  <span class="font-mono">{{ current.id }}</span> &middot;
+                <h2 class="text-xl font-semibold fp-text-primary">{{ current.title }}</h2>
+                <p class="text-sm fp-text-secondary mt-1">
+                  <span class="fp-data-mono">{{ current.id }}</span> &middot;
                   created {{ current.createdAt | date: 'mediumDate' }}
                   @if (current.assignedTo) {
                     &middot; assigned to
-                    <span class="font-medium text-slate-700">{{ assignedName() }}</span>
+                    <span class="font-medium fp-text-secondary">{{ assignedName() }}</span>
                   }
                 </p>
               </div>
@@ -50,10 +50,9 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
                   @for (status of statuses; track status) {
                     <button
                       type="button"
-                      class="px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-200"
-                      [class.bg-indigo-600]="pendingStatus() === status"
-                      [class.text-white]="pendingStatus() === status"
-                      [class.text-slate-600]="pendingStatus() !== status"
+                      class="px-3 py-1.5 rounded-sm text-sm font-medium border border-[var(--fp-border)]"
+                      [class.fp-tab-active]="pendingStatus() === status"
+                      [class.fp-text-secondary]="pendingStatus() !== status"
                       (click)="pendingStatus.set(status)"
                     >{{ status }}</button>
                   }
@@ -102,76 +101,76 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
             @if (transaction(); as tx) {
               <div class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 text-sm">
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Amount</p>
-                  <p class="font-medium text-slate-800">
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Amount</p>
+                  <p class="font-medium fp-text-primary">
                     {{ tx.transactionCurrency }} {{ tx.transactionAmount | number: '1.2-2' }}
                   </p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">USD Equiv.</p>
-                  <p class="font-medium text-slate-800">
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">USD Equiv.</p>
+                  <p class="font-medium fp-text-primary">
                     {{ tx.enrichedAmountUsd !== null ? ('$' + (tx.enrichedAmountUsd | number: '1.2-2')) : '—' }}
                   </p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Decision</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Decision</p>
                   <app-badge [value]="tx.decision ?? 'UNKNOWN'" />
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Fraud Score</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Fraud Score</p>
                   @if (tx.fraudScore !== null) {
                     <app-score-bar [score]="tx.fraudScore" />
                   } @else {
-                    <p class="text-slate-500">—</p>
+                    <p class="fp-text-secondary">—</p>
                   }
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Channel</p>
-                  <p class="font-medium text-slate-800">{{ tx.channel ?? '—' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Channel</p>
+                  <p class="font-medium fp-text-primary">{{ tx.channel ?? '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Card Type</p>
-                  <p class="font-medium text-slate-800">{{ tx.cardType ?? '—' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Card Type</p>
+                  <p class="font-medium fp-text-primary">{{ tx.cardType ?? '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Merchant</p>
-                  <p class="font-mono text-xs text-slate-700 truncate">{{ tx.merchantId }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Merchant</p>
+                  <p class="fp-data-mono truncate">{{ tx.merchantId }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">MCC</p>
-                  <p class="font-medium text-slate-800">{{ tx.merchantCategoryCode ?? '—' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">MCC</p>
+                  <p class="font-medium fp-text-primary">{{ tx.merchantCategoryCode ?? '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Country</p>
-                  <p class="font-medium text-slate-800">{{ tx.transactionCountry ?? '—' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Country</p>
+                  <p class="font-medium fp-text-primary">{{ tx.transactionCountry ?? '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Auth Method</p>
-                  <p class="font-medium text-slate-800">{{ tx.authentication ?? '—' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Auth Method</p>
+                  <p class="font-medium fp-text-primary">{{ tx.authentication ?? '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Entry Mode</p>
-                  <p class="font-medium text-slate-800">{{ tx.panEntryMode ?? '—' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Entry Mode</p>
+                  <p class="font-medium fp-text-primary">{{ tx.panEntryMode ?? '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-xs text-slate-400 uppercase tracking-wide">Timestamp</p>
-                  <p class="font-medium text-slate-800">{{ tx.ts | date: 'medium' }}</p>
+                  <p class="text-xs fp-text-muted uppercase tracking-wide">Timestamp</p>
+                  <p class="font-medium fp-text-primary">{{ tx.ts | date: 'medium' }}</p>
                 </div>
                 @if (tx.reasonCode) {
                   <div class="col-span-2 sm:col-span-3">
-                    <p class="text-xs text-slate-400 uppercase tracking-wide">Reason Code</p>
+                    <p class="text-xs fp-text-muted uppercase tracking-wide">Reason Code</p>
                     <p class="font-medium text-red-700">{{ tx.reasonCode }}</p>
                   </div>
                 }
                 @if (tx.modelVersion) {
                   <div class="col-span-2 sm:col-span-3">
-                    <p class="text-xs text-slate-400 uppercase tracking-wide">Model</p>
-                    <p class="font-mono text-xs text-slate-500">{{ tx.modelVersion }}</p>
+                    <p class="text-xs fp-text-muted uppercase tracking-wide">Model</p>
+                    <p class="fp-data-mono">{{ tx.modelVersion }}</p>
                   </div>
                 }
               </div>
             } @else {
-              <p class="text-sm text-slate-400">Loading transaction details…</p>
+              <p class="text-sm fp-text-muted">Loading transaction details…</p>
             }
           </section>
 
@@ -179,15 +178,15 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
           <section class="card">
             <h3 class="section-title">Linked Alert</h3>
             @if (linkedAlert(); as alert) {
-              <div class="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-3 rounded-sm border border-[var(--fp-border)] p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
-                  <p class="font-mono text-sm text-slate-700">{{ alert.id }}</p>
-                  <p class="text-sm text-slate-500">{{ alert.reason }}</p>
+                  <p class="fp-data-mono">{{ alert.id }}</p>
+                  <p class="fp-data-cell !text-sm">{{ alert.reason }}</p>
                 </div>
                 <app-badge [value]="alert.severity" />
               </div>
             } @else {
-              <p class="text-sm text-slate-400">No linked alert found.</p>
+              <p class="text-sm fp-text-muted">No linked alert found.</p>
             }
           </section>
 
@@ -200,17 +199,17 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
           <section class="card">
             <h3 class="section-title">Timeline</h3>
             @if (events().length === 0) {
-              <p class="text-sm text-slate-400">No events yet.</p>
+              <p class="text-sm fp-text-muted">No events yet.</p>
             }
             <div class="space-y-4">
               @for (event of events(); track event.id) {
                 <div class="flex gap-3">
-                  <span class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm shrink-0">
+                  <span class="w-8 h-8 rounded-full bg-[var(--fp-hover)] flex items-center justify-center text-sm shrink-0">
                     {{ iconFor(event.eventType) }}
                   </span>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-slate-700">{{ event.description }}</p>
-                    <p class="text-xs text-slate-400">{{ event.actor }} &middot; {{ event.createdAt | timeAgo }}</p>
+                    <p class="text-sm fp-data-cell">{{ event.description }}</p>
+                    <p class="text-xs fp-text-muted">{{ event.actor }} &middot; {{ event.createdAt | timeAgo }}</p>
                   </div>
                 </div>
               }
@@ -222,16 +221,16 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
             <h3 class="section-title">Notes</h3>
             <div class="space-y-3">
               @for (note of notes(); track note.id) {
-                <article class="rounded-lg bg-slate-50 p-3">
+                <article class="rounded-sm bg-[var(--fp-surface-muted)] p-3">
                   <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs font-medium text-slate-700">{{ note.authorId }}</span>
-                    <span class="text-xs text-slate-400">{{ note.createdAt | timeAgo }}</span>
+                    <span class="text-xs font-medium fp-text-secondary">{{ note.authorId }}</span>
+                    <span class="text-xs fp-text-muted">{{ note.createdAt | timeAgo }}</span>
                   </div>
-                  <p class="mt-2 text-sm text-slate-600">{{ note.body }}</p>
+                  <p class="mt-2 text-sm fp-text-secondary">{{ note.body }}</p>
                 </article>
               }
               @if (notes().length === 0) {
-                <p class="text-sm text-slate-400">No notes yet.</p>
+                <p class="text-sm fp-text-muted">No notes yet.</p>
               }
             </div>
             <div class="mt-4">
@@ -244,7 +243,7 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
                 (input)="noteBody.set(noteInput.value)"
               ></textarea>
               <div class="mt-2 flex items-center justify-between">
-                <span class="text-xs text-slate-400">{{ noteBody().length }} / 2000</span>
+                <span class="text-xs fp-text-muted">{{ noteBody().length }} / 2000</span>
                 <button type="button" class="btn-primary" (click)="submitNote()">Add Note</button>
               </div>
             </div>

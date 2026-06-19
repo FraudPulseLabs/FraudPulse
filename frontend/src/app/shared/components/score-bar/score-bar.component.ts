@@ -10,7 +10,7 @@ import { Component, computed, input } from '@angular/core';
       <div class="score-bar-track w-16">
         <div class="score-bar-fill" [style.width.%]="pct()" [style.background-color]="colour()"></div>
       </div>
-      <span class="text-xs font-mono text-slate-600">{{ score() | number: '1.2-2' }}</span>
+      <span class="text-xs font-mono fp-text-secondary">{{ score() | number: '1.2-2' }}</span>
     </div>
   `,
 })

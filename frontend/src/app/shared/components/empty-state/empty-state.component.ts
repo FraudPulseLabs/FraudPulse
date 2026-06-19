@@ -6,9 +6,9 @@ import { Component, input } from '@angular/core';
   template: `
     <div class="empty-state">
       <div class="text-4xl mb-3">{{ icon() }}</div>
-      <p class="text-sm font-medium text-slate-500">{{ message() }}</p>
+      <p class="text-sm font-medium fp-text-secondary">{{ message() }}</p>
       @if (subtext()) {
-        <p class="text-xs text-slate-400 mt-1">{{ subtext() }}</p>
+        <p class="text-xs fp-text-muted mt-1">{{ subtext() }}</p>
       }
     </div>
   `,

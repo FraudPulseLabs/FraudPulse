@@ -1,7 +1,9 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AccessRequestService } from '../../core/services/access-request.service';
+import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 
 type ScanStatus = 'unverified' | 'secured' | 'flagged';
 
@@ -26,12 +28,18 @@ const MERCHANTS = [
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, FormsModule],
+  imports: [DecimalPipe, RouterLink, FormsModule, ThemeToggleComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.css',
 })
 export class LandingComponent implements OnInit, OnDestroy {
+  private readonly accessRequests = inject(AccessRequestService);
+
   readonly accessEmail = signal('');
+  readonly accessCompany = signal('');
+  readonly accessSubmitting = signal(false);
+  readonly accessError = signal('');
+  readonly accessSuccess = signal('');
   readonly events = signal<ScanEvent[]>([]);
   readonly throughput = signal(0);
   readonly avgLatency = signal(0.42);
@@ -59,8 +67,38 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   submitAccess(): void {
     const email = this.accessEmail().trim();
-    if (!email) return;
-    this.accessEmail.set('');
+    if (!email || this.accessSubmitting()) return;
+
+    this.accessError.set('');
+    this.accessSuccess.set('');
+    this.accessSubmitting.set(true);
+
+    this.accessRequests
+      .submit({
+        email,
+        company: this.accessCompany().trim() || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          this.accessSubmitting.set(false);
+          this.accessSuccess.set(res.message);
+          this.accessEmail.set('');
+          this.accessCompany.set('');
+        },
+        error: (err) => {
+          this.accessSubmitting.set(false);
+          const detail = err.error?.detail;
+          if (typeof detail === 'string') {
+            this.accessError.set(detail);
+          } else if (Array.isArray(detail) && detail[0]?.msg) {
+            this.accessError.set(detail[0].msg);
+          } else if (err.status === 0) {
+            this.accessError.set('Cannot reach the server. Please try again shortly.');
+          } else {
+            this.accessError.set('Unable to submit your request. Please try again.');
+          }
+        },
+      });
   }
 
   statusLabel(status: ScanStatus): string {
