@@ -23,22 +23,11 @@ interface DemoRow {
   template: `
     <div class="space-y-4">
       <header class="card">
-        <h1 class="text-lg font-semibold fp-text-primary">Model Demo — held-out test split</h1>
+        <h1 class="text-lg font-semibold fp-text-primary">Model Validation</h1>
         <p class="mt-1 text-sm fp-text-secondary">
-          These {{ rows().length }} transactions come from the chronological 20% test
-          split of the raw training dataset. The active model (version2 calibrated
-          LightGBM) has <strong>never seen them</strong>. Each row is POSTed through
-          the real pipeline at
-          <code class="rounded bg-[var(--fp-hover)] px-1 py-0.5 text-xs">POST /api/v1/transactions?explain=true</code>;
-          the ground-truth <code class="rounded bg-[var(--fp-hover)] px-1 py-0.5 text-xs">is_fraud</code>
-          label is stripped before sending and is only used here for display.
-        </p>
-        <p class="mt-2 rounded border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          <strong>Caveat:</strong> live ingest builds card-history features from prior
-          rows in the live DB only — seeding just these 20 demo rows means each card
-          starts with cold-start velocity/spend defaults. Offline test-set scores were
-          computed with full pre-split history, so live scores will differ. This is
-          still a genuine unseen-data evaluation of the calibrated model.
+          Score held-out transactions through the live fraud pipeline and compare model
+          predictions against known outcomes. Use single-row scoring to inspect feature
+          contributions, or run the full batch to review aggregate performance.
         </p>
       </header>
 
@@ -120,6 +109,9 @@ interface DemoRow {
                 <td>{{ row.data.authentication }}</td>
                 <td>
                   {{ row.data.issuing_bank_country }} → {{ row.data.transaction_country }}
+                  @if (row.data.transaction_city) {
+                    <span class="fp-text-muted"> ({{ row.data.transaction_city }})</span>
+                  }
                 </td>
                 <td>
                   <span
@@ -280,13 +272,11 @@ export class ModelDemoComponent implements OnInit {
   scoreOne(row: DemoRow, done?: () => void): void {
     this.updateRow(row.data.transaction_id, (r) => ({ ...r, status: 'scoring', error: undefined }));
 
-    // CRITICAL: strip is_fraud and the raw-CSV transaction_id from the body.
-    // Backend mints a new DB id and is_fraud is ground-truth only.
     const { is_fraud: _is_fraud, transaction_id: _tx_id, ...payload } = row.data;
 
     this.http
       .post<ScoreResult>(
-        `${environment.apiUrl}/api/v1/transactions?explain=true`,
+        `${environment.apiUrl}/api/v1/demo/score?explain=true`,
         payload,
       )
       .subscribe({
@@ -298,11 +288,22 @@ export class ModelDemoComponent implements OnInit {
           this.updateRow(row.data.transaction_id, (r) => ({
             ...r,
             status: 'error',
-            error: err?.error?.detail ?? err?.message ?? 'Score request failed',
+            error: this.formatError(err),
           }));
           done?.();
         },
       });
+  }
+
+  private formatError(err: { error?: { detail?: unknown }; message?: string }): string {
+    const detail = err?.error?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) => (typeof item === 'object' && item && 'msg' in item ? String(item.msg) : String(item)))
+        .join('; ');
+    }
+    return err?.message ?? 'Score request failed';
   }
 
   matches(row: DemoRow): boolean {
