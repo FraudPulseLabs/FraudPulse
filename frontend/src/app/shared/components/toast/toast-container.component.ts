@@ -15,7 +15,7 @@ import { ToastService, ToastType } from '../../../core/services/toast.service';
       >
         @for (t of toast.toasts(); track t.id) {
           <div
-            class="pointer-events-auto flex items-start gap-2 rounded-lg border px-3 py-2.5 shadow-md"
+            class="pointer-events-auto flex items-start gap-2 rounded-sm border px-3 py-2.5 shadow-md"
             [class]="styles(t.type)"
             role="status"
           >
@@ -45,7 +45,7 @@ export class ToastContainerComponent {
       case 'error':
         return 'border-rose-200 bg-rose-50 text-rose-800';
       default:
-        return 'border-slate-200 bg-white text-slate-700';
+        return 'border-[var(--fp-border)] bg-[var(--fp-surface)] fp-text-secondary';
     }
   }
 

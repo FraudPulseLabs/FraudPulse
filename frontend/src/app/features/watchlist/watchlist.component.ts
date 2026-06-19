@@ -30,7 +30,7 @@ interface PendingRemove {
     <div class="page-header">
       <div>
         <h2 class="page-title">Watchlist</h2>
-        <p class="text-sm text-slate-500">Merchants requiring extra scrutiny in fraud decisions.</p>
+        <p class="text-sm fp-text-secondary">Merchants requiring extra scrutiny in fraud decisions.</p>
       </div>
       <button type="button" class="btn-primary" (click)="showAddForm.set(true)" [disabled]="loading()">
         Add Merchant
@@ -90,7 +90,7 @@ interface PendingRemove {
               <option value="NEVER">Never</option>
             </select>
           </label>
-          <label class="flex items-center gap-2 pt-7 text-sm text-slate-700">
+          <label class="flex items-center gap-2 pt-7 text-sm fp-text-secondary">
             <input
               type="checkbox"
               [checked]="form().isBlacklist"
@@ -112,17 +112,16 @@ interface PendingRemove {
         @for (filter of filters; track filter) {
           <button
             type="button"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-200"
-            [class.bg-indigo-600]="entityFilter() === filter"
-            [class.text-white]="entityFilter() === filter"
-            [class.text-slate-600]="entityFilter() !== filter"
+            class="px-3 py-1.5 rounded-sm text-sm font-medium border border-[var(--fp-border)]"
+            [class.fp-tab-active]="entityFilter() === filter"
+            [class.fp-text-secondary]="entityFilter() !== filter"
             (click)="entityFilter.set(filter)"
           >
             {{ filter }}
           </button>
         }
         </div>
-        <label class="ml-auto inline-flex items-center gap-2 text-sm text-slate-600">
+        <label class="ml-auto inline-flex items-center gap-2 text-sm fp-text-secondary">
           <input
             type="checkbox"
             class="h-4 w-4"
@@ -136,7 +135,7 @@ interface PendingRemove {
 
     <div class="card overflow-hidden">
       @if (loading()) {
-        <p class="p-6 text-sm text-slate-500">Loading watchlist…</p>
+        <p class="p-6 text-sm fp-text-secondary">Loading watchlist…</p>
       } @else if (filtered().length === 0) {
         <app-empty-state message="No watchlist entries found" />
       } @else {
@@ -158,7 +157,7 @@ interface PendingRemove {
               @for (entry of filtered(); track entry.id) {
                 <tr [class.opacity-60]="isWatchlistEntryExpired(entry)">
                   <td><span [class]="typeClass(entry.entityType)">{{ entry.entityType }}</span></td>
-                  <td><span class="font-mono">{{ entry.entityId }}</span></td>
+                  <td><span class="fp-data-mono">{{ entry.entityId }}</span></td>
                   <td>{{ entry.reason }}</td>
                   <td><app-badge [value]="entry.severity" /></td>
                   <td>
@@ -166,7 +165,7 @@ interface PendingRemove {
                       <span class="badge-block">Blacklisted</span>
                     }
                     @if (isWatchlistEntryExpired(entry)) {
-                      <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Expired</span>
+                      <span class="ml-1 rounded-full bg-[var(--fp-hover)] px-2 py-0.5 text-xs fp-text-secondary">Expired</span>
                     }
                   </td>
                   <td>{{ entry.addedBy }}</td>
@@ -316,7 +315,7 @@ export class WatchlistComponent implements OnInit {
     const map: Record<WatchlistEntityType, string> = {
       USER: 'inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700',
       MERCHANT: 'inline-flex rounded-full bg-yellow-50 px-2.5 py-0.5 text-xs font-medium text-yellow-700',
-      TRANSACTION: 'inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700',
+      TRANSACTION: 'inline-flex rounded-full bg-[var(--fp-hover)] px-2.5 py-0.5 text-xs font-medium fp-text-secondary',
     };
     return map[type];
   }

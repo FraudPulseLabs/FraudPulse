@@ -17,7 +17,7 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
     <div class="page-header">
       <div>
         <h2 class="page-title">Cases</h2>
-        <p class="text-sm text-slate-500">Investigation workspace — cases are created automatically when fraud alerts are triggered.</p>
+        <p class="text-sm fp-text-secondary">Investigation workspace — cases are created automatically when fraud alerts are triggered.</p>
       </div>
     </div>
 
@@ -27,10 +27,9 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
         @for (filter of filters; track filter) {
           <button
             type="button"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium border border-slate-200"
-            [class.bg-indigo-600]="statusFilter() === filter"
-            [class.text-white]="statusFilter() === filter"
-            [class.text-slate-600]="statusFilter() !== filter"
+            class="px-3 py-1.5 rounded-sm text-sm font-medium border border-[var(--fp-border)]"
+            [class.fp-tab-active]="statusFilter() === filter"
+            [class.fp-text-secondary]="statusFilter() !== filter"
             (click)="statusFilter.set(filter)"
           >
             {{ filter }}
@@ -60,9 +59,9 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
             <tbody>
               @for (c of filtered(); track c.id) {
                 <tr>
-                  <td><span class="font-mono text-xs">{{ c.id }}</span></td>
+                  <td><span class="fp-data-mono">{{ c.id }}</span></td>
                   <td>{{ c.title }}</td>
-                  <td><span class="font-mono text-xs">{{ c.transactionId }}</span></td>
+                  <td><span class="fp-data-mono">{{ c.transactionId }}</span></td>
                   <td><app-badge [value]="c.status" /></td>
                   <td><app-badge [value]="c.riskLevel" /></td>
                   <td>{{ c.createdAt | timeAgo }}</td>

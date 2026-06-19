@@ -1,8 +1,8 @@
-<div class="landing min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+<div class="landing min-h-screen bg-[var(--fp-bg)] text-[var(--fp-text)] antialiased">
 
   <!-- Navigation -->
   <header
-    class="sticky top-0 z-50 border-b border-neutral-800/60 bg-neutral-950/[0.97] backdrop-blur-sm"
+    class="sticky top-0 z-50 border-b border-[var(--fp-border)] bg-[var(--fp-bg)]/97 backdrop-blur-sm"
   >
     <nav
       class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8"
@@ -10,10 +10,11 @@
     >
       <a routerLink="/" class="flex items-center gap-2.5 no-underline">
         <span
-          class="flex h-7 w-7 items-center justify-center rounded-sm bg-neutral-100 text-[10px] font-bold tracking-tighter text-neutral-950"
+          class="flex h-7 w-7 items-center justify-center rounded-sm text-[10px] font-bold tracking-tighter"
+          style="background-color: var(--fp-brand-mark-bg); color: var(--fp-brand-mark-text);"
           aria-hidden="true"
         >FP</span>
-        <span class="text-sm font-semibold tracking-tight text-neutral-100">FraudPulse</span>
+        <span class="text-sm font-semibold tracking-tight fp-text-primary">FraudPulse</span>
       </a>
 
       <ul class="hidden items-center gap-10 md:flex">
@@ -28,8 +29,9 @@
         </li>
       </ul>
 
-      <div class="flex items-center gap-6">
-        <a routerLink="/login" class="text-sm text-neutral-400 transition-colors hover:text-neutral-100">
+      <div class="flex items-center gap-4 sm:gap-6">
+        <app-theme-toggle />
+        <a routerLink="/login" class="text-sm fp-text-secondary transition-colors hover:fp-text-primary">
           Sign In
         </a>
         <button
@@ -49,10 +51,10 @@
     <section class="section-pad mx-auto max-w-6xl px-6 lg:px-8">
       <div class="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-20">
         <div class="max-w-xl pt-4 lg:pt-8">
-          <h1 class="type-display text-neutral-50">
+          <h1 class="type-display fp-text-primary">
             Stop fraud<br />before settlement.
           </h1>
-          <p class="type-body mt-6 max-w-md text-neutral-400">
+          <p class="type-body mt-6 max-w-md fp-text-secondary">
             Real-time ledger analysis at sub-millisecond latencies. Every transaction scored,
             routed, and resolved before funds move.
           </p>
@@ -60,9 +62,9 @@
             <button type="button" class="cta-solid" (click)="scrollTo('access')">
               Request Access
             </button>
-            <p class="mt-4 font-mono text-xs text-neutral-500">
+            <p class="mt-4 font-mono text-xs fp-text-primary0">
               <span class="text-[#DC2626]">p99</span> decision latency
-              <span class="text-neutral-300">{{ avgLatency() }}ms</span>
+              <span class="fp-text-secondary">{{ avgLatency() }}ms</span>
               · {{ throughput() | number }} events secured this session
             </p>
           </div>
@@ -90,13 +92,13 @@
                 [class.pulse-terminal__row--secured]="event.status === 'secured'"
                 [class.pulse-terminal__row--flagged]="event.status === 'flagged'"
               >
-                <span class="font-mono text-neutral-300">{{ event.ref }}</span>
-                <span class="truncate font-mono text-neutral-500">{{ event.corridor }}</span>
-                <span class="font-mono tabular-nums text-neutral-300">{{ event.amount }}</span>
+                <span class="font-mono fp-text-secondary">{{ event.ref }}</span>
+                <span class="truncate font-mono fp-text-primary0">{{ event.corridor }}</span>
+                <span class="font-mono tabular-nums fp-text-secondary">{{ event.amount }}</span>
                 <span class="status-pill" [attr.data-status]="event.status">
                   {{ statusLabel(event.status) }}
                 </span>
-                <span class="text-right font-mono tabular-nums text-neutral-500">
+                <span class="text-right font-mono tabular-nums fp-text-primary0">
                   @if (event.latencyMs !== null) {
                     {{ event.latencyMs }}ms
                   } @else {
@@ -111,34 +113,34 @@
     </section>
 
     <!-- Feature grid -->
-    <section id="features" class="section-pad border-t border-neutral-800/80">
+    <section id="features" class="section-pad border-t border-[var(--fp-border)]/80">
       <div class="mx-auto max-w-6xl px-6 lg:px-8">
         <p class="type-label">Technical capabilities</p>
-        <h2 class="type-heading mt-3 max-w-lg text-neutral-50">
+        <h2 class="type-heading mt-3 max-w-lg fp-text-primary">
           Built for throughput, not dashboards.
         </h2>
 
-        <div class="mt-16 grid gap-px bg-neutral-800 md:grid-cols-3">
+        <div class="mt-16 grid gap-px md:grid-cols-3" style="background-color: var(--fp-border)">
           <article class="feature-cell">
             <p class="type-label">Throughput</p>
-            <h3 class="type-subheading mt-4 text-neutral-100">12M+ TPS envelope</h3>
-            <p class="type-body mt-3 text-neutral-400">
+            <h3 class="type-subheading mt-4 fp-text-primary">12M+ TPS envelope</h3>
+            <p class="type-body mt-3 fp-text-secondary">
               Horizontally sharded ingestion with deterministic partitioning across payment
               corridors. No single hot shard under peak load.
             </p>
           </article>
           <article class="feature-cell">
             <p class="type-label">Latency</p>
-            <h3 class="type-subheading mt-4 text-neutral-100">Sub-ms scoring path</h3>
-            <p class="type-body mt-3 text-neutral-400">
+            <h3 class="type-subheading mt-4 fp-text-primary">Sub-ms scoring path</h3>
+            <p class="type-body mt-3 fp-text-secondary">
               Feature extraction and model inference co-located on the decision path.
               p99 under 1ms at production scale.
             </p>
           </article>
           <article class="feature-cell">
             <p class="type-label">Models</p>
-            <h3 class="type-subheading mt-4 text-neutral-100">Ensemble risk stack</h3>
-            <p class="type-body mt-3 text-neutral-400">
+            <h3 class="type-subheading mt-4 fp-text-primary">Ensemble risk stack</h3>
+            <p class="type-body mt-3 fp-text-secondary">
               Gradient-boosted tabular models with graph-derived entity features. Shadow-deployed
               challengers with automatic rollback.
             </p>
@@ -148,40 +150,40 @@
     </section>
 
     <!-- Architecture -->
-    <section id="architecture" class="section-pad border-t border-neutral-800/80">
+    <section id="architecture" class="section-pad border-t border-[var(--fp-border)]/80">
       <div class="mx-auto max-w-6xl px-6 lg:px-8">
         <p class="type-label">Architecture</p>
-        <h2 class="type-heading mt-3 max-w-xl text-neutral-50">
+        <h2 class="type-heading mt-3 max-w-xl fp-text-primary">
           Event-native pipeline from ingest to decision.
         </h2>
-        <p class="type-body mt-6 max-w-2xl text-neutral-400">
+        <p class="type-body mt-6 max-w-2xl fp-text-secondary">
           Kafka-backed ingestion, Flink feature computation, and a low-latency decision service
           exposed via gRPC. Every decision is immutable, auditable, and replayable.
         </p>
 
-        <dl class="mt-16 grid gap-px bg-neutral-800 sm:grid-cols-2 lg:grid-cols-4">
+        <dl class="mt-16 grid gap-px sm:grid-cols-2 lg:grid-cols-4" style="background-color: var(--fp-border)">
           <div class="feature-cell">
             <dt class="type-label">Ingest</dt>
-            <dd class="type-subheading mt-3 text-neutral-100">Stream adapters</dd>
+            <dd class="type-subheading mt-3 fp-text-primary">Stream adapters</dd>
           </div>
           <div class="feature-cell">
             <dt class="type-label">Compute</dt>
-            <dd class="type-subheading mt-3 text-neutral-100">Feature store</dd>
+            <dd class="type-subheading mt-3 fp-text-primary">Feature store</dd>
           </div>
           <div class="feature-cell">
             <dt class="type-label">Decide</dt>
-            <dd class="type-subheading mt-3 text-neutral-100">Rules + ML</dd>
+            <dd class="type-subheading mt-3 fp-text-primary">Rules + ML</dd>
           </div>
           <div class="feature-cell">
             <dt class="type-label">Audit</dt>
-            <dd class="type-subheading mt-3 text-neutral-100">Immutable log</dd>
+            <dd class="type-subheading mt-3 fp-text-primary">Immutable log</dd>
           </div>
         </dl>
       </div>
     </section>
 
     <!-- Trust -->
-    <section class="section-pad border-t border-neutral-800/80">
+    <section class="section-pad border-t border-[var(--fp-border)]/80">
       <div class="mx-auto max-w-6xl px-6 lg:px-8">
         <p class="type-label text-center">Trusted by risk teams at</p>
         <ul
@@ -198,17 +200,17 @@
     </section>
 
     <!-- Documentation teaser -->
-    <section id="documentation" class="section-pad border-t border-neutral-800/80">
+    <section id="documentation" class="section-pad border-t border-[var(--fp-border)]/80">
       <div class="mx-auto max-w-6xl px-6 text-center lg:px-8">
         <p class="type-label">Documentation</p>
-        <h2 class="type-heading mt-3 text-neutral-50">Integration in hours, not quarters.</h2>
-        <p class="type-body mx-auto mt-4 max-w-lg text-neutral-400">
+        <h2 class="type-heading mt-3 fp-text-primary">Integration in hours, not quarters.</h2>
+        <p class="type-body mx-auto mt-4 max-w-lg fp-text-secondary">
           REST and gRPC APIs, webhook callbacks, and sandbox environments with synthetic
           transaction generators.
         </p>
         <a
           routerLink="/login"
-          class="mt-8 inline-block text-sm text-neutral-400 underline decoration-neutral-700 underline-offset-4 transition-colors hover:text-neutral-100"
+          class="mt-8 inline-block text-sm fp-text-secondary underline decoration-[var(--fp-border)] underline-offset-4 transition-colors hover:fp-text-primary"
         >
           View API reference after sign-in →
         </a>
@@ -216,33 +218,60 @@
     </section>
 
     <!-- Email capture -->
-    <section id="access" class="section-pad-lg border-t border-neutral-800/80">
+    <section id="access" class="section-pad-lg border-t border-[var(--fp-border)]">
       <div class="mx-auto max-w-xl px-6 text-center lg:px-8">
-        <h2 class="type-heading text-neutral-50">Request access</h2>
-        <p class="type-body mt-4 text-neutral-400">
+        <h2 class="type-heading fp-text-primary">Request access</h2>
+        <p class="type-body mt-4 fp-text-secondary">
           Enterprise deployments with dedicated onboarding. No credit card required.
         </p>
-        <form class="mt-10 flex flex-col gap-3 sm:flex-row" (ngSubmit)="submitAccess()">
-          <label for="access-email" class="sr-only">Work email</label>
-          <input
-            id="access-email"
-            type="email"
-            name="email"
-            required
-            placeholder="you@company.com"
-            class="fp-field-input flex-1"
-            [ngModel]="accessEmail()"
-            (ngModelChange)="accessEmail.set($event)"
-          />
-          <button type="submit" class="cta-solid shrink-0">Submit</button>
+        <form class="mt-10 space-y-3 text-left" (ngSubmit)="submitAccess()">
+          <div>
+            <label for="access-email" class="type-label">Work email</label>
+            <input
+              id="access-email"
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              placeholder="you@company.com"
+              class="fp-field-input mt-2"
+              [class.fp-field-input--error]="accessError()"
+              [ngModel]="accessEmail()"
+              (ngModelChange)="accessEmail.set($event); accessError.set('')"
+              [disabled]="accessSubmitting()"
+            />
+          </div>
+          <div>
+            <label for="access-company" class="type-label">Company <span class="normal-case tracking-normal text-[0.6875rem]">(optional)</span></label>
+            <input
+              id="access-company"
+              type="text"
+              name="company"
+              autocomplete="organization"
+              placeholder="Acme Corp"
+              class="fp-field-input mt-2"
+              [ngModel]="accessCompany()"
+              (ngModelChange)="accessCompany.set($event)"
+              [disabled]="accessSubmitting()"
+            />
+          </div>
+          @if (accessError()) {
+            <p class="fp-form-message fp-form-message--error" role="alert">{{ accessError() }}</p>
+          }
+          @if (accessSuccess()) {
+            <p class="fp-form-message fp-form-message--success" role="status">{{ accessSuccess() }}</p>
+          }
+          <button type="submit" class="cta-solid w-full sm:w-auto" [disabled]="accessSubmitting()">
+            {{ accessSubmitting() ? 'Submitting…' : 'Submit request' }}
+          </button>
         </form>
       </div>
     </section>
 
   </main>
 
-  <footer class="border-t border-neutral-800/80 py-10">
-    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs text-neutral-600 sm:flex-row lg:px-8">
+  <footer class="border-t border-[var(--fp-border)]/80 py-10">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs fp-text-muted sm:flex-row lg:px-8">
       <p>© {{ 2026 }} FraudPulse. All rights reserved.</p>
       <p class="font-mono">Precision risk infrastructure.</p>
     </div>

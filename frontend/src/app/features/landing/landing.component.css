@@ -1,31 +1,3 @@
-/* ─── Type scale (4 tiers) ─────────────────────────────────────────── */
-.type-display {
-  font-size: clamp(2.5rem, 5vw, 3.75rem);
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-}
-
-.type-heading {
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-}
-
-.type-subheading {
-  font-size: 1.125rem;
-  font-weight: 500;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
-}
-
-.type-body {
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.7;
-}
-
 /* ─── Layout ───────────────────────────────────────────────────────── */
 .section-pad {
   padding-block: clamp(4rem, 8vw, 8rem);
@@ -35,9 +7,9 @@
   padding-block: clamp(6rem, 12vw, 10rem);
 }
 
-.nav-link {
+.landing .nav-link {
   font-size: 0.875rem;
-  color: var(--color-neutral-400, #a3a3a3);
+  color: var(--fp-text-secondary);
   background: none;
   border: none;
   padding: 0;
@@ -45,14 +17,14 @@
   transition: color 0.15s ease;
 }
 
-.nav-link:hover {
-  color: var(--color-neutral-100, #f5f5f5);
+.landing .nav-link:hover {
+  color: var(--fp-text);
 }
 
 /* ─── Pulse terminal ───────────────────────────────────────────────── */
 .pulse-terminal {
-  border: 1px solid var(--color-neutral-800, #262626);
-  background-color: #0c0c0c;
+  border: 1px solid var(--fp-border);
+  background-color: var(--fp-surface);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -62,8 +34,8 @@
   align-items: center;
   gap: 0.625rem;
   padding: 0.625rem 1rem;
-  border-bottom: 1px solid var(--color-neutral-800, #262626);
-  background-color: #0a0a0a;
+  border-bottom: 1px solid var(--fp-border);
+  background-color: var(--fp-surface-muted);
 }
 
 .pulse-terminal__dot {
@@ -85,7 +57,7 @@
   font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-neutral-500, #737373);
+  color: var(--fp-text-muted);
 }
 
 .pulse-terminal__live {
@@ -107,8 +79,8 @@
 }
 
 .pulse-terminal__head {
-  border-bottom: 1px solid var(--color-neutral-800, #262626);
-  color: var(--color-neutral-600, #525252);
+  border-bottom: 1px solid var(--fp-border);
+  color: var(--fp-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -122,7 +94,7 @@
 }
 
 .pulse-terminal__row {
-  border-bottom: 1px solid var(--color-neutral-800, #262626);
+  border-bottom: 1px solid var(--fp-border-subtle);
   animation: row-enter 0.35s ease-out;
 }
 
@@ -131,11 +103,11 @@
 }
 
 .pulse-terminal__row--unverified {
-  color: var(--color-neutral-500, #737373);
+  color: var(--fp-text-muted);
 }
 
 .pulse-terminal__row--secured .status-pill {
-  color: var(--color-neutral-300, #d4d4d4);
+  color: var(--fp-text-secondary);
 }
 
 .pulse-terminal__row--flagged .status-pill {
@@ -161,12 +133,12 @@
 }
 
 .status-pill[data-status='unverified'] {
-  color: var(--color-neutral-600, #525252);
+  color: var(--fp-text-muted);
 }
 
 /* ─── Feature cells ────────────────────────────────────────────────── */
 .feature-cell {
-  background-color: var(--color-neutral-950, #0a0a0a);
+  background-color: var(--fp-bg);
   padding: 2rem;
 }
 
@@ -175,7 +147,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: var(--color-neutral-100, #f5f5f5);
+  color: var(--fp-text);
   opacity: 0.4;
   filter: grayscale(100%);
   user-select: none;
