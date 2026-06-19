@@ -120,13 +120,6 @@ jobs:
           fi
 
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
-            "set -e; \
-            docker rm -f fraudpulse-backend 2>/dev/null || true; \
-            stray=\$(docker ps -q --filter publish=8000); \
-            if [ -n \"\$stray\" ]; then docker rm -f \$stray; fi; \
-            sudo fuser -k 8000/tcp 2>/dev/null || true"
-
-          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
             "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
 
       - name: Verify backend health
