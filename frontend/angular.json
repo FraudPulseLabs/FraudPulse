@@ -84,6 +84,10 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "host": "::",
+            "port": 4200
+          },
           "configurations": {
             "production": {
               "buildTarget": "fraudpulse:build:production"

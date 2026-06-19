@@ -1,0 +1,251 @@
+<div class="landing min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+
+  <!-- Navigation -->
+  <header
+    class="sticky top-0 z-50 border-b border-neutral-800/60 bg-neutral-950/[0.97] backdrop-blur-sm"
+  >
+    <nav
+      class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8"
+      aria-label="Primary"
+    >
+      <a routerLink="/" class="flex items-center gap-2.5 no-underline">
+        <span
+          class="flex h-7 w-7 items-center justify-center rounded-sm bg-neutral-100 text-[10px] font-bold tracking-tighter text-neutral-950"
+          aria-hidden="true"
+        >FP</span>
+        <span class="text-sm font-semibold tracking-tight text-neutral-100">FraudPulse</span>
+      </a>
+
+      <ul class="hidden items-center gap-10 md:flex">
+        <li>
+          <button type="button" class="nav-link" (click)="scrollTo('features')">Features</button>
+        </li>
+        <li>
+          <button type="button" class="nav-link" (click)="scrollTo('architecture')">Architecture</button>
+        </li>
+        <li>
+          <button type="button" class="nav-link" (click)="scrollTo('documentation')">Documentation</button>
+        </li>
+      </ul>
+
+      <div class="flex items-center gap-6">
+        <a routerLink="/login" class="text-sm text-neutral-400 transition-colors hover:text-neutral-100">
+          Sign In
+        </a>
+        <button
+          type="button"
+          class="cta-solid hidden sm:inline-flex"
+          (click)="scrollTo('access')"
+        >
+          Request Access
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="section-pad mx-auto max-w-6xl px-6 lg:px-8">
+      <div class="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-20">
+        <div class="max-w-xl pt-4 lg:pt-8">
+          <h1 class="type-display text-neutral-50">
+            Stop fraud<br />before settlement.
+          </h1>
+          <p class="type-body mt-6 max-w-md text-neutral-400">
+            Real-time ledger analysis at sub-millisecond latencies. Every transaction scored,
+            routed, and resolved before funds move.
+          </p>
+          <div class="mt-10">
+            <button type="button" class="cta-solid" (click)="scrollTo('access')">
+              Request Access
+            </button>
+            <p class="mt-4 font-mono text-xs text-neutral-500">
+              <span class="text-[#DC2626]">p99</span> decision latency
+              <span class="text-neutral-300">{{ avgLatency() }}ms</span>
+              · {{ throughput() | number }} events secured this session
+            </p>
+          </div>
+        </div>
+
+        <!-- Pulse terminal -->
+        <div class="pulse-terminal" aria-label="Live transaction scan stream" role="region">
+          <div class="pulse-terminal__chrome">
+            <span class="pulse-terminal__dot" aria-hidden="true"></span>
+            <span class="pulse-terminal__title">fraudpulse scan stream</span>
+            <span class="pulse-terminal__live">live</span>
+          </div>
+          <div class="pulse-terminal__head">
+            <span>Reference</span>
+            <span>Corridor</span>
+            <span>Amount</span>
+            <span>Status</span>
+            <span class="text-right">Latency</span>
+          </div>
+          <ul class="pulse-terminal__body">
+            @for (event of events(); track event.id) {
+              <li
+                class="pulse-terminal__row"
+                [class.pulse-terminal__row--unverified]="event.status === 'unverified'"
+                [class.pulse-terminal__row--secured]="event.status === 'secured'"
+                [class.pulse-terminal__row--flagged]="event.status === 'flagged'"
+              >
+                <span class="font-mono text-neutral-300">{{ event.ref }}</span>
+                <span class="truncate font-mono text-neutral-500">{{ event.corridor }}</span>
+                <span class="font-mono tabular-nums text-neutral-300">{{ event.amount }}</span>
+                <span class="status-pill" [attr.data-status]="event.status">
+                  {{ statusLabel(event.status) }}
+                </span>
+                <span class="text-right font-mono tabular-nums text-neutral-500">
+                  @if (event.latencyMs !== null) {
+                    {{ event.latencyMs }}ms
+                  } @else {
+                    —
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature grid -->
+    <section id="features" class="section-pad border-t border-neutral-800/80">
+      <div class="mx-auto max-w-6xl px-6 lg:px-8">
+        <p class="type-label">Technical capabilities</p>
+        <h2 class="type-heading mt-3 max-w-lg text-neutral-50">
+          Built for throughput, not dashboards.
+        </h2>
+
+        <div class="mt-16 grid gap-px bg-neutral-800 md:grid-cols-3">
+          <article class="feature-cell">
+            <p class="type-label">Throughput</p>
+            <h3 class="type-subheading mt-4 text-neutral-100">12M+ TPS envelope</h3>
+            <p class="type-body mt-3 text-neutral-400">
+              Horizontally sharded ingestion with deterministic partitioning across payment
+              corridors. No single hot shard under peak load.
+            </p>
+          </article>
+          <article class="feature-cell">
+            <p class="type-label">Latency</p>
+            <h3 class="type-subheading mt-4 text-neutral-100">Sub-ms scoring path</h3>
+            <p class="type-body mt-3 text-neutral-400">
+              Feature extraction and model inference co-located on the decision path.
+              p99 under 1ms at production scale.
+            </p>
+          </article>
+          <article class="feature-cell">
+            <p class="type-label">Models</p>
+            <h3 class="type-subheading mt-4 text-neutral-100">Ensemble risk stack</h3>
+            <p class="type-body mt-3 text-neutral-400">
+              Gradient-boosted tabular models with graph-derived entity features. Shadow-deployed
+              challengers with automatic rollback.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture" class="section-pad border-t border-neutral-800/80">
+      <div class="mx-auto max-w-6xl px-6 lg:px-8">
+        <p class="type-label">Architecture</p>
+        <h2 class="type-heading mt-3 max-w-xl text-neutral-50">
+          Event-native pipeline from ingest to decision.
+        </h2>
+        <p class="type-body mt-6 max-w-2xl text-neutral-400">
+          Kafka-backed ingestion, Flink feature computation, and a low-latency decision service
+          exposed via gRPC. Every decision is immutable, auditable, and replayable.
+        </p>
+
+        <dl class="mt-16 grid gap-px bg-neutral-800 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="feature-cell">
+            <dt class="type-label">Ingest</dt>
+            <dd class="type-subheading mt-3 text-neutral-100">Stream adapters</dd>
+          </div>
+          <div class="feature-cell">
+            <dt class="type-label">Compute</dt>
+            <dd class="type-subheading mt-3 text-neutral-100">Feature store</dd>
+          </div>
+          <div class="feature-cell">
+            <dt class="type-label">Decide</dt>
+            <dd class="type-subheading mt-3 text-neutral-100">Rules + ML</dd>
+          </div>
+          <div class="feature-cell">
+            <dt class="type-label">Audit</dt>
+            <dd class="type-subheading mt-3 text-neutral-100">Immutable log</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Trust -->
+    <section class="section-pad border-t border-neutral-800/80">
+      <div class="mx-auto max-w-6xl px-6 lg:px-8">
+        <p class="type-label text-center">Trusted by risk teams at</p>
+        <ul
+          class="trust-logos mt-12 flex flex-wrap items-center justify-center gap-x-14 gap-y-8"
+          aria-label="Enterprise customers"
+        >
+          <li><span class="trust-logo">Stripe</span></li>
+          <li><span class="trust-logo">Plaid</span></li>
+          <li><span class="trust-logo">Adyen</span></li>
+          <li><span class="trust-logo">Marqeta</span></li>
+          <li><span class="trust-logo">Checkout</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Documentation teaser -->
+    <section id="documentation" class="section-pad border-t border-neutral-800/80">
+      <div class="mx-auto max-w-6xl px-6 text-center lg:px-8">
+        <p class="type-label">Documentation</p>
+        <h2 class="type-heading mt-3 text-neutral-50">Integration in hours, not quarters.</h2>
+        <p class="type-body mx-auto mt-4 max-w-lg text-neutral-400">
+          REST and gRPC APIs, webhook callbacks, and sandbox environments with synthetic
+          transaction generators.
+        </p>
+        <a
+          routerLink="/login"
+          class="mt-8 inline-block text-sm text-neutral-400 underline decoration-neutral-700 underline-offset-4 transition-colors hover:text-neutral-100"
+        >
+          View API reference after sign-in →
+        </a>
+      </div>
+    </section>
+
+    <!-- Email capture -->
+    <section id="access" class="section-pad-lg border-t border-neutral-800/80">
+      <div class="mx-auto max-w-xl px-6 text-center lg:px-8">
+        <h2 class="type-heading text-neutral-50">Request access</h2>
+        <p class="type-body mt-4 text-neutral-400">
+          Enterprise deployments with dedicated onboarding. No credit card required.
+        </p>
+        <form class="mt-10 flex flex-col gap-3 sm:flex-row" (ngSubmit)="submitAccess()">
+          <label for="access-email" class="sr-only">Work email</label>
+          <input
+            id="access-email"
+            type="email"
+            name="email"
+            required
+            placeholder="you@company.com"
+            class="fp-field-input flex-1"
+            [ngModel]="accessEmail()"
+            (ngModelChange)="accessEmail.set($event)"
+          />
+          <button type="submit" class="cta-solid shrink-0">Submit</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-neutral-800/80 py-10">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs text-neutral-600 sm:flex-row lg:px-8">
+      <p>© {{ 2026 }} FraudPulse. All rights reserved.</p>
+      <p class="font-mono">Precision risk infrastructure.</p>
+    </div>
+  </footer>
+
+</div>
