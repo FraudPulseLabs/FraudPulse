@@ -8,7 +8,6 @@ from src.api.v1 import (
     alert_routes,
     decisions,
     demo,
-    metrics,
     profiles_routes,
     scoring_routes,
     transactions,
@@ -29,7 +28,6 @@ api_router.include_router(alert_routes.router, prefix="/alerts", tags=["alerts"]
 api_router.include_router(cases_routes.router, prefix="/cases", tags=["cases"], dependencies=_protected)
 api_router.include_router(watchlist_routes.router, prefix="/watchlist", tags=["watchlist"], dependencies=_protected)
 api_router.include_router(profiles_routes.router, prefix="/profiles", tags=["profiles"], dependencies=_protected)
-api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"], dependencies=_protected)
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"], dependencies=_protected)
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"], dependencies=_protected)
 
