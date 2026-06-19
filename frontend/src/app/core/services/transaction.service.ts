@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { MOCK_TRANSACTIONS, txStore } from '../mock/transactions.mock';
+import { txStore } from '../stores/transaction.store';
 import type { Transaction, TransactionApiRead, TransactionDetailApiRead } from '../models';
 import { mapTransactionDetailFromApi, mapTransactionFromApi } from '../models/transaction.model';
 
@@ -54,11 +54,6 @@ export class TransactionService {
     this.error.set(null);
     this.loading.set(true);
     try {
-      if (environment.useMock) {
-        txStore.set([...MOCK_TRANSACTIONS]);
-        return;
-      }
-
       const rows = await firstValueFrom(
         this.http.get<TransactionApiRead[]>(this.baseUrl),
       );
@@ -74,10 +69,6 @@ export class TransactionService {
 
   async fetchTransactionById(id: string): Promise<Transaction | undefined> {
     this.error.set(null);
-
-    if (environment.useMock) {
-      return this.getById(id);
-    }
 
     try {
       const row = await firstValueFrom(

@@ -21,6 +21,10 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
       </div>
     </div>
 
+    @if (error()) {
+      <div class="card mb-4 border border-red-200 bg-red-50 text-sm text-red-700">{{ error() }}</div>
+    }
+
     <!-- Status filter -->
     <div class="card mb-4">
       <div class="flex flex-wrap gap-2">
@@ -40,7 +44,9 @@ type CaseFilter = 'ACTIVE' | 'ALL' | CaseStatus;
 
     <!-- Case table -->
     <div class="card overflow-hidden">
-      @if (filtered().length === 0) {
+      @if (loading()) {
+        <p class="p-6 text-sm fp-text-secondary">Loading cases…</p>
+      } @else if (filtered().length === 0) {
         <app-empty-state message="No cases match this filter" />
       } @else {
         <div class="overflow-auto">
@@ -88,6 +94,9 @@ export class CaseListComponent implements OnInit {
 
   filters: CaseFilter[] = ['ACTIVE', 'ALL', 'OPEN', 'INVESTIGATING', 'CLOSED'];
   statusFilter = signal<CaseFilter>('ACTIVE');
+
+  readonly loading = this.caseService.loading;
+  readonly error = this.caseService.error;
 
   filtered = computed(() => {
     const filter = this.statusFilter();

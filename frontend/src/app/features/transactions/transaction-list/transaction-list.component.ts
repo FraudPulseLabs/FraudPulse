@@ -6,7 +6,6 @@ import type { Transaction, TransactionFeatures } from '../../../core/models';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { ScoreBarComponent } from '../../../shared/components/score-bar/score-bar.component';
-import { environment } from '../../../../environments/environment';
 
 type DecisionFilter = 'ALL' | 'ALLOW' | 'REVIEW' | 'BLOCK';
 type ScoreFilter = 'ANY' | 'LOW' | 'MEDIUM' | 'HIGH';
@@ -84,11 +83,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
       <div class="min-w-0">
         <h2 class="page-title">Transaction Monitor</h2>
         <p class="text-sm fp-text-secondary">
-          {{
-            useMock
-              ? 'Live fraud scoring decisions from the mock stream.'
-              : 'Live fraud scoring decisions from the API.'
-          }}
+          Live fraud scoring decisions from the API.
         </p>
       </div>
       <button type="button" class="btn-ghost" (click)="rescoreSelected()">Rescore selected</button>
@@ -335,7 +330,6 @@ const FEATURE_SECTIONS: FeatureSection[] = [
 export class TransactionListComponent implements OnInit {
   protected txService = inject(TransactionService);
   protected featureSections = FEATURE_SECTIONS;
-  protected useMock = environment.useMock;
 
   decisionFilter = signal<DecisionFilter>('ALL');
   userIdFilter = signal('');
@@ -414,7 +408,6 @@ export class TransactionListComponent implements OnInit {
 
   openTransaction(tx: Transaction): void {
     this.selectedTx.set(tx);
-    if (environment.useMock) return;
 
     this.detailLoading.set(true);
     void this.txService
