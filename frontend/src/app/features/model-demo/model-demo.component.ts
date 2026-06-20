@@ -29,6 +29,12 @@ interface DemoRow {
           predictions against known outcomes. Use single-row scoring to inspect feature
           contributions, or run the full batch to review aggregate performance.
         </p>
+        <p class="mt-2 rounded border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <strong>Note:</strong> scoring uses cold-start card history (no prior spend or
+          velocity), so this is a genuine unseen-data check but the aggregate accuracy here
+          is <strong>not</strong> directly comparable to the model's published offline
+          test-set metrics.
+        </p>
       </header>
 
       <div class="card flex flex-wrap items-center gap-3 !p-3">
