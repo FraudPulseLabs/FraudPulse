@@ -49,11 +49,19 @@ This project actively uses:
 
 ## Running unit tests
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Unit and component tests use Jest:
 
 ```bash
-ng test
+npm test
 ```
+
+Watch mode:
+
+```bash
+npm run test:watch
+```
+
+Coverage includes core services (alerts, cases, watchlist, transactions), model mappers, pipes, auth guards, and the overview dashboard component.
 
 ## Running end-to-end tests
 

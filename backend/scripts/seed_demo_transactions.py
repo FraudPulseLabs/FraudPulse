@@ -106,6 +106,21 @@ def build_demo_records() -> list[dict]:
     fraud_pool = test_df[test_df["is_fraud"] == 1]
     legit_pool = test_df[test_df["is_fraud"] == 0]
 
+    # Kenya corridor only — domestic issuer and transaction country.
+    def _kenya_rows(df: pd.DataFrame) -> pd.DataFrame:
+        return df[
+            (df["transaction_country"] == "KEN")
+            & (df["issuing_bank_country"] == "KEN")
+        ]
+
+    fraud_pool = _kenya_rows(fraud_pool)
+    legit_pool = _kenya_rows(legit_pool)
+
+    if fraud_pool.empty or legit_pool.empty:
+        raise RuntimeError(
+            "Not enough Kenya (KEN/KEN) rows in the test split to build the demo artifact."
+        )
+
     n_fraud = min(N_FRAUD, len(fraud_pool))
     n_legit = min(N_LEGIT, len(legit_pool))
 
@@ -116,7 +131,7 @@ def build_demo_records() -> list[dict]:
 
     print(
         f"Test split rows: {len(test_df):,} "
-        f"(fraud={len(fraud_pool):,}, legit={len(legit_pool):,}). "
+        f"(Kenya fraud={len(fraud_pool):,}, Kenya legit={len(legit_pool):,}). "
         f"Sampled {n_fraud} fraud + {n_legit} legit = {len(combined)} demo rows."
     )
 

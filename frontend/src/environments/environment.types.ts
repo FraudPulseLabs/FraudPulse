@@ -4,5 +4,4 @@ export interface AppEnvironment {
   supabaseUrl: string;
   supabasePublicKey: string;
   apiUrl: string;
-  useMock: boolean;
 }

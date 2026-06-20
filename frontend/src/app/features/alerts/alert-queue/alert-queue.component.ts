@@ -20,6 +20,10 @@ type SeverityFilter = 'ALL' | AlertSeverity;
       </div>
     </div>
 
+    @if (error()) {
+      <div class="card mb-4 border border-red-200 bg-red-50 text-sm text-red-700">{{ error() }}</div>
+    }
+
     <!-- Summary bar + severity filter -->
     <div class="card mb-4">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -51,7 +55,9 @@ type SeverityFilter = 'ALL' | AlertSeverity;
 
     <!-- Alert table -->
     <div class="card overflow-hidden">
-      @if (filtered().length === 0) {
+      @if (loading()) {
+        <p class="p-6 text-sm fp-text-secondary">Loading alerts…</p>
+      } @else if (filtered().length === 0) {
         <app-empty-state icon="Done" message="No alerts found" />
       } @else {
         <div class="overflow-auto">
@@ -87,6 +93,9 @@ export class AlertQueueComponent implements OnInit {
 
   severities: SeverityFilter[] = ['ALL', 'HIGH', 'MEDIUM', 'LOW'];
   severityFilter = signal<SeverityFilter>('ALL');
+
+  readonly loading = this.alertService.loading;
+  readonly error = this.alertService.error;
 
   // All alerts from the service
   private allAlerts = this.alertService.alerts;

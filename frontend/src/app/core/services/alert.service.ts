@@ -1,6 +1,6 @@
 // src/app/core/services/alert.service.ts
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import type { Alert, AlertReason, AlertSeverity } from '../models/alert.model';
 
@@ -19,18 +19,30 @@ interface AlertApiResponse {
   created_at: string;
 }
 
+function httpErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status === 0) {
+      return 'Cannot reach the API. Is the backend running? (CORS/network)';
+    }
+    const body = err.error as { detail?: string; message?: string } | null;
+    if (typeof body?.detail === 'string') return body.detail;
+    if (typeof body?.message === 'string') return body.message;
+    return err.message || fallback;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AlertService {
   private http = inject(HttpClient);
   private baseUrl = `${environment.apiUrl}/api/v1/alerts`;
 
-  // All loaded alerts held in a signal
   private _alerts = signal<Alert[]>([]);
-
-  // Public read-only view
   readonly alerts = this._alerts.asReadonly();
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
-  // Computed: count per severity across all alerts
   readonly countBySeverity = computed(() => {
     const all = this._alerts();
     return {
@@ -40,7 +52,6 @@ export class AlertService {
     };
   });
 
-  // Fetch alerts from the backend, optionally filtered
   load(params?: { reason?: AlertReason; severity?: AlertSeverity; transactionId?: string }): void {
     let httpParams = new HttpParams();
 
@@ -48,11 +59,21 @@ export class AlertService {
     if (params?.severity)      httpParams = httpParams.set('severity', params.severity);
     if (params?.transactionId) httpParams = httpParams.set('transaction_id', params.transactionId);
 
+    this.error.set(null);
+    this.loading.set(true);
+
     this.http
       .get<AlertListResponse>(this.baseUrl, { params: httpParams })
       .subscribe({
-        next: (res) => this._alerts.set(res.data.map(this._map)),
-        error: (err) => console.error('[AlertService] load failed', err),
+        next: (res) => {
+          this._alerts.set(res.data.map(this._map));
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.error.set(httpErrorMessage(err, 'Failed to load alerts'));
+          this.loading.set(false);
+          console.error('[AlertService] load failed', err);
+        },
       });
   }
 

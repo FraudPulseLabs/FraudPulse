@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { MOCK_WATCHLIST, watchlistStore } from '../mock/watchlist.mock';
+import { watchlistStore } from '../stores/watchlist.store';
 import type { ApiResponse } from '../models/api-response.model';
 import type {
   WatchlistApiEntry,
@@ -48,14 +48,6 @@ export class WatchlistService {
     this.error.set(null);
     this.loading.set(true);
     try {
-      if (environment.useMock) {
-        const rows = [...MOCK_WATCHLIST];
-        watchlistStore.set(
-          options?.includeExpired ? rows : rows.filter((e) => !isWatchlistEntryExpired(e)),
-        );
-        return;
-      }
-
       let params = new HttpParams().set(
         'include_expired',
         String(options?.includeExpired ?? false),
@@ -95,18 +87,6 @@ export class WatchlistService {
       expires_at: entry.expiresAt ?? null,
     };
 
-    if (environment.useMock) {
-      const newEntry: WatchlistEntry = {
-        ...entry,
-        addedBy: entry.addedBy || CREATED_BY,
-        id: `WL-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      };
-      watchlistStore.update((list) => [newEntry, ...list]);
-      this.toast.success('Added to watchlist');
-      return newEntry;
-    }
-
     const res = await firstValueFrom(
       this.http.post<ApiResponse<WatchlistApiEntry>>(this.baseUrl, payload),
     );
@@ -127,27 +107,6 @@ export class WatchlistService {
     this.error.set(null);
     const url = `${this.baseUrl}/${entityType}/${encodeURIComponent(entityId)}`;
 
-    if (environment.useMock) {
-      let updated!: WatchlistEntry;
-      watchlistStore.update((list) =>
-        list.map((e) => {
-          if (e.entityType !== entityType || e.entityId !== entityId) return e;
-          updated = {
-            ...e,
-            ...(payload.watchlist_reason !== undefined ? { reason: payload.watchlist_reason } : {}),
-            ...(payload.risk_severity !== undefined ? { severity: payload.risk_severity } : {}),
-            ...(payload.is_blacklist !== undefined ? { isBlacklist: payload.is_blacklist } : {}),
-            ...(payload.expires_at !== undefined
-              ? { expiresAt: payload.expires_at ?? undefined }
-              : {}),
-          };
-          return updated;
-        }),
-      );
-      this.toast.success('Watchlist entry updated');
-      return updated;
-    }
-
     const res = await firstValueFrom(
       this.http.patch<ApiResponse<WatchlistApiEntry>>(url, payload),
     );
@@ -167,14 +126,6 @@ export class WatchlistService {
   async remove(entityType: WatchlistEntityType, entityId: string): Promise<void> {
     this.error.set(null);
     const url = `${this.baseUrl}/${entityType}/${encodeURIComponent(entityId)}`;
-
-    if (environment.useMock) {
-      watchlistStore.update((list) =>
-        list.filter((e) => !(e.entityType === entityType && e.entityId === entityId)),
-      );
-      this.toast.success('Removed from watchlist');
-      return;
-    }
 
     const res = await firstValueFrom(this.http.delete<ApiResponse<null>>(url));
     if (!res.success) {

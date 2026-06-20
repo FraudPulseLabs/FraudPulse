@@ -9,7 +9,8 @@ def main() -> None:
     if not DATABASE_URL:
         print("DATABASE_URL not set; skipping seed.")
         return
-    print("Seed stub: create tables and insert demo rows via Alembic/SQLAlchemy here.")
+    print("Run: python -m scripts.seed_ops_data  (alerts, cases, watchlist)")
+    print("Run: python -m scripts.seed_demo_transactions  (model demo fixture)")
 
 
 if __name__ == "__main__":

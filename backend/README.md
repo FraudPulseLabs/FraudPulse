@@ -1,6 +1,6 @@
 # Backend
 
-FastAPI backend for the payment fraud detection system. It exposes API routes for transactions, scoring, decisions, alerts, cases, watchlists, profiles, metrics, and admin operations. It also keeps the ML data pipeline code under `ml/`.
+FastAPI backend for the payment fraud detection system. It exposes API routes for transactions, scoring, decisions, alerts, cases, watchlists, profiles, and admin operations. It also keeps the ML data pipeline code under `ml/`.
 
 ## Quick Start
 
@@ -56,7 +56,6 @@ Current route modules:
 - `cases.py` — investigation case endpoints.
 - `watchlist.py` — watchlist endpoints.
 - `profiles.py` — profile endpoints.
-- `metrics.py` — dashboard metrics.
 - `admin.py` — admin/settings endpoints.
 
 ## Database
@@ -109,13 +108,11 @@ pytest
 
 Test layout:
 
-- `tests/unit/` — focused tests for ML preprocessing, feature engineering, the
-  decision-service ingest pipeline (`test_decision_service.py`), and the
-  exact-match merchant blacklist helper (`test_watchlist_service.py`).
-- `tests/integration/` — app-level smoke tests such as `/health`.
+- `tests/conftest.py` — shared JWT auth fixtures for route integration tests
+- `tests/unit/` — service logic, ML preprocessing, scoring, decision ingest, alerts/cases/watchlist CRUD
+- `tests/integration/` — `/health`, auth gates, and ops API routes (alerts, cases, watchlist)
 
-The decision-service tests mock the SQLAlchemy session and the scorer, so the
-suite runs without a live database or model artefacts.
+Most tests mock the database and model artefacts, so the suite runs without a live Supabase connection.
 
 ## Useful Files
 

@@ -1,6 +1,6 @@
 // src/app/core/services/case.service.ts
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import type { CaseEvent, CaseNote, CaseStatus, CaseUpdate, FraudCase, ResolutionCode } from '../models';
 
@@ -54,6 +54,20 @@ export interface TransactionDetail {
   reasonCode: string | null;
 }
 
+function httpErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status === 0) {
+      return 'Cannot reach the API. Is the backend running? (CORS/network)';
+    }
+    const body = err.error as { detail?: string; message?: string } | null;
+    if (typeof body?.detail === 'string') return body.detail;
+    if (typeof body?.message === 'string') return body.message;
+    return err.message || fallback;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CaseService {
   private http = inject(HttpClient);
@@ -66,15 +80,27 @@ export class CaseService {
   private _transaction = signal<Record<string, TransactionDetail>>({});
 
   readonly cases       = this._cases.asReadonly();
+  readonly loading     = signal(false);
+  readonly error       = signal<string | null>(null);
 
   // ==========================================================================
   // Cases
   // ==========================================================================
 
   load(): void {
+    this.error.set(null);
+    this.loading.set(true);
+
     this.http.get<CaseApiResponse[]>(this.baseUrl).subscribe({
-      next: (res) => this._cases.set(res.map(this._mapCase)),
-      error: (err) => console.error('[CaseService] load failed', err),
+      next: (res) => {
+        this._cases.set(res.map(this._mapCase));
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.error.set(httpErrorMessage(err, 'Failed to load cases'));
+        this.loading.set(false);
+        console.error('[CaseService] load failed', err);
+      },
     });
   }
 
