@@ -13,5 +13,12 @@ __pycache__
 .env
 tests
 scripts
-ml/data
+# Exclude bulky training data, but keep the two artefacts the API needs at runtime:
+#   - ml/data/demo/demo_transactions.json   (GET /api/v1/demo/transactions)
+#   - ml/data/processed/encoding_maps.json  (scoring feature builder)
+ml/data/*
+!ml/data/demo
+!ml/data/processed
+ml/data/processed/*
+!ml/data/processed/encoding_maps.json
 *.md

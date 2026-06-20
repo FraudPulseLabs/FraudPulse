@@ -1,5 +1,5 @@
 node_modules
 .claude
-/backend/ml/__pycache__
-/backend/ml/__pycache__
-/backend/src/__pycache__
+.venv
+__pycache__/
+*.pyc
