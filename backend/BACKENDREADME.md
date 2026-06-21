@@ -22,7 +22,7 @@ False positives 	    4
 Missed frauds   	    2
 
 ## Model Comparison
-Metric	            Random Forest	        LightGBM
+Metric	            Random Forest	        LightGBM        V2 Tuned Calibrated LightGBM
 Accuracy	        99.96%	                99.94%
 Fraud precision	    100.00%	                98.61%
 Fraud recall	    98.60%	                99.30%
@@ -122,3 +122,80 @@ DECLINE                284
 Name: is_fraud, dtype: int64
 Model saved to: \backend\ml\artefacts\fraud_model.pkl
 Feature schema saved to: \backend\ml\artefacts\feature_schema.json
+
+
+## Tuned Calibrated LightGBM Version 2 result
+
+Dataset version: version2  
+Full training rows: 64762  
+Final testing rows: 16190  
+Number of features: 32  
+
+Model training rows:  45333  
+Validation rows:      9714  
+Calibration rows:     9715  
+
+Best validation PR-AUC: 0.750377  
+
+Best parameters:
+{
+  "subsample": 0.8,
+  "reg_lambda": 5.0,
+  "reg_alpha": 0.1,
+  "num_leaves": 15,
+  "n_estimators": 300,
+  "min_child_samples": 100,
+  "max_depth": 12,
+  "learning_rate": 0.08,
+  "colsample_bytree": 0.8
+}
+
+Confusion Matrix at 0.50 threshold:
+[[15540   116]
+ [  219   315]]
+
+Classification Report at 0.50 threshold:
+              precision    recall  f1-score   support
+
+           0     0.9861    0.9926    0.9893     15656
+           1     0.7309    0.5899    0.6528       534
+
+    accuracy                         0.9793     16190
+   macro avg     0.8585    0.7912    0.8211     16190
+weighted avg     0.9777    0.9793    0.9782     16190
+
+ROC-AUC: 0.9656550766574995
+PR-AUC: 0.720934490295165
+
+Decision Thresholds:
+{
+  "APPROVE": "score < 0.016541",
+  "APPROVE_WITH_REVIEW": "0.016541 <= score < 0.592932",
+  "DECLINE": "score >= 0.592932"
+}
+
+Decision Distribution:
+decision
+APPROVE                14321
+APPROVE_WITH_REVIEW     1577
+DECLINE                  292
+Name: count, dtype: int64
+
+Fraud Rate by Decision:
+decision
+APPROVE                0.004120
+APPROVE_WITH_REVIEW    0.140774
+DECLINE                0.866438
+Name: is_fraud, dtype: float64
+
+Fraud Count by Decision:
+decision
+APPROVE                 59
+APPROVE_WITH_REVIEW    222
+DECLINE                253
+Name: is_fraud, dtype: int64
+
+Tuned model saved to: \backend\ml\artefacts\version2\fraud_model_tuned.pkl
+Tuned feature schema saved to: \backend\ml\artefacts\version2\feature_schema_tuned.json
+Tuning results saved to: \backend\ml\artefacts\version2\tuning_results_v2.csv
+Best params saved to: \backend\ml\artefacts\version2\best_params_v2.json

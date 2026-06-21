@@ -1,0 +1,15 @@
+{
+  "selection_metric": "validation_pr_auc",
+  "best_validation_pr_auc": 0.7503768659686193,
+  "best_params": {
+    "subsample": 0.8,
+    "reg_lambda": 5.0,
+    "reg_alpha": 0.1,
+    "num_leaves": 15,
+    "n_estimators": 300,
+    "min_child_samples": 100,
+    "max_depth": 12,
+    "learning_rate": 0.08,
+    "colsample_bytree": 0.8
+  }
+}
