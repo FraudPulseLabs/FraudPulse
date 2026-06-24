@@ -525,6 +525,14 @@
   border: 1px solid var(--fp-sidebar-active-border);
 }
 
+@media (max-width: 767px) {
+  .fp-sidebar .nav-link,
+  .fp-sidebar .nav-link-active {
+    gap: 0.625rem;
+    padding-inline: 0.625rem;
+  }
+}
+
 /* Empty state */
 .empty-state {
   display: flex;
@@ -700,6 +708,49 @@
   color: #fff;
 }
 
+/* ─── Marketing layout primitives ──────────────────────────────────── */
+.landing-container {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .landing-container {
+    padding-inline: 2rem;
+  }
+}
+
+.landing-container--footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--fp-text-muted);
+}
+
+@media (min-width: 640px) {
+  .landing-container--footer {
+    flex-direction: row;
+  }
+}
+
+.access-form {
+  max-width: 36rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  text-align: left;
+  background-color: var(--fp-surface-muted);
+  border-radius: 2px;
+}
+
+.access-form .fp-field-input {
+  font-weight: 500;
+}
+
 /* ─── Body defaults ─────────────────────────────────────────────── */
 body {
   font-family: var(--font-sans);
@@ -710,6 +761,10 @@ body {
 
 html, body {
   min-height: 100%;
+}
+
+body.nav-open {
+  overflow: hidden;
 }
 
 /* Prevent flash of wrong theme */
