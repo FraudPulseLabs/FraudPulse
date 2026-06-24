@@ -22,3 +22,5 @@ ml/data/*
 ml/data/processed/*
 !ml/data/processed/encoding_maps.json
 *.md
+# Keep the RAG corpus in the image (overrides the *.md ignore above).
+!rag/docs/*.md
