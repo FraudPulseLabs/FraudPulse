@@ -1,0 +1,71 @@
+{
+  "in_corpus": [
+    {
+      "question": "What is FraudPulse?",
+      "expected_keywords": ["fraud", "payment", "real-time", "score"],
+      "expected_source": "01-product-overview.md"
+    },
+    {
+      "question": "What are the three decisions a transaction can get?",
+      "expected_keywords": ["allow", "review", "block"],
+      "expected_source": "03-decisions-and-case-workflow.md"
+    },
+    {
+      "question": "What machine learning model does FraudPulse use?",
+      "expected_keywords": ["lightgbm", "calibrated"],
+      "expected_source": "02-scoring-methodology.md"
+    },
+    {
+      "question": "How does FraudPulse extract features for scoring?",
+      "expected_keywords": ["velocity", "amount", "feature"],
+      "expected_source": "02-scoring-methodology.md"
+    },
+    {
+      "question": "What is the difference between an alert and a case?",
+      "expected_keywords": ["alert", "case", "investigation"],
+      "expected_source": "03-decisions-and-case-workflow.md"
+    },
+    {
+      "question": "How does authentication work in the API?",
+      "expected_keywords": ["jwt", "supabase", "token"],
+      "expected_source": "04-api-reference.md"
+    },
+    {
+      "question": "What is the tech stack behind FraudPulse?",
+      "expected_keywords": ["fastapi", "angular", "postgres"],
+      "expected_source": "05-architecture-and-tech-stack.md"
+    },
+    {
+      "question": "Where is the backend hosted?",
+      "expected_keywords": ["oracle", "docker"],
+      "expected_source": "05-architecture-and-tech-stack.md"
+    },
+    {
+      "question": "How do I get access to FraudPulse?",
+      "expected_keywords": ["request access", "form", "email"],
+      "expected_source": "07-access-and-onboarding.md"
+    },
+    {
+      "question": "Is FraudPulse data encrypted in transit?",
+      "expected_keywords": ["tls", "encrypted"],
+      "expected_source": "06-security-and-compliance.md"
+    },
+    {
+      "question": "Can I try FraudPulse without an account?",
+      "expected_keywords": ["demo", "without"],
+      "expected_source": "07-access-and-onboarding.md"
+    },
+    {
+      "question": "How fast is transaction scoring?",
+      "expected_keywords": ["millisecond", "real time"],
+      "expected_source": "08-faq.md"
+    }
+  ],
+  "out_of_corpus": [
+    { "question": "What is the capital of France?" },
+    { "question": "Write me a poem about the ocean." },
+    { "question": "What is the weather today?" },
+    { "question": "How do I bake sourdough bread?" },
+    { "question": "Who won the World Cup in 2022?" }
+  ]
+}
