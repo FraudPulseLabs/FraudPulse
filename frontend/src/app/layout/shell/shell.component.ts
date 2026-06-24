@@ -29,11 +29,11 @@ interface NavItem {
       }
 
       <aside
-        class="fp-sidebar fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r transition-transform duration-200 md:static md:w-60 md:max-w-none md:translate-x-0"
+        class="fp-sidebar fixed inset-y-0 left-0 z-40 flex w-[min(15rem,72vw)] flex-col border-r transition-transform duration-200 md:static md:w-60 md:max-w-none md:translate-x-0"
         [class.-translate-x-full]="!navOpen()"
         style="background-color: var(--fp-sidebar-bg); border-color: var(--fp-sidebar-border)"
       >
-        <div class="border-b px-5 py-5" style="border-color: var(--fp-sidebar-border)">
+        <div class="border-b px-4 py-4 md:px-5 md:py-5" style="border-color: var(--fp-sidebar-border)">
           <div class="flex items-center gap-2.5">
             <span
               class="flex h-7 w-7 items-center justify-center rounded-sm text-[10px] font-bold tracking-tighter"
@@ -46,7 +46,7 @@ interface NavItem {
           </div>
         </div>
 
-        <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+        <nav class="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-4 md:px-3">
           @for (item of navItems; track item.path) {
             <a
               [routerLink]="item.path"
@@ -61,7 +61,7 @@ interface NavItem {
           }
         </nav>
 
-        <div class="border-t px-3 py-4" style="border-color: var(--fp-sidebar-border)">
+        <div class="border-t px-2.5 py-4 md:px-3" style="border-color: var(--fp-sidebar-border)">
           <div class="flex items-center gap-2 px-2 py-2">
             <div
               class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
