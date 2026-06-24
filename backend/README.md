@@ -4,12 +4,22 @@ FastAPI backend for the payment fraud detection system. It exposes API routes fo
 
 ## Quick Start
 
-Run these commands from the `backend/` directory:
+Run these commands from the `backend/` directory. Use **Python 3.11 or 3.12**
+(the RAG assistant depends on `torch`, which has no wheels for 3.14):
 
 ```bash
-pip install -r requirements.txt
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+# CPU-only torch first to avoid the large CUDA packages:
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt -r requirements-rag.txt
 python run.py
 ```
+
+`requirements-rag.txt` holds the assistant extras (embeddings, FAISS, Groq).
+If you don't need the assistant, you can skip the torch + `requirements-rag.txt`
+steps and just `pip install -r requirements.txt`.
 
 After the server starts:
 
@@ -57,6 +67,7 @@ Current route modules:
 - `watchlist.py` — watchlist endpoints.
 - `profiles.py` — profile endpoints.
 - `admin.py` — admin/settings endpoints.
+- `assistant.py` — **public** `POST /assistant/chat`, the landing-page RAG assistant. It answers questions strictly from the FraudPulse docs corpus and refuses out-of-corpus questions. See `rag/README.md` (incl. where to put the `GROQ_API_KEY`).
 
 ## Database
 
@@ -121,4 +132,5 @@ Most tests mock the database and model artefacts, so the suite runs without a li
 - `src/core/config.py` — environment variables and project paths.
 - `src/db/session.py` — database engine/session setup.
 - `scripts/seed.py` — placeholder for future seed data.
+- `rag/` — the retrieval-augmented-generation assistant (corpus, index, pipeline). Build the index with `python -m rag.scripts.build_vector_db`; full guide in `rag/README.md`.
 - `BACKEND_FILES_EXPLAINED.txt` — beginner-friendly file-by-file backend guide.
