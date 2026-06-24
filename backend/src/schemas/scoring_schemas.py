@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # =============================================================================
@@ -118,6 +118,8 @@ class ScoringResponse(BaseModel):
     Decision logic (APPROVE / REVIEW / DECLINE) is applied by the caller
     using the thresholds from GET /schema.
     """
+    model_config = ConfigDict(protected_namespaces=())
+
     score:         float = Field(..., ge=0, le=1)
     model_name:    str
     contributions: list[FeatureContribution] | None = None   # None if explain=False

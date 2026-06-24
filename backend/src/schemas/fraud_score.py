@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class FraudScoreRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: uuid.UUID
     transaction_id: uuid.UUID
