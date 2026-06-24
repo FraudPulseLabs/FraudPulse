@@ -1,0 +1,9 @@
+# RAG assistant extras — heavy ML deps kept separate from the core backend so
+# tests and the core install stay lightweight. Installed in the Docker image
+# alongside requirements.txt. See backend/rag/README.md.
+#   pip install -r requirements.txt -r requirements-rag.txt
+
+sentence-transformers==3.3.1   # local embeddings (all-MiniLM-L6-v2), pulls torch
+faiss-cpu==1.9.0               # vector store (IndexFlatIP / cosine)
+groq==0.13.0                   # Groq LLM client for answer generation
+pypdf==5.1.0                   # optional: load .pdf corpus files
