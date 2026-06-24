@@ -53,6 +53,57 @@ jobs:
           DATABASE_URL: "sqlite:///:memory:"
         run: python -m pytest -v --cov=ml --cov=src
 
+  # RAG job: installs the assistant extras, builds the vector index from the
+  # docs corpus, and runs a retrieval smoke test. Generation (Groq) is not
+  # exercised here since it needs a secret API key; retrieval + refusal logic
+  # are fully validated offline.
+  rag-index:
+    name: RAG (build index + smoke test)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-rag.txt
+
+      - name: Install RAG dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-rag.txt
+
+      - name: Build vector index
+        run: python -m rag.scripts.build_vector_db
+
+      - name: Retrieval smoke test
+        run: |
+          python - <<'PY'
+          from rag.app.rag_system import RagSystem
+          from rag.config import MIN_RELEVANCE_SCORE
+
+          rag = RagSystem()
+          # In-corpus question should retrieve a relevant chunk.
+          hits = rag.retrieve("What are the allow review block decisions?")
+          assert hits, "no chunks retrieved for an in-corpus question"
+          assert hits[0].score >= MIN_RELEVANCE_SCORE, hits[0].score
+
+          # Out-of-corpus question should be refused without an LLM call.
+          ans = rag.answer("What is the capital of France?")
+          assert ans.refused, "out-of-corpus question was not refused"
+          print("RAG smoke test passed:", round(hits[0].score, 3))
+          PY
+
   # Frontend job: installs Node deps and runs Jest. Jest picks up any
   # *.spec.ts files via frontend/jest.config.js and tsconfig.spec.json.
   frontend-tests:
