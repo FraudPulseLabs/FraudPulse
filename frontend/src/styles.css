@@ -716,6 +716,12 @@
   padding-inline: 1.5rem;
 }
 
+@media (max-width: 767px) {
+  .landing-container {
+    padding-inline: 1.75rem;
+  }
+}
+
 @media (min-width: 1024px) {
   .landing-container {
     padding-inline: 2rem;
