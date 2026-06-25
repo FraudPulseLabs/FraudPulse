@@ -11,6 +11,16 @@
   padding: 2.5rem;
 }
 
+.login .type-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.login .fp-field-input {
+  font-weight: 500;
+}
+
 .login-card__header {
   margin-bottom: 2rem;
 }
@@ -26,8 +36,9 @@
 
 .login-card__subtitle {
   margin-top: 0.75rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.65;
   color: var(--fp-text-secondary);
 }
 
@@ -80,6 +91,7 @@
 .login-error {
   padding: 0.75rem 1rem;
   font-size: 0.8125rem;
+  font-weight: 500;
   line-height: 1.5;
   color: #fca5a5;
   background-color: rgb(220 38 38 / 0.08);
@@ -102,6 +114,7 @@
 
 .login-footer__link {
   font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--fp-text-muted);
   text-decoration: none;
   transition: color 0.15s ease;

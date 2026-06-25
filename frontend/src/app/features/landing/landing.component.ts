@@ -1,8 +1,9 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AccessRequestService } from '../../core/services/access-request.service';
+import { ChatbotWidgetComponent } from '../../shared/components/chatbot/chatbot-widget.component';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 
 type ScanStatus = 'unverified' | 'secured' | 'flagged';
@@ -25,16 +26,21 @@ const MERCHANTS = [
   'sepa://instant',
 ];
 
+/** Neutral logo-slot labels — not real company names. */
+const TRUST_PLACEHOLDERS = ['Logo', 'Logo', 'Logo', 'Logo', 'Logo', 'Logo'] as const;
+
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, FormsModule, ThemeToggleComponent],
+  imports: [DecimalPipe, RouterLink, FormsModule, ThemeToggleComponent, ChatbotWidgetComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.css',
 })
 export class LandingComponent implements OnInit, OnDestroy {
   private readonly accessRequests = inject(AccessRequestService);
 
+  readonly trustPlaceholders = TRUST_PLACEHOLDERS;
+  readonly navOpen = signal(false);
   readonly accessEmail = signal('');
   readonly accessCompany = signal('');
   readonly accessSubmitting = signal(false);
@@ -59,9 +65,34 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.intervalId) clearInterval(this.intervalId);
+    document.body.classList.remove('nav-open');
+  }
+
+  toggleNav(): void {
+    this.navOpen.update(open => !open);
+    document.body.classList.toggle('nav-open', this.navOpen());
+  }
+
+  closeNav(): void {
+    if (!this.navOpen()) return;
+    this.navOpen.set(false);
+    document.body.classList.remove('nav-open');
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (window.matchMedia('(min-width: 768px)').matches) {
+      this.closeNav();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeNav();
   }
 
   scrollTo(id: string): void {
+    this.closeNav();
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 

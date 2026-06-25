@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from src.api.v1 import (
     access,
     admin,
+    assistant,
     auth,
     cases_routes,
     alert_routes,
@@ -34,5 +35,6 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"], dependenci
 # Public — no authentication required.
 api_router.include_router(demo.router, prefix="/demo", tags=["demo"])
 api_router.include_router(access.router, prefix="/access", tags=["access"])
+api_router.include_router(assistant.router, prefix="/assistant", tags=["assistant"])
 
 __all__ = ["api_router"]

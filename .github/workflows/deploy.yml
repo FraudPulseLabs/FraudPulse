@@ -67,6 +67,7 @@ jobs:
       OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
       OCI_SSH_KNOWN_HOSTS: ${{ secrets.OCI_SSH_KNOWN_HOSTS }}
       BACKEND_DATABASE_URL: ${{ secrets.BACKEND_DATABASE_URL }}
+      BACKEND_GROQ_API_KEY: ${{ secrets.BACKEND_GROQ_API_KEY }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
       GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
       IMAGE_REPO: ${{ needs.build-and-push.outputs.image_repo }}
@@ -77,6 +78,7 @@ jobs:
         run: |
           echo "::add-mask::$OCI_SSH_PRIVATE_KEY"
           echo "::add-mask::$BACKEND_DATABASE_URL"
+          echo "::add-mask::$BACKEND_GROQ_API_KEY"
           echo "::add-mask::$GHCR_READ_TOKEN"
 
       - name: Configure SSH
@@ -93,7 +95,10 @@ jobs:
           set +x
           ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "mkdir -p ~/fraudpulse && chmod 700 ~/fraudpulse"
 
-          printf 'DATABASE_URL=%s\n' "$BACKEND_DATABASE_URL" | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
+          {
+            printf 'DATABASE_URL=%s\n' "$BACKEND_DATABASE_URL"
+            printf 'GROQ_API_KEY=%s\n' "$BACKEND_GROQ_API_KEY"
+          } | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
 
           printf '%s\n' \
             'services:' \

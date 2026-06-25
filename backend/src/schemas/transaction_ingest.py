@@ -19,7 +19,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.schemas.scoring_schemas import (
     AuthenticationMethod,
@@ -84,6 +84,8 @@ class TransactionIngestRequest(BaseModel):
 
 class TransactionDecisionResponse(BaseModel):
     """Returned by POST /transactions."""
+
+    model_config = ConfigDict(protected_namespaces=())
 
     transaction_id: uuid.UUID
     decision: str  # APPROVE | APPROVE_WITH_REVIEW | DECLINE
