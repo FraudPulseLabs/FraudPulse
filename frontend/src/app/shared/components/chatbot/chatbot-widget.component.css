@@ -173,6 +173,7 @@
   font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.5;
+  white-space: pre-line;
   color: var(--fp-text);
   background-color: var(--fp-surface-muted);
   border: 1px solid var(--fp-border);

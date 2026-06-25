@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from rag.app.prompts import Source
-from rag.app.rag_system import RagSystem, normalize_citations
+from rag.app.rag_system import RagSystem, normalize_citations, to_plain_text
 
 
 def _source(number: int, filename: str = "doc.md") -> Source:
@@ -73,4 +73,34 @@ def test_validate_returns_normalized_answer():
 
     assert grounded is True
     assert final == "Details in [1] and [2]."
+    assert [s.number for s in cited] == [1, 2]
+
+
+def test_to_plain_text_strips_markdown():
+    raw = "**FraudPulse** uses `LightGBM` and:\n- ALLOW\n- REVIEW"
+
+    plain = to_plain_text(raw)
+
+    assert plain == "FraudPulse uses LightGBM and:\nALLOW\nREVIEW"
+    assert "**" not in plain
+    assert "`" not in plain
+
+
+def test_to_plain_text_strips_links_and_numbered_lists():
+    raw = "See [docs](/api) for details.\n1. ALLOW\n2. REVIEW"
+
+    plain = to_plain_text(raw)
+
+    assert plain == "See docs for details.\nALLOW\nREVIEW"
+
+
+def test_validate_strips_markdown_and_renumbers_citations():
+    sources = [_source(1), _source(2), _source(3)]
+    answer = "**Risk** is scored [3]. **Decisions** include [1]."
+
+    grounded, cited, final = RagSystem.validate(answer, sources)
+
+    assert grounded is True
+    assert final == "Risk is scored [1]. Decisions include [2]."
+    assert "**" not in final
     assert [s.number for s in cited] == [1, 2]

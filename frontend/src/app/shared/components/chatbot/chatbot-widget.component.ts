@@ -28,6 +28,19 @@ const SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
   { label: 'How do I get access?', query: 'How do I get access?' },
 ];
 
+/** Fallback sanitizer in case the API returns residual Markdown markers. */
+function stripAssistantMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*/g, '')
+    .replace(/`/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '');
+}
+
 @Component({
   selector: 'app-chatbot-widget',
   standalone: true,
@@ -102,7 +115,7 @@ export class ChatbotWidgetComponent {
                 const heading = s.heading ? ` — ${s.heading}` : '';
                 return `[${s.number}] ${s.title}${heading}`;
               });
-        this.pushMessage('bot', res.answer, sources);
+        this.pushMessage('bot', stripAssistantMarkdown(res.answer), sources);
       },
       error: () => {
         this.typing.set(false);

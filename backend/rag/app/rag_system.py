@@ -82,6 +82,24 @@ def normalize_citations(
     return normalized_answer, normalized_sources, grounded
 
 
+def to_plain_text(answer: str) -> str:
+    """Strip common Markdown markers so chat responses render as plain text."""
+    text = answer
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    text = re.sub(r"\*(.+?)\*", r"\1", text)
+    text = re.sub(r"_(.+?)_", r"\1", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^[-*]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^\d+\.\s+", "", text, flags=re.MULTILINE)
+    text = text.replace("**", "").replace("__", "").replace("`", "")
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
 @dataclass(slots=True)
 class RagAnswer:
     """The result of answering a question."""
@@ -176,14 +194,15 @@ class RagSystem:
     @staticmethod
     def validate(answer: str, sources: list[Source]) -> tuple[bool, list[Source], str]:
         """Check grounding and return sequential citations aligned to sources."""
-        lowered = answer.lower()
+        cleaned = to_plain_text(answer)
+        lowered = cleaned.lower()
         if _NO_INFO_MARKER in lowered:
-            return False, [], answer
+            return False, [], cleaned
 
         normalized_answer, normalized_sources, grounded = normalize_citations(
-            answer, sources
+            cleaned, sources
         )
-        return grounded, normalized_sources, normalized_answer
+        return grounded, normalized_sources, to_plain_text(normalized_answer)
 
     # ------------------------------------------------------------------ #
     # Public entry point
@@ -250,4 +269,4 @@ def get_rag_system() -> RagSystem:
     return RagSystem()
 
 
-__all__ = ["RagSystem", "RagAnswer", "get_rag_system", "normalize_citations"]
+__all__ = ["RagSystem", "RagAnswer", "get_rag_system", "normalize_citations", "to_plain_text"]

@@ -64,7 +64,8 @@ def build_user_prompt(question: str, results: list[SearchResult]) -> str:
     """Assemble the final user message: context + question + citation reminder."""
     context = format_context(results)
     return (
-        "Answer the question using ONLY the context below. Cite the sources you "
+        "Answer the question using ONLY the context below. Write the answer in plain "
+        "text only (no Markdown, no ** bold, no bullet lists). Cite the sources you "
         "use with bracketed numbers like [1] or [2][3]. If the context does not "
         "contain the answer, say you don't have information about that in the "
         "FraudPulse documentation.\n\n"
