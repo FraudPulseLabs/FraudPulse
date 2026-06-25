@@ -28,7 +28,8 @@ FraudPulse is a modular fraud detection system that processes transactions, comp
 ## 2. Live Deployments
 
 - Frontend: [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
-- Backend Health/API: [https://fraudpulse.duckdns.org/docs/health](https://fraudpulse.duckdns.org/docs/health)
+- Backend (API docs): [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs)
+- Backend (health): [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health)
 
 ## 3. Architecture
 
