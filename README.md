@@ -1,84 +1,170 @@
-# Payment Fraud Detection System
+# FraudPulse
 
-## Overview
+FraudPulse is a modular fraud detection platform for card payments that combines machine learning, AI, analytics, and Retrieval-Augmented Generation (RAG) support to help teams detect suspicious activity and act faster.
 
-This project is a **modular fraud detection system for card payments**. It processes transaction data, generates fraud risk scores, and classifies transactions into **ALLOW, REVIEW, or BLOCK** using a combination of rules and machine learning.
+## Table of Contents
 
-The system is designed as a full pipeline:
+- [1. Overview](#1-overview)
+- [2. Live Deployments](#2-live-deployments)
+- [3. Architecture](#3-architecture)
+- [4. Machine Learning](#4-machine-learning)
+- [5. AI Support Assistant](#5-ai-support-assistant)
+- [6. Features](#6-features)
+  - [6.1 Core Capabilities](#61-core-capabilities)
+  - [6.2 Back-office Processing](#62-back-office-processing)
+  - [6.3 Investigation System](#63-investigation-system)
+- [7. System Architecture](#7-system-architecture)
+- [8. Technology Stack](#8-technology-stack)
+- [9. Key Repository Structure](#9-key-repository-structure)
+- [10. Branch Protection Rules](#10-branch-protection-rules)
+- [11. Key Outputs](#11-key-outputs)
+- [12. Team](#12-team)
+- [13. License](#13-license)
 
-* Transaction ingestion API
-* Fraud scoring engine
-* Decision system
-* Case management workflow
-* Dashboard for monitoring and investigation
+## 1. Overview
 
-# System Architecture
+FraudPulse is a modular fraud detection system that processes transactions, computes fraud risk scores, and classifies payments into **ALLOW**, **REVIEW**, or **BLOCK**. It is designed as an end-to-end workflow covering ingestion, scoring, decisioning, investigation, and monitoring.
 
-The system is organized into the following components:
+## 2. Live Deployments
 
-* **Transaction Ingestion API** → receives and validates transactions
-* **Fraud Scoring Engine** → generates risk scores (rules + ML)
-* **Decision Engine** → classifies transactions
-* **Data Layer** → stores transactions, scores, and cases
-* **Back-office Processor** → re-evaluates and detects patterns
-* **Case Management System** → investigation workflow
-* **Dashboard** → monitoring and analytics UI
+- Frontend: [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
+- Backend Health/API: [https://fraudpulse.duckdns.org/docs/health](https://fraudpulse.duckdns.org/docs/health)
 
-# Repository Structure
+## 3. Architecture
 
+FraudPulse uses a layered architecture with a web client, API services, and fraud intelligence engines, where the **ML fraud engine is the primary decision layer** and the **RAG assistant is a secondary support capability**.
+
+- **Angular frontend**: user dashboards, case views, and support assistant interface
+- **FastAPI backend**: fraud APIs, decisioning endpoints, and service orchestration
+- **ML fraud detection engine (primary)**: risk scoring, prediction, and fraud classification
+- **Analytics services**: trends, metrics, and back-office monitoring
+- **RAG-powered AI support assistant**: context retrieval and grounded natural-language responses
+
+```mermaid
+flowchart TD
+    A[Angular Frontend] --> B[FastAPI Backend]
+    B --> C[ML Engine (Primary)]
+    B --> D[Analytics Services]
+    B --> E[RAG Assistant (Support)]
 ```
-/backend        → API, scoring, decision engine  
-/frontend       → dashboard UI  
-/data           → datasets & schemas
+
+## 4. Machine Learning
+
+FraudPulse’s ML capabilities form the primary fraud intelligence layer for both real-time and back-office fraud operations.
+
+- **Fraud prediction**: estimates probability of fraudulent activity per transaction
+- **Risk scoring**: produces normalized fraud scores to support decision thresholds
+- **Pattern analysis**: identifies suspicious trends and recurring behavior across events
+- **Hybrid decisioning**: combines ML and rules for robust **ALLOW/REVIEW/BLOCK** outcomes
+
+## 5. AI Support Assistant
+
+The AI support assistant is a secondary support layer for product guidance and operational help. It uses RAG to provide context-aware responses and does not replace the core ML-based fraud decisioning pipeline.
+
+- **RAG architecture**: combines context retrieval with LLM generation for grounded answers
+- **Knowledge base**: currently uses curated synthetic support content indexed for domain-specific responses
+- **Workflow**:
+  1. User submits a question
+  2. Relevant context is retrieved from the indexed knowledge base
+  3. Retrieved context is injected into the LLM prompt
+  4. The LLM generates a context-grounded answer
+
+```mermaid
+flowchart TD
+    Q[User Question] --> R[Retriever]
+    K[(Indexed Synthetic Knowledge Base)] --> R
+    R --> P[Prompt Builder (Question + Context)]
+    P --> L[LLM Response (Grounded Support Answer)]
 ```
 
-# Features
+## 6. Features
 
-## Core Capabilities
+### 6.1 Core Capabilities
 
-* Real-time transaction ingestion
-* Fraud risk scoring
-* Rule-based + ML-based detection
-* Automated decisioning (ALLOW / REVIEW / BLOCK)
-* Case creation from alerts
+- Real-time transaction ingestion
+- Fraud risk scoring
+- Rule-based + ML-based detection
+- Automated decisioning (**ALLOW / REVIEW / BLOCK**)
+- Case creation from alerts
 
-## Back-office Processing
+### 6.2 Back-office Processing
 
-* Event reprocessing
-* Fraud pattern detection
-* Batch evaluation of transactions
+- Event reprocessing
+- Fraud pattern detection
+- Batch evaluation of transactions
 
-## Investigation System
+### 6.3 Investigation System
 
-* Case lifecycle management
-* Alert grouping
-* Analyst workflow support
+- Case lifecycle management
+- Alert grouping
+- Analyst workflow support
 
-# Tech Stack
+## 7. System Architecture
 
-* Backend: Python
-* ML: 
-* API: REST
-* Database: Supabase
-* Frontend:Angular v20, Tailwind v4
-* CI/CD: GitHub Actions
+The complete fraud operations flow includes:
 
-# Branch Protection Rules
+- **Transaction Ingestion API**: receives and validates transactions
+- **Fraud Scoring Engine**: computes risk (rules + ML)
+- **Decision Engine**: classifies transactions
+- **Data Layer**: stores transactions, scores, and cases
+- **Back-office Processor**: re-evaluates and detects long-range patterns
+- **Case Management System**: supports investigation workflows
+- **Dashboard**: monitoring and analytics UI
 
-* No direct pushes to `main`
-* All changes require Pull Requests
-* At least 1 approval required
-* CI checks must pass before merge
+```mermaid
+flowchart TD
+    I[Transaction Ingestion API] --> S[Fraud Scoring Engine]
+    S --> D[Decision Engine]
+    D --> C[Case Management System]
+    C --> U[Dashboard]
+    I --> X[(Data Layer / Analytics)]
+    S --> X
+    D --> X
+    C --> X
+    U --> X
+```
 
-# Key Outputs
+## 8. Technology Stack
 
-* Fraud risk score (0–1)
-* Decision: ALLOW / REVIEW / BLOCK
-* Case creation for flagged transactions
+- **Frontend**: Angular
+- **Backend**: FastAPI, Python REST services
+- **AI/RAG**: retrieval pipeline, vector index, LLM-based response generation
+- **Machine Learning**: fraud classification and risk-scoring models
+- **Data & Infrastructure**: Supabase, CI/CD with GitHub Actions, containerized services
 
-# Team
+## 9. Key Repository Structure
 
-* Project Owner: Macharia Kibandi
-* Scrum Master: Victor Asena
-* Olalekan Erinoso
-* James Kilonzo
+```text
+.
+├── backend/      -> FastAPI API, ML engine, RAG services, tests
+├── frontend/     -> Angular application (UI, routing, feature modules)
+├── .github/      -> CI workflows and project automation
+├── render.yaml   -> deployment configuration
+└── README.md     -> project documentation
+```
+
+## 10. Branch Protection Rules
+
+- No direct pushes to `main`
+- All changes require Pull Requests
+- At least 1 approval required
+- CI checks must pass before merge
+
+## 11. Key Outputs
+
+- Fraud risk score (0-1)
+- Decision: `ALLOW` / `REVIEW` / `BLOCK`
+- Case creation for flagged transactions
+
+## 12. Team
+
+- **Macharia Kibandi** · Project Owner
+- **Victor Asena** · Scrum Master
+- **Olalekan Erinoso** · Team Member
+- **James Kilonzo** · Team Member
+
+## 13. License
+
+FraudPulse is licensed under the **MIT License**.
+
+This license allows you to use, modify, and distribute the software with minimal restrictions. See the [LICENSE](LICENSE) file for full terms and details.
