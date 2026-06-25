@@ -30,17 +30,9 @@
       </ul>
 
       <div class="site-nav__actions">
-        <app-theme-toggle />
-        <a routerLink="/login" class="site-nav__sign-in fp-text-secondary transition-colors hover:fp-text-primary" (click)="closeNav()">
+        <a routerLink="/login" class="site-nav__sign-in" (click)="closeNav()">
           Sign In
         </a>
-        <button
-          type="button"
-          class="cta-solid site-nav__cta"
-          (click)="scrollTo('access')"
-        >
-          Request Access
-        </button>
         <button
           type="button"
           class="site-nav__toggle"
@@ -54,6 +46,7 @@
           <span class="site-nav__toggle-bar" aria-hidden="true"></span>
           <span class="site-nav__toggle-bar" aria-hidden="true"></span>
         </button>
+        <app-theme-toggle />
       </div>
     </nav>
 
@@ -73,11 +66,6 @@
         </li>
         <li>
           <button type="button" class="site-nav__drawer-link" (click)="scrollTo('documentation')">Documentation</button>
-        </li>
-        <li class="site-nav__drawer-cta">
-          <button type="button" class="cta-solid cta-solid--block" (click)="scrollTo('access')">
-            Request Access
-          </button>
         </li>
       </ul>
     </div>

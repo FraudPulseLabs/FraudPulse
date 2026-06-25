@@ -69,13 +69,30 @@
 }
 
 .site-nav__sign-in {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.875rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--fp-text);
   text-decoration: none;
+  background-color: var(--fp-surface);
+  border: 1px solid var(--fp-border);
+  border-radius: 2px;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.site-nav__cta {
-  display: none;
+.site-nav__sign-in:hover {
+  background-color: var(--fp-hover);
+  color: var(--fp-text);
+}
+
+.site-nav__sign-in:focus-visible {
+  outline: 2px solid var(--fp-focus-ring);
+  outline-offset: 2px;
 }
 
 .site-nav__toggle {
@@ -109,10 +126,6 @@
 @media (min-width: 768px) {
   .site-nav__links {
     display: flex;
-  }
-
-  .site-nav__cta {
-    display: inline-flex;
   }
 
   .site-nav__toggle,
@@ -205,12 +218,6 @@
 .site-nav__drawer-link:focus-visible {
   outline: 2px solid var(--fp-focus-ring);
   outline-offset: -2px;
-}
-
-.site-nav__drawer-cta {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--fp-border);
 }
 
 @keyframes nav-menu-in {
@@ -351,11 +358,6 @@
   padding: 0.75rem 1.5rem;
   font-size: 0.9375rem;
   font-weight: 600;
-}
-
-.landing .cta-solid--block {
-  display: flex;
-  width: 100%;
 }
 
 /* ─── Documentation link ───────────────────────────────────────────── */
