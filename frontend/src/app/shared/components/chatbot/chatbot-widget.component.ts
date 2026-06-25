@@ -96,7 +96,12 @@ export class ChatbotWidgetComponent {
         this.typing.set(false);
         const sources = res.refused
           ? undefined
-          : [...new Set(res.sources.map((s) => s.title))];
+          : [...res.sources]
+              .sort((a, b) => a.number - b.number)
+              .map((s) => {
+                const heading = s.heading ? ` — ${s.heading}` : '';
+                return `[${s.number}] ${s.title}${heading}`;
+              });
         this.pushMessage('bot', res.answer, sources);
       },
       error: () => {

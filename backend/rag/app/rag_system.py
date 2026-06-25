@@ -36,6 +36,52 @@ _NO_INFO_MARKER = "i don't have information about that"
 _CITATION_RE = re.compile(r"\[(\d+)\]")
 
 
+def normalize_citations(
+    answer: str, sources: list[Source]
+) -> tuple[str, list[Source], bool]:
+    """Renumber in-text citations sequentially and align the sources list.
+
+    - Keeps only citations that reference retrieved sources (drops orphans).
+    - Deduplicates sources while preserving first-appearance order in the answer.
+    - Renumbers both answer markers and returned sources to 1..N with no gaps.
+    """
+    by_number = {s.number: s for s in sources}
+
+    ordered_old: list[int] = []
+    seen: set[int] = set()
+    for raw in _CITATION_RE.findall(answer):
+        num = int(raw)
+        if num in by_number and num not in seen:
+            seen.add(num)
+            ordered_old.append(num)
+
+    old_to_new = {old: i + 1 for i, old in enumerate(ordered_old)}
+
+    def repl(match: re.Match[str]) -> str:
+        num = int(match.group(1))
+        if num in old_to_new:
+            return f"[{old_to_new[num]}]"
+        return ""
+
+    normalized_answer = _CITATION_RE.sub(repl, answer)
+    normalized_answer = re.sub(r"  +", " ", normalized_answer)
+    normalized_answer = re.sub(r"\s+([,.;:!?])", r"\1", normalized_answer).strip()
+
+    normalized_sources = [
+        Source(
+            number=old_to_new[old],
+            title=by_number[old].title,
+            filename=by_number[old].filename,
+            heading=by_number[old].heading,
+            score=by_number[old].score,
+        )
+        for old in ordered_old
+    ]
+
+    grounded = len(normalized_sources) > 0
+    return normalized_answer, normalized_sources, grounded
+
+
 @dataclass(slots=True)
 class RagAnswer:
     """The result of answering a question."""
@@ -128,20 +174,16 @@ class RagSystem:
         return (completion.choices[0].message.content or "").strip()
 
     @staticmethod
-    def validate(answer: str, sources: list[Source]) -> tuple[bool, list[Source]]:
-        """Check that the answer is grounded: it either declines or cites at
-        least one valid source. Returns (grounded, cited_sources)."""
+    def validate(answer: str, sources: list[Source]) -> tuple[bool, list[Source], str]:
+        """Check grounding and return sequential citations aligned to sources."""
         lowered = answer.lower()
         if _NO_INFO_MARKER in lowered:
-            return False, []
+            return False, [], answer
 
-        cited_numbers = {int(n) for n in _CITATION_RE.findall(answer)}
-        valid_numbers = {s.number for s in sources}
-        used = sorted(cited_numbers & valid_numbers)
-        cited_sources = [s for s in sources if s.number in used]
-        # Grounded when the model cited at least one retrieved source.
-        grounded = len(cited_sources) > 0
-        return grounded, (cited_sources if cited_sources else sources)
+        normalized_answer, normalized_sources, grounded = normalize_citations(
+            answer, sources
+        )
+        return grounded, normalized_sources, normalized_answer
 
     # ------------------------------------------------------------------ #
     # Public entry point
@@ -189,11 +231,11 @@ class RagSystem:
                 error=str(exc),
             )
 
-        grounded, cited_sources = self.validate(raw_answer, sources)
+        grounded, cited_sources, final_answer = self.validate(raw_answer, sources)
         refused = _NO_INFO_MARKER in raw_answer.lower()
 
         return RagAnswer(
-            answer=raw_answer,
+            answer=final_answer,
             sources=[] if refused else cited_sources,
             grounded=grounded,
             refused=refused,
@@ -208,4 +250,4 @@ def get_rag_system() -> RagSystem:
     return RagSystem()
 
 
-__all__ = ["RagSystem", "RagAnswer", "get_rag_system"]
+__all__ = ["RagSystem", "RagAnswer", "get_rag_system", "normalize_citations"]

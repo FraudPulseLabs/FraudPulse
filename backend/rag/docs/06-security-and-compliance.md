@@ -2,53 +2,77 @@
 
 ## Authentication and access control
 
-FraudPulse protects its application API with authentication. Every endpoint
-under ``/api/v1`` requires a valid Supabase-issued JWT, except a small set of
-public endpoints (the model demo, access requests, and the landing-page
-assistant). Tokens are issued by Supabase Auth and verified by the backend
-against the project's public JWKS, so credentials are never handled directly by
-the FraudPulse backend.
+FraudPulse protects application APIs with **Supabase JWT authentication**.
+Protected routes under `/api/v1` require:
+
+```
+Authorization: Bearer <supabase-jwt>
+```
+
+**Public endpoints** (no JWT required):
+
+- `GET /health`
+- `POST /api/v1/demo/transactions`
+- `POST /api/v1/demo/score`
+- `POST /api/v1/access/requests`
+- `POST /api/v1/assistant/chat`
+
+Tokens are minted by Supabase Auth on the frontend and verified by the backend
+against the project's public JWKS. The FraudPulse backend does not handle raw
+passwords or issue its own credentials.
 
 ## Data protection in transit
 
-All traffic between the dashboard, the API, and the database is encrypted in
-transit using TLS. Database connections to Supabase Postgres require SSL
-(``sslmode=require``).
+All traffic between the browser, API, and database uses **TLS encryption**.
+Database connections to Supabase Postgres require SSL (`sslmode=require` in the
+connection string).
 
 ## Secrets management
 
-Secrets — including the database connection string and the Groq API key used by
-the assistant — are provided through environment variables and never committed
-to source control. Local development uses a gitignored ``.env`` file, and
-production injects secrets through the deployment environment.
+Sensitive configuration is provided through **environment variables** and
+never committed to git:
+
+| Secret | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Supabase/Postgres connection |
+| `GROQ_API_KEY` | RAG assistant LLM generation |
+
+Local development uses a gitignored `backend/.env` file. Production injects
+secrets through Render, OCI deployment, or GitHub Actions secrets.
 
 ## Audit trail
 
-FraudPulse maintains a comprehensive audit trail. Scores, score reasons,
-triggered rules, decisions, case actions, and watchlist changes are all
-recorded. This supports investigation, accountability, and regulatory review.
-Watchlist changes in particular are versioned with history so any change can be
-traced to who made it and when.
+FraudPulse records scores, score reasons, triggered rules, decisions, case
+actions, and watchlist changes. Watchlist updates are **versioned with history**
+so every change is traceable. This supports investigation, accountability, and
+regulatory review.
 
 ## Explainability for compliance
 
-Because the model is calibrated and each prediction stores its top contributing
-features alongside any rules that fired, FraudPulse can explain why any given
-transaction was allowed, sent to review, or blocked. Explainability supports
-fair-lending and adverse-action style requirements where a reason for a
-decision must be available.
+The calibrated model stores **top contributing features** per score (available
+with `explain=true` on ingest/score). Combined with rule triggers, FraudPulse
+can explain why a transaction was allowed, sent to review, or blocked — supporting
+adverse-action and fair-lending style requirements.
 
-## Privacy considerations
+## Privacy and data isolation for the assistant
 
-The landing-page assistant answers only from FraudPulse's own product
-documentation. It does not have access to customer transaction data, personal
-data, or the production database, and it does not store user conversations as
-part of the corpus. This keeps the public assistant isolated from sensitive
-data.
+The landing-page **RAG assistant**:
+
+- Answers only from FraudPulse product documentation
+- Does **not** access customer transaction data or the production database
+- Does **not** store visitor conversations in the documentation corpus
+- Refuses out-of-scope questions rather than guessing
+
+This keeps the public assistant isolated from sensitive operational data.
 
 ## Responsible AI
 
-The assistant is constrained by design: it answers strictly from the curated
-documentation corpus and refuses questions it cannot ground in that corpus,
-rather than guessing. This reduces the risk of hallucinated or misleading
-statements about the product.
+The assistant is constrained by design:
+
+1. Retrieval from a curated corpus before any LLM call
+2. Relevance threshold — low-similarity questions are refused
+3. System prompt forbids inventing features, endpoints, or guarantees
+4. Citations required for grounded answers
+
+Fraud **decisioning** is not performed by the LLM — it is performed by the
+calibrated ML model and rule engine.

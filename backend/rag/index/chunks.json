@@ -17,10 +17,10 @@
     "doc_id": "01-product-overview",
     "title": "FraudPulse Product Overview",
     "filename": "01-product-overview.md",
-    "text": "## What is FraudPulse\nFraudPulse is a real-time fraud detection platform for card and account\npayments. It ingests payment transactions, scores each one for fraud risk\nusing a combination of deterministic rules and a calibrated machine-learning\nmodel, and routes the outcome to one of three decisions: ALLOW, REVIEW, or\nBLOCK. The goal is to stop fraudulent payments before they settle while\nkeeping friction low for legitimate customers.\n\nFraudPulse is designed for payment processors, fintechs, marketplaces, and\nbanks that need sub-second risk decisions at the moment of authorization.",
+    "text": "## What is FraudPulse\nFraudPulse is a real-time payment fraud detection platform for card and account\npayments. It ingests transactions through a REST API, scores each one for fraud\nrisk using a calibrated machine-learning model and supporting rules, and routes\nthe outcome to a three-way decision. The goal is to stop fraudulent payments\nbefore they settle while keeping friction low for legitimate customers.\n\nFraudPulse is designed for payment processors, fintechs, marketplaces, and\nbanks that need sub-second risk decisions at the moment of authorization.\n\n**Live deployments:**\n\n- Frontend (dashboard and landing page): `https://fraudpulse-u2va.onrender.com/`\n- Backend API documentation: `https://fraudpulse.duckdns.org/docs`\n- Backend health check: `https://fraudpulse.duckdns.org/health`",
     "heading": "What is FraudPulse",
     "chunk_index": 1,
-    "word_count": 87,
+    "word_count": 102,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/01-product-overview.md"
     }
@@ -30,10 +30,10 @@
     "doc_id": "01-product-overview",
     "title": "FraudPulse Product Overview",
     "filename": "01-product-overview.md",
-    "text": "## Who FraudPulse is for\nFraudPulse serves two primary audiences:\n\n- **Risk and fraud analysts**, who monitor live transaction streams,\n  investigate alerts, and work cases through the FraudPulse dashboard.\n- **Engineering and product teams**, who integrate FraudPulse through its REST\n  API to score transactions inline with their checkout or authorization flow.",
+    "text": "## Who FraudPulse is for\nFraudPulse serves two primary audiences:\n\n- **Risk and fraud analysts**, who monitor transactions, triage alerts, and\n  investigate cases in the Angular dashboard.\n- **Engineering and product teams**, who integrate FraudPulse through the REST\n  API to score transactions inline with checkout or authorization flows.",
     "heading": "Who FraudPulse is for",
     "chunk_index": 2,
-    "word_count": 51,
+    "word_count": 48,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/01-product-overview.md"
     }
@@ -43,10 +43,10 @@
     "doc_id": "01-product-overview",
     "title": "FraudPulse Product Overview",
     "filename": "01-product-overview.md",
-    "text": "## Core capabilities\n- **Real-time scoring**: every transaction receives a fraud risk score in\n  milliseconds during authorization.\n- **Hybrid detection**: a rule engine runs alongside a calibrated LightGBM\n  model so that both known fraud patterns and emerging anomalies are caught.\n- **Three-way decisioning**: each transaction is classified as ALLOW, REVIEW,\n  or BLOCK based on configurable thresholds.\n- **Alerts and case management**: flagged transactions generate alerts that are\n  grouped into cases for analyst investigation.\n- **Watchlists**: cards, devices, and accounts can be added to watchlists that\n  influence future scoring.\n- **Audit trail**: every decision, score reason, and case action is logged for\n  compliance and review.",
+    "text": "## Core capabilities\n- **Real-time scoring**: every transaction receives a fraud risk score between\n  0 and 1 during authorization, typically in milliseconds.\n- **Hybrid detection**: a rule engine runs alongside a calibrated LightGBM\n  model so known fraud patterns and emerging anomalies are both considered.\n- **Three-way decisioning**: each transaction is classified into ALLOW, REVIEW,\n  or BLOCK (dashboard labels). The API returns `APPROVE`, `APPROVE_WITH_REVIEW`,\n  or `DECLINE` for the same outcomes.\n- **Alerts and case management**: REVIEW and BLOCK outcomes create alerts that\n  analysts group into cases for investigation.\n- **Watchlists**: cards, devices, merchants, and accounts can be watchlisted to\n  influence future scoring.\n- **Explainability**: optional SHAP-style feature contributions explain why a\n  transaction scored the way it did.\n- **Audit trail**: decisions, score reasons, rule triggers, and case actions are\n  logged for compliance and review.",
     "heading": "Core capabilities",
     "chunk_index": 3,
-    "word_count": 104,
+    "word_count": 133,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/01-product-overview.md"
     }
@@ -56,10 +56,10 @@
     "doc_id": "01-product-overview",
     "title": "FraudPulse Product Overview",
     "filename": "01-product-overview.md",
-    "text": "## Key benefits\n- Reduce fraud losses by blocking high-risk payments before settlement.\n- Lower manual review volume by auto-approving clearly legitimate traffic.\n- Give analysts a single workspace for alerts, cases, and watchlists.\n- Maintain explainability: each score is accompanied by the top contributing\n  features and any rules that fired.",
-    "heading": "Key benefits",
+    "text": "utions explain why a\n  transaction scored the way it did.\n- **Audit trail**: decisions, score reasons, rule triggers, and case actions are\n  logged for compliance and review.\n- **AI support assistant**: a RAG-powered chatbot on the landing page answers\n  product questions from this documentation. It is a support layer only \u2014 fraud\n  decisioning is driven by the ML engine.",
+    "heading": "Core capabilities",
     "chunk_index": 4,
-    "word_count": 51,
+    "word_count": 59,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/01-product-overview.md"
     }
@@ -69,10 +69,23 @@
     "doc_id": "01-product-overview",
     "title": "FraudPulse Product Overview",
     "filename": "01-product-overview.md",
-    "text": "## How a transaction flows through FraudPulse\n1. A transaction is submitted to FraudPulse through the REST API.\n2. Real-time features are extracted, including amount patterns and velocity\n   (activity over rolling time windows).\n3. The rule engine evaluates the transaction against configured rules.\n4. The calibrated LightGBM model produces a fraud risk score.\n5. The combined result is mapped to an ALLOW, REVIEW, or BLOCK decision.\n6. REVIEW and BLOCK outcomes create alerts and cases for analysts.\n7. The decision, score, reasons, and any triggered rules are persisted to the\n   audit trail.",
-    "heading": "How a transaction flows through FraudPulse",
+    "text": "## Dashboard areas\nSigned-in analysts use these main sections:\n\n- **Overview** \u2014 high-level monitoring and metrics\n- **Transactions** \u2014 scored transaction stream with ALLOW / REVIEW / BLOCK filters\n- **Alerts** \u2014 queue of items needing attention\n- **Cases** \u2014 investigation workflow from open to closed\n- **Watchlist** \u2014 manage flagged entities",
+    "heading": "Dashboard areas",
     "chunk_index": 5,
-    "word_count": 92,
+    "word_count": 52,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/01-product-overview.md"
+    }
+  },
+  {
+    "chunk_id": "01-product-overview::6",
+    "doc_id": "01-product-overview",
+    "title": "FraudPulse Product Overview",
+    "filename": "01-product-overview.md",
+    "text": "## How a transaction flows through FraudPulse\n1. A transaction is submitted via `POST /api/v1/transactions` (or scored via the\n   demo endpoints without persistence).\n2. Watchlist and merchant-blacklist checks may short-circuit high-risk paths.\n3. Real-time features are built from the payload and recent card history\n   (amount patterns, velocity, temporal signals).\n4. The rule engine evaluates deterministic policies in parallel with the model.\n5. The calibrated LightGBM model produces a fraud probability score (0\u20131).\n6. The score is mapped to APPROVE, APPROVE_WITH_REVIEW, or DECLINE using\n   configurable thresholds.\n7. `APPROVE_WITH_REVIEW` (REVIEW) and `DECLINE` (BLOCK) outcomes create alerts\n   and cases for analysts.\n8. The decision, score, reasons, and triggered rules are persisted and audited.",
+    "heading": "How a transaction flows through FraudPulse",
+    "chunk_index": 6,
+    "word_count": 110,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/01-product-overview.md"
     }
@@ -95,10 +108,10 @@
     "doc_id": "02-scoring-methodology",
     "title": "Scoring Methodology",
     "filename": "02-scoring-methodology.md",
-    "text": "## Overview of scoring\nFraudPulse scores every transaction in real time. Scoring combines a\ndeterministic rule engine with a calibrated machine-learning model. The rule\nengine captures known, explainable fraud patterns, while the model detects\nsubtler and emerging anomalies. The two run together and their results are\ncombined to produce the final risk score and decision.",
-    "heading": "Overview of scoring",
+    "text": "## Overview of fraud scoring\nFraudPulse scores every transaction in real time. Scoring combines a\ndeterministic rule engine with a calibrated machine-learning model. The rule\nengine captures known, explainable fraud patterns; the model detects subtler and\nemerging anomalies. Both run together to produce a fraud risk score between\n**0 and 1**, where higher values mean higher fraud risk.\n\nScoring is the **primary intelligence layer** in FraudPulse. The landing-page\nassistant does not perform scoring \u2014 it only answers documentation questions.",
+    "heading": "Overview of fraud scoring",
     "chunk_index": 1,
-    "word_count": 55,
+    "word_count": 79,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
     }
@@ -108,10 +121,10 @@
     "doc_id": "02-scoring-methodology",
     "title": "Scoring Methodology",
     "filename": "02-scoring-methodology.md",
-    "text": "## Feature extraction\nBefore scoring, FraudPulse builds a feature vector for the transaction from the\nincoming payload and recent history for the card or account. Engineered\nfeatures include:\n\n- **Amount features**: the transaction amount, and how it compares to the\n  card's historical mean and standard deviation of spend.\n- **Velocity features**: counts of recent transactions over rolling time\n  windows (for example the last hour and last 24 hours), which capture bursts\n  of activity that often indicate card testing or takeover.\n- **Temporal features**: time-of-day and recency signals derived from the\n  transaction timestamp and the time since the previous transaction.\n- **Entity features**: signals associated with the card, device, and account,\n  including whether any of them appear on a watchlist.\n\nFeature extraction is performed by a real-time feature builder so that scoring\nreflects the most current behaviour at the moment of authorization.",
+    "text": "## Feature extraction\nBefore scoring, FraudPulse builds a feature vector from the incoming transaction\nand recent history for the card or account. The real-time feature builder\nengineers signals such as:\n\n- **Amount features** \u2014 transaction amount and deviation from the card's\n  historical mean and standard deviation.\n- **Velocity features** \u2014 counts of recent transactions over rolling windows\n  (for example the last hour and last 24 hours), capturing bursts of activity\n  common in card testing or account takeover.\n- **Temporal features** \u2014 time-of-day and recency derived from timestamps.\n- **Entity features** \u2014 card, device, merchant, and account signals, including\n  watchlist membership and merchant-category fraud rates.\n\nFeature order and decision thresholds are defined in the model artefact schema\n(`feature_schema.json`) and exposed via `GET /api/v1/scoring/schema`.",
     "heading": "Feature extraction",
     "chunk_index": 2,
-    "word_count": 141,
+    "word_count": 122,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
     }
@@ -121,10 +134,10 @@
     "doc_id": "02-scoring-methodology",
     "title": "Scoring Methodology",
     "filename": "02-scoring-methodology.md",
-    "text": "## The machine-learning model\nFraudPulse uses a gradient-boosted decision tree model trained with LightGBM.\nThe model is **calibrated** so that its output behaves like a true probability\nof fraud, which makes thresholds meaningful and stable across time.\n\nKey properties of the model:\n\n- It outputs a fraud risk score between 0 and 1, where higher means riskier.\n- It is calibrated (for example with isotonic or Platt scaling) so scores can\n  be compared to fixed decision thresholds.\n- It is explainable: for any prediction FraudPulse can surface the top\n  contributing features so analysts understand why a transaction scored the way\n  it did.",
+    "text": "## The machine-learning model\nFraudPulse uses a **gradient-boosted decision tree model trained with LightGBM**.\nThe model is **calibrated** (for example with isotonic or Platt scaling) so its\noutput behaves like a true fraud probability.\n\nKey properties:\n\n- Outputs a score between **0 and 1** (higher = riskier).\n- Calibrated probabilities make threshold bands meaningful over time.\n- Explainable: with `explain=true`, the API returns top contributing features\n  (SHAP-style contributions) so analysts understand why a transaction scored as\n  it did.",
     "heading": "The machine-learning model",
     "chunk_index": 3,
-    "word_count": 102,
+    "word_count": 78,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
     }
@@ -134,10 +147,10 @@
     "doc_id": "02-scoring-methodology",
     "title": "Scoring Methodology",
     "filename": "02-scoring-methodology.md",
-    "text": "## The rule engine\nThe rule engine evaluates each transaction against a set of deterministic\nrules in parallel with the model. Rules encode policies and known fraud\npatterns \u2014 for example flagging transactions tied to watchlisted entities or\nmatching a high-risk pattern. When a rule fires, it is recorded as a rule\ntrigger and contributes to the final decision and the audit trail.",
+    "text": "## The rule engine\nThe rule engine evaluates each transaction against deterministic rules in\nparallel with the model. Rules encode policies and known patterns \u2014 for example\nwatchlisted entities or high-risk merchant behaviour. When a rule fires, it is\nrecorded as a **rule trigger** in the audit trail and may escalate the final\ndecision.",
     "heading": "The rule engine",
     "chunk_index": 4,
-    "word_count": 63,
+    "word_count": 54,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
     }
@@ -147,10 +160,10 @@
     "doc_id": "02-scoring-methodology",
     "title": "Scoring Methodology",
     "filename": "02-scoring-methodology.md",
-    "text": "## Combining rules and the model\nThe final decision is driven by the combination of the calibrated model score\nand any rules that fired. Rules can escalate a decision (for example forcing a\nREVIEW or BLOCK) regardless of the model score, while the model score drives\nthe decision in the absence of overriding rules.",
+    "text": "## Combining rules and the model\nThe final decision maps the calibrated score to thresholds, then applies any\nrule overrides:\n\n| Score band (default policy) | API decision | Dashboard label |\n| --- | --- | --- |\n| Below approve threshold | `APPROVE` | ALLOW |\n| Between approve and decline thresholds | `APPROVE_WITH_REVIEW` | REVIEW |\n| At or above decline threshold | `DECLINE` | BLOCK |\n\nDefault thresholds (from the shipped model schema) are approximately:\n\n- **approve_below**: 0.011 \u2014 scores below this are APPROVE (ALLOW)\n- **decline_from**: 0.995 \u2014 scores at or above this are DECLINE (BLOCK)\n- Scores between those values are APPROVE_WITH_REVIEW (REVIEW)\n\nThresholds are configurable per deployment so risk teams can tune the balance\nbetween fraud capture and customer friction.",
     "heading": "Combining rules and the model",
     "chunk_index": 5,
-    "word_count": 54,
+    "word_count": 127,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
     }
@@ -160,10 +173,23 @@
     "doc_id": "02-scoring-methodology",
     "title": "Scoring Methodology",
     "filename": "02-scoring-methodology.md",
-    "text": "## Explainability and score reasons\nEvery score is stored with score reasons: the top contributing model features\nand the list of rules that triggered. This explainability is available to\nanalysts in the dashboard and is recorded in the audit trail, supporting both\ninvestigation and compliance.",
-    "heading": "Explainability and score reasons",
+    "text": "## Merchant blacklist short-circuit\nBefore full scoring, transactions tied to blacklisted merchants may be\nshort-circuited to a high-risk outcome without running the full ML pipeline.",
+    "heading": "Merchant blacklist short-circuit",
     "chunk_index": 6,
-    "word_count": 45,
+    "word_count": 25,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
+    }
+  },
+  {
+    "chunk_id": "02-scoring-methodology::7",
+    "doc_id": "02-scoring-methodology",
+    "title": "Scoring Methodology",
+    "filename": "02-scoring-methodology.md",
+    "text": "## Explainability and score reasons\nEvery persisted score stores **score reasons**: top contributing model features\nand any rules that triggered. Analysts see this in the dashboard; it is also\nrecorded in the audit trail for investigation and compliance.",
+    "heading": "Explainability and score reasons",
+    "chunk_index": 7,
+    "word_count": 38,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/02-scoring-methodology.md"
     }
@@ -186,10 +212,10 @@
     "doc_id": "03-decisions-and-case-workflow",
     "title": "Decisions and Case Workflow",
     "filename": "03-decisions-and-case-workflow.md",
-    "text": "## The three decisions\nEvery scored transaction is classified into exactly one of three decisions:\n\n- **ALLOW**: the transaction is cleared. The risk score is low and no\n  overriding rule fired, so the payment proceeds without friction.\n- **REVIEW**: the transaction is uncertain and needs a human analyst. It is\n  held for investigation and generates an alert and a case.\n- **BLOCK**: the transaction is high risk. It is declined and generates an\n  alert and a case for follow-up.",
-    "heading": "The three decisions",
+    "text": "## ALLOW, REVIEW, and BLOCK decisions\nEvery scored transaction receives exactly one decision. FraudPulse uses two\nnaming conventions for the same three outcomes:\n\n| Dashboard / product label | API value | Meaning |\n| --- | --- | --- |\n| **ALLOW** | `APPROVE` | Low risk; payment proceeds without friction |\n| **REVIEW** | `APPROVE_WITH_REVIEW` | Uncertain; held for analyst investigation |\n| **BLOCK** | `DECLINE` | High risk; payment declined |\n\nWhen users ask about **allow, review, or block** decisions, these map directly\nto the API values above.",
+    "heading": "ALLOW, REVIEW, and BLOCK decisions",
     "chunk_index": 1,
-    "word_count": 79,
+    "word_count": 91,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
     }
@@ -199,10 +225,10 @@
     "doc_id": "03-decisions-and-case-workflow",
     "title": "Decisions and Case Workflow",
     "filename": "03-decisions-and-case-workflow.md",
-    "text": "## How decisions are determined\nDecisions are produced by mapping the calibrated risk score to configurable\nthresholds, combined with any rules that fired. A low score maps to ALLOW, a\nmiddle band maps to REVIEW, and a high score maps to BLOCK. Rules can override\nthe score-based mapping to escalate a transaction.\n\nThresholds are configurable so that risk teams can tune the balance between\nfraud capture and customer friction for their portfolio.",
+    "text": "## How decisions are determined\nDecisions are produced by mapping the calibrated fraud score (0\u20131) to\nthresholds, combined with any rules that fired:\n\n1. If the score is **below** `approve_below` \u2192 `APPROVE` (ALLOW).\n2. If the score is **at or above** `decline_from` \u2192 `DECLINE` (BLOCK).\n3. Otherwise \u2192 `APPROVE_WITH_REVIEW` (REVIEW).\n\nRules can override score-based mapping to force escalation. Thresholds are\ntunable per portfolio.",
     "heading": "How decisions are determined",
     "chunk_index": 2,
-    "word_count": 72,
+    "word_count": 63,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
     }
@@ -212,10 +238,10 @@
     "doc_id": "03-decisions-and-case-workflow",
     "title": "Decisions and Case Workflow",
     "filename": "03-decisions-and-case-workflow.md",
-    "text": "## Alerts\nWhen a transaction results in REVIEW or BLOCK, FraudPulse creates an **alert**.\nAlerts represent something that needs attention. Related alerts are grouped so\nthat analysts are not overwhelmed by duplicates from the same underlying\nactivity (for example repeated attempts on the same card).",
-    "heading": "Alerts",
+    "text": "## Which outcomes create alerts\n`APPROVE_WITH_REVIEW` (REVIEW) and `DECLINE` (BLOCK) outcomes generate\n**alerts** for analyst attention. `APPROVE` (ALLOW) does not.\n\nCommon alert reasons include fraud-review-required and fraud-score-decline\nsignals tied to the decision type.",
+    "heading": "Which outcomes create alerts",
     "chunk_index": 3,
-    "word_count": 45,
+    "word_count": 33,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
     }
@@ -225,10 +251,10 @@
     "doc_id": "03-decisions-and-case-workflow",
     "title": "Decisions and Case Workflow",
     "filename": "03-decisions-and-case-workflow.md",
-    "text": "## Cases\nAlerts are organized into **cases**. A case is the unit of investigation an\nanalyst works. Cases have a lifecycle so that work can be tracked from\ndiscovery to resolution. A typical lifecycle moves through states such as:\n\n- **Open**: newly created and awaiting triage.\n- **In progress**: an analyst is actively investigating.\n- **Resolved**: a conclusion has been reached (for example confirmed fraud or\n  legitimate).\n- **Closed**: the case is complete and archived.\n\nEvery action taken on a case is recorded in the audit trail.",
-    "heading": "Cases",
+    "text": "## Alerts\nAn **alert** is a single item needing attention, created when a transaction\nlands in REVIEW or BLOCK. Related alerts may be grouped so analysts are not\noverwhelmed by duplicate activity on the same card or account.",
+    "heading": "Alerts",
     "chunk_index": 4,
-    "word_count": 87,
+    "word_count": 38,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
     }
@@ -238,10 +264,10 @@
     "doc_id": "03-decisions-and-case-workflow",
     "title": "Decisions and Case Workflow",
     "filename": "03-decisions-and-case-workflow.md",
-    "text": "## Analyst workflow in the dashboard\nAnalysts use the FraudPulse dashboard to:\n\n1. Monitor the live stream of scored transactions.\n2. Triage incoming alerts as they are created.\n3. Open and work cases, reviewing the score, the contributing features, and the\n   rules that fired.\n4. Add cards, devices, or accounts to watchlists when fraud is confirmed.\n5. Resolve and close cases, leaving an auditable record of the outcome.",
-    "heading": "Analyst workflow in the dashboard",
+    "text": "## Cases\nAlerts feed into **cases** \u2014 the unit of investigation. Cases have a lifecycle:\n\n- **Open** \u2014 newly created, awaiting triage\n- **In progress** \u2014 actively under investigation\n- **Resolved** \u2014 conclusion reached (confirmed fraud or legitimate)\n- **Closed** \u2014 complete and archived\n\nEvery case action is recorded in the audit trail.",
+    "heading": "Cases",
     "chunk_index": 5,
-    "word_count": 68,
+    "word_count": 53,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
     }
@@ -251,10 +277,36 @@
     "doc_id": "03-decisions-and-case-workflow",
     "title": "Decisions and Case Workflow",
     "filename": "03-decisions-and-case-workflow.md",
-    "text": "## Watchlists\nWatchlists let analysts flag specific cards, devices, or accounts as known\nrisk. Watchlist membership influences future scoring and can cause rules to\nfire, so confirmed fraud feeds back into the detection system. Watchlist\nchanges are versioned and recorded in history for auditability.",
-    "heading": "Watchlists",
+    "text": "## Analyst workflow in the dashboard\nAnalysts typically:\n\n1. Monitor the transaction stream on the **Transactions** page.\n2. Triage new **Alerts** as they arrive.\n3. Open **Cases**, review the score, contributing features, and triggered rules.\n4. Add confirmed fraud entities to the **Watchlist**.\n5. Resolve and close cases with an auditable outcome.",
+    "heading": "Analyst workflow in the dashboard",
     "chunk_index": 6,
-    "word_count": 44,
+    "word_count": 52,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
+    }
+  },
+  {
+    "chunk_id": "03-decisions-and-case-workflow::7",
+    "doc_id": "03-decisions-and-case-workflow",
+    "title": "Decisions and Case Workflow",
+    "filename": "03-decisions-and-case-workflow.md",
+    "text": "## Watchlists\nWatchlists flag specific cards, devices, merchants, or accounts as known risk.\nMembership influences future scoring and can cause rules to fire, so confirmed\nfraud feeds back into detection. Changes are versioned in watchlist history for\nauditability.",
+    "heading": "Watchlists",
+    "chunk_index": 7,
+    "word_count": 38,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
+    }
+  },
+  {
+    "chunk_id": "03-decisions-and-case-workflow::8",
+    "doc_id": "03-decisions-and-case-workflow",
+    "title": "Decisions and Case Workflow",
+    "filename": "03-decisions-and-case-workflow.md",
+    "text": "## Transaction ingest vs read-only queries\n- `POST /api/v1/transactions` \u2014 full ingest pipeline (score, decide, persist,\n  optionally create alerts/cases). Supports `?explain=true` for feature\n  contributions.\n- `GET /api/v1/transactions` \u2014 list recent transactions.\n- `GET /api/v1/transactions/{id}` \u2014 single transaction with latest score and reasons.",
+    "heading": "Transaction ingest vs read-only queries",
+    "chunk_index": 8,
+    "word_count": 42,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/03-decisions-and-case-workflow.md"
     }
@@ -277,10 +329,10 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## API overview\nFraudPulse exposes a REST API. All application endpoints are served under the\n``/api/v1`` prefix. Responses are JSON. Most endpoints require authentication\nwith a Supabase-issued JWT; a small number of public endpoints exist for the\nlanding page and the model demo.\n\nThe interactive API documentation is available at ``/docs`` (Swagger UI) when\nthe service is running.",
+    "text": "## API overview\nFraudPulse exposes a **REST API** with JSON request and response bodies. Versioned\napplication endpoints live under the `/api/v1` prefix.\n\n- **Interactive docs (Swagger UI):** `/docs` \u2014 e.g. `https://fraudpulse.duckdns.org/docs`\n- **Health check:** `GET /health` \u2014 no authentication required\n- **Base path for app routes:** `/api/v1`\n\nMost endpoints require a Supabase-issued JWT. A small set of public endpoints\nsupports the landing page, access requests, model demo, and documentation\nassistant.",
     "heading": "API overview",
     "chunk_index": 1,
-    "word_count": 58,
+    "word_count": 70,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -290,10 +342,10 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## Authentication\nProtected endpoints require a bearer token in the ``Authorization`` header:\n\n```\nAuthorization: Bearer <supabase-jwt>\n```\n\nFraudPulse does not issue tokens itself. Tokens are minted by Supabase Auth on\nthe frontend, and the backend verifies them using the project's public JWKS.\nRequests without a valid token to a protected route receive ``401\nUnauthorized``.",
+    "text": "## Authentication\nProtected endpoints require a bearer token:\n\n```\nAuthorization: Bearer <supabase-jwt>\n```\n\nFraudPulse does **not** issue tokens. The Angular frontend obtains tokens from\n**Supabase Auth**; the backend verifies them via the project's public JWKS.\nInvalid or missing tokens on protected routes return `401 Unauthorized`.",
     "heading": "Authentication",
     "chunk_index": 2,
-    "word_count": 54,
+    "word_count": 45,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -303,10 +355,10 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## Health check\n- ``GET /health`` \u2014 returns service status and a timestamp. No authentication\n  required. Useful for uptime monitoring and load-balancer health probes.",
+    "text": "## Health check\n- `GET /health` \u2014 returns service status and a UTC timestamp. Used by load\n  balancers, deployment workflows, and uptime monitoring. No auth required.",
     "heading": "Health check",
     "chunk_index": 3,
-    "word_count": 24,
+    "word_count": 26,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -316,10 +368,10 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## Core endpoint groups\nThe API is organized into the following groups, all under ``/api/v1``:\n\n- ``/transactions`` \u2014 ingest and query transactions.\n- ``/scoring`` \u2014 score transactions and retrieve scores.\n- ``/decisions`` \u2014 retrieve decision outcomes (ALLOW / REVIEW / BLOCK).\n- ``/alerts`` \u2014 list and manage alerts.\n- ``/cases`` \u2014 work the case lifecycle (open, update, resolve, close).\n- ``/watchlist`` \u2014 manage watchlisted cards, devices, and accounts.\n- ``/profiles`` \u2014 entity profiles and history.\n- ``/admin`` \u2014 administrative operations.\n- ``/auth`` \u2014 authenticated user/account helpers.\n\nThese groups require a valid JWT.",
-    "heading": "Core endpoint groups",
+    "text": "## Core endpoint groups (authenticated)\nAll groups below require a valid JWT unless noted.\n\n| Prefix | Purpose |\n| --- | --- |\n| `/api/v1/transactions` | Ingest transactions and query history |\n| `/api/v1/scoring` | Score without full ingest; feature schema |\n| `/api/v1/decisions` | Decision workflow endpoints |\n| `/api/v1/alerts` | List and manage fraud alerts |\n| `/api/v1/cases` | Case lifecycle (open, update, resolve, close) |\n| `/api/v1/watchlist` | Watchlisted cards, devices, merchants, accounts |\n| `/api/v1/profiles` | Entity profiles and history |\n| `/api/v1/admin` | Administrative operations |\n| `/api/v1/auth` | Authenticated user helpers |",
+    "heading": "Core endpoint groups (authenticated)",
     "chunk_index": 4,
-    "word_count": 92,
+    "word_count": 99,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -329,10 +381,10 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## Public endpoints\nA few endpoints are intentionally public so the marketing site and demo work\nwithout sign-in:\n\n- ``/api/v1/demo/transactions`` \u2014 returns a fixture set of demo transactions.\n- ``/api/v1/demo/score`` \u2014 scores a demo transaction through the model without\n  persisting to the database, so prospective users can try scoring.\n- ``/api/v1/access/requests`` \u2014 submit a request for early access to the\n  dashboard and API.\n- ``/api/v1/assistant/chat`` \u2014 the public landing-page assistant, which answers\n  product questions from the FraudPulse documentation.",
-    "heading": "Public endpoints",
+    "text": "## Key transaction endpoints",
+    "heading": "Key transaction endpoints",
     "chunk_index": 5,
-    "word_count": 78,
+    "word_count": 4,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -342,10 +394,10 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## Scoring a transaction\nTo score a transaction, submit its details to the scoring endpoint. The\nresponse includes the fraud risk score, the resulting decision, the model name,\nand (when explanations are requested) the top contributing features. Scoring\nthe demo endpoint uses cold-start card history and does not write to the\ndatabase.",
-    "heading": "Scoring a transaction",
+    "text": "### Ingest a transaction (full pipeline)\n```\nPOST /api/v1/transactions?explain=false\n```\n\nRuns watchlist checks, feature building, ML scoring, threshold mapping,\npersistence, and optional alert/case creation. Set `explain=true` to include\ntop contributing features in the response.",
+    "heading": "Ingest a transaction (full pipeline)",
     "chunk_index": 6,
-    "word_count": 52,
+    "word_count": 34,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -355,10 +407,62 @@
     "doc_id": "04-api-reference",
     "title": "API Reference",
     "filename": "04-api-reference.md",
-    "text": "## Rate limits and errors\nThe API uses standard HTTP status codes. ``400`` indicates a malformed request,\n``401`` an authentication failure, ``404`` a missing resource, and ``5xx`` a\nserver error. Error responses include a ``detail`` field describing the problem.",
-    "heading": "Rate limits and errors",
+    "text": "### List and retrieve transactions\n```\nGET /api/v1/transactions\nGET /api/v1/transactions/{transaction_id}\n```",
+    "heading": "List and retrieve transactions",
     "chunk_index": 7,
-    "word_count": 39,
+    "word_count": 11,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
+    }
+  },
+  {
+    "chunk_id": "04-api-reference::8",
+    "doc_id": "04-api-reference",
+    "title": "API Reference",
+    "filename": "04-api-reference.md",
+    "text": "## Scoring endpoints\n```\nPOST /api/v1/scoring/score?explain=false\nGET  /api/v1/scoring/schema\n```\n\n`/score` runs the model without the full ingest persistence path. `/schema`\nreturns feature order and decision thresholds from the loaded model artefact.",
+    "heading": "Scoring endpoints",
+    "chunk_index": 8,
+    "word_count": 31,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
+    }
+  },
+  {
+    "chunk_id": "04-api-reference::9",
+    "doc_id": "04-api-reference",
+    "title": "API Reference",
+    "filename": "04-api-reference.md",
+    "text": "## Public endpoints (no JWT)\n| Endpoint | Purpose |\n| --- | --- |\n| `GET /health` | Service health |\n| `POST /api/v1/demo/transactions` | Fixture demo transactions |\n| `POST /api/v1/demo/score` | Score a demo transaction without DB writes |\n| `POST /api/v1/access/requests` | Submit early-access request from landing page |\n| `POST /api/v1/assistant/chat` | Landing-page RAG assistant (documentation Q&A) |",
+    "heading": "Public endpoints (no JWT)",
+    "chunk_index": 9,
+    "word_count": 63,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
+    }
+  },
+  {
+    "chunk_id": "04-api-reference::10",
+    "doc_id": "04-api-reference",
+    "title": "API Reference",
+    "filename": "04-api-reference.md",
+    "text": "### Assistant chat\n```\nPOST /api/v1/assistant/chat\nBody: { \"question\": \"How does scoring work?\" }\n```\n\nReturns a grounded answer with source citations from the FraudPulse\ndocumentation corpus. Out-of-scope questions are refused without guessing.",
+    "heading": "Assistant chat",
+    "chunk_index": 10,
+    "word_count": 33,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
+    }
+  },
+  {
+    "chunk_id": "04-api-reference::11",
+    "doc_id": "04-api-reference",
+    "title": "API Reference",
+    "filename": "04-api-reference.md",
+    "text": "## HTTP status codes and errors\n| Code | Meaning |\n| --- | --- |\n| `400` | Malformed request or validation error |\n| `401` | Missing or invalid authentication |\n| `404` | Resource not found |\n| `5xx` | Server error |\n\nError bodies include a `detail` field describing the problem.",
+    "heading": "HTTP status codes and errors",
+    "chunk_index": 11,
+    "word_count": 55,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/04-api-reference.md"
     }
@@ -381,10 +485,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## High-level architecture\nFraudPulse is a two-tier application: an Angular single-page dashboard talks to\na FastAPI backend over a REST API. The backend performs feature extraction,\nruns the rule engine and the machine-learning model, persists results, and\nserves data to the dashboard. A managed Postgres database stores all\ntransactional and operational data.",
+    "text": "## High-level architecture\nFraudPulse is a modular full-stack application:\n\n```text\nAngular frontend (Render)  \u2192  FastAPI backend (Oracle Cloud / DuckDNS)  \u2192  Supabase Postgres\n                                      \u2502\n                         \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                         \u25bc            \u25bc            \u25bc\n                    ML engine    RAG assistant   Analytics\n                   (primary)      (support)\n```\n\nThe **ML fraud engine is the primary decision layer**. The RAG assistant is a\nsecondary support capability for documentation questions on the landing page.",
     "heading": "High-level architecture",
     "chunk_index": 1,
-    "word_count": 52,
+    "word_count": 60,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -394,10 +498,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Backend\n- **Framework**: FastAPI (Python).\n- **Server**: Uvicorn ASGI server.\n- **Hosting**: deployed on Oracle Cloud Infrastructure (OCI) as a Docker\n  container.\n- **Responsibilities**: transaction ingestion, real-time feature building,\n  rule evaluation, model scoring, decisioning, alerts, cases, watchlists, and\n  the audit trail.\n\nThe backend exposes the REST API described in the API Reference and verifies\nSupabase-issued JWTs on protected routes.",
+    "text": "## Backend\n| Component | Technology |\n| --- | --- |\n| Framework | FastAPI (Python 3.11+) |\n| Server | Uvicorn ASGI |\n| Hosting | Docker on Oracle Cloud Infrastructure (OCI) |\n| Public URL | `fraudpulse.duckdns.org` |\n| ORM | SQLAlchemy models aligned with Supabase Postgres schema |\n\n**Responsibilities:** transaction ingestion, real-time feature building, rule\nevaluation, ML scoring, decisioning, alerts, cases, watchlists, audit trail,\nand the public assistant endpoint.\n\nBackend code is organized in layers: API routes \u2192 services \u2192 SQLAlchemy models.",
     "heading": "Backend",
     "chunk_index": 2,
-    "word_count": 60,
+    "word_count": 86,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -407,10 +511,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Frontend\n- **Framework**: Angular 20.\n- **Styling**: Tailwind CSS.\n- **Hosting**: deployed on Render as a static site.\n- **Responsibilities**: the analyst dashboard for monitoring transactions,\n  investigating alerts and cases, managing watchlists, and the public model\n  demo.",
+    "text": "## Frontend\n| Component | Technology |\n| --- | --- |\n| Framework | Angular 21 |\n| Styling | Tailwind CSS v4 |\n| Hosting | Render (static site from `render.yaml`) |\n| Public URL | `https://fraudpulse-u2va.onrender.com/` |\n\n**Responsibilities:** analyst dashboard (overview, transactions, alerts, cases,\nwatchlist), authentication via Supabase, public landing page with model demo\nand chatbot widget.\n\nRoutes use lazy loading and auth guards (`authGuard`, `guestGuard`).",
     "heading": "Frontend",
     "chunk_index": 3,
-    "word_count": 38,
+    "word_count": 69,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -420,7 +524,7 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Data and storage\n- **Database**: PostgreSQL, provided through Supabase.\n- **ORM**: SQLAlchemy.\n- **Migrations**: Alembic.\n\nTransactions, scores, score reasons, rule triggers, decisions, alerts, cases,\nwatchlists, and audit logs are all stored in Postgres.",
+    "text": "## Data and storage\n- **Database:** PostgreSQL via Supabase\n- **Connection:** `DATABASE_URL` with `postgresql+psycopg://` driver prefix\n- **Stored entities:** transactions, fraud scores, score reasons, rule triggers,\n  decisions, alerts, cases, watchlists, watchlist history, audit logs",
     "heading": "Data and storage",
     "chunk_index": 4,
     "word_count": 34,
@@ -433,10 +537,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Authentication\nAuthentication is handled by Supabase Auth, which mints JSON Web Tokens (JWTs)\non the frontend. The backend does not issue tokens; it verifies them using the\nSupabase project's public JWKS. This keeps auth stateless and offloads\ncredential management to Supabase.",
+    "text": "## Authentication\n**Supabase Auth** mints JWTs on the frontend. The backend verifies tokens using\nthe project's public JWKS (asymmetric keys). The backend does not store passwords\nor issue its own sessions.",
     "heading": "Authentication",
     "chunk_index": 5,
-    "word_count": 42,
+    "word_count": 31,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -446,10 +550,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Machine learning stack\n- **Model**: LightGBM gradient-boosted trees, calibrated to output\n  probabilities.\n- **Libraries**: scikit-learn for calibration and preprocessing, pandas and\n  NumPy for data handling, joblib for model persistence.\n- Model artefacts are versioned and loaded by the scoring service at runtime.",
+    "text": "## Machine learning stack\n| Component | Detail |\n| --- | --- |\n| Model | Calibrated LightGBM (`fraud_model.pkl`) |\n| Libraries | scikit-learn, LightGBM, pandas, NumPy |\n| Inference | Loaded once per process via the scoring service |\n| Outputs | Fraud probability 0\u20131, mapped to APPROVE / APPROVE_WITH_REVIEW / DECLINE |",
     "heading": "Machine learning stack",
     "chunk_index": 6,
-    "word_count": 43,
+    "word_count": 55,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -459,10 +563,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Assistant (RAG) subsystem\nThe landing-page assistant is powered by a retrieval-augmented-generation (RAG)\npipeline in the backend. It embeds a curated corpus of FraudPulse documentation\nwith a local sentence-transformers model, stores the vectors in a FAISS index,\nretrieves the most relevant chunks for a question, and uses a Groq-hosted large\nlanguage model to generate a grounded, cited answer. The assistant answers only\nfrom the documentation and refuses out-of-scope questions.",
-    "heading": "Assistant (RAG) subsystem",
+    "text": "## RAG assistant stack\n| Component | Detail |\n| --- | --- |\n| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`) |\n| Vector store | FAISS (cosine similarity) |\n| Generation | Groq-hosted LLM (`llama-3.3-70b-versatile` by default) |\n| Corpus | Curated Markdown docs in `backend/rag/docs/` |\n\nPipeline: retrieve \u2192 relevance gate \u2192 generate \u2192 validate \u2192 cite. Refuses\nout-of-corpus questions below the relevance threshold.",
+    "heading": "RAG assistant stack",
     "chunk_index": 7,
-    "word_count": 69,
+    "word_count": 64,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -472,10 +576,10 @@
     "doc_id": "05-architecture-and-tech-stack",
     "title": "Architecture and Tech Stack",
     "filename": "05-architecture-and-tech-stack.md",
-    "text": "## Deployment and CI/CD\n- The backend is containerized with Docker and deployed to Oracle Cloud.\n- The frontend is built and deployed to Render.\n- Continuous integration runs backend tests (pytest) and frontend tests (Jest)\n  on every pull request.\n- A deployment workflow builds and ships the backend image after CI passes on\n  the main branch.",
+    "text": "## Deployment and CI/CD\n| Layer | How it deploys |\n| --- | --- |\n| Frontend | Render static build (`npm run build:prod`) |\n| Backend | Docker image to GHCR; deployed to OCI via GitHub Actions on `main` |\n| CI | pytest (backend), Jest (frontend), RAG index smoke test on every PR |\n\nSecrets (`DATABASE_URL`, `GROQ_API_KEY`) are injected via environment variables,\nnever committed to source control.",
     "heading": "Deployment and CI/CD",
     "chunk_index": 8,
-    "word_count": 57,
+    "word_count": 70,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/05-architecture-and-tech-stack.md"
     }
@@ -498,10 +602,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Authentication and access control\nFraudPulse protects its application API with authentication. Every endpoint\nunder ``/api/v1`` requires a valid Supabase-issued JWT, except a small set of\npublic endpoints (the model demo, access requests, and the landing-page\nassistant). Tokens are issued by Supabase Auth and verified by the backend\nagainst the project's public JWKS, so credentials are never handled directly by\nthe FraudPulse backend.",
+    "text": "## Authentication and access control\nFraudPulse protects application APIs with **Supabase JWT authentication**.\nProtected routes under `/api/v1` require:\n\n```\nAuthorization: Bearer <supabase-jwt>\n```\n\n**Public endpoints** (no JWT required):\n\n- `GET /health`\n- `POST /api/v1/demo/transactions`\n- `POST /api/v1/demo/score`\n- `POST /api/v1/access/requests`\n- `POST /api/v1/assistant/chat`\n\nTokens are minted by Supabase Auth on the frontend and verified by the backend\nagainst the project's public JWKS. The FraudPulse backend does not handle raw\npasswords or issue its own credentials.",
     "heading": "Authentication and access control",
     "chunk_index": 1,
-    "word_count": 63,
+    "word_count": 75,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -511,10 +615,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Data protection in transit\nAll traffic between the dashboard, the API, and the database is encrypted in\ntransit using TLS. Database connections to Supabase Postgres require SSL\n(``sslmode=require``).",
+    "text": "## Data protection in transit\nAll traffic between the browser, API, and database uses **TLS encryption**.\nDatabase connections to Supabase Postgres require SSL (`sslmode=require` in the\nconnection string).",
     "heading": "Data protection in transit",
     "chunk_index": 2,
-    "word_count": 29,
+    "word_count": 28,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -524,10 +628,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Secrets management\nSecrets \u2014 including the database connection string and the Groq API key used by\nthe assistant \u2014 are provided through environment variables and never committed\nto source control. Local development uses a gitignored ``.env`` file, and\nproduction injects secrets through the deployment environment.",
+    "text": "## Secrets management\nSensitive configuration is provided through **environment variables** and\nnever committed to git:\n\n| Secret | Purpose |\n| --- | --- |\n| `DATABASE_URL` | Supabase/Postgres connection |\n| `GROQ_API_KEY` | RAG assistant LLM generation |\n\nLocal development uses a gitignored `backend/.env` file. Production injects\nsecrets through Render, OCI deployment, or GitHub Actions secrets.",
     "heading": "Secrets management",
     "chunk_index": 3,
-    "word_count": 46,
+    "word_count": 57,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -537,10 +641,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Audit trail\nFraudPulse maintains a comprehensive audit trail. Scores, score reasons,\ntriggered rules, decisions, case actions, and watchlist changes are all\nrecorded. This supports investigation, accountability, and regulatory review.\nWatchlist changes in particular are versioned with history so any change can be\ntraced to who made it and when.",
+    "text": "## Audit trail\nFraudPulse records scores, score reasons, triggered rules, decisions, case\nactions, and watchlist changes. Watchlist updates are **versioned with history**\nso every change is traceable. This supports investigation, accountability, and\nregulatory review.",
     "heading": "Audit trail",
     "chunk_index": 4,
-    "word_count": 50,
+    "word_count": 34,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -550,10 +654,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Explainability for compliance\nBecause the model is calibrated and each prediction stores its top contributing\nfeatures alongside any rules that fired, FraudPulse can explain why any given\ntransaction was allowed, sent to review, or blocked. Explainability supports\nfair-lending and adverse-action style requirements where a reason for a\ndecision must be available.",
+    "text": "## Explainability for compliance\nThe calibrated model stores **top contributing features** per score (available\nwith `explain=true` on ingest/score). Combined with rule triggers, FraudPulse\ncan explain why a transaction was allowed, sent to review, or blocked \u2014 supporting\nadverse-action and fair-lending style requirements.",
     "heading": "Explainability for compliance",
     "chunk_index": 5,
-    "word_count": 52,
+    "word_count": 42,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -563,10 +667,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Privacy considerations\nThe landing-page assistant answers only from FraudPulse's own product\ndocumentation. It does not have access to customer transaction data, personal\ndata, or the production database, and it does not store user conversations as\npart of the corpus. This keeps the public assistant isolated from sensitive\ndata.",
-    "heading": "Privacy considerations",
+    "text": "## Privacy and data isolation for the assistant\nThe landing-page **RAG assistant**:\n\n- Answers only from FraudPulse product documentation\n- Does **not** access customer transaction data or the production database\n- Does **not** store visitor conversations in the documentation corpus\n- Refuses out-of-scope questions rather than guessing\n\nThis keeps the public assistant isolated from sensitive operational data.",
+    "heading": "Privacy and data isolation for the assistant",
     "chunk_index": 6,
-    "word_count": 49,
+    "word_count": 57,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -576,10 +680,10 @@
     "doc_id": "06-security-and-compliance",
     "title": "Security and Compliance",
     "filename": "06-security-and-compliance.md",
-    "text": "## Responsible AI\nThe assistant is constrained by design: it answers strictly from the curated\ndocumentation corpus and refuses questions it cannot ground in that corpus,\nrather than guessing. This reduces the risk of hallucinated or misleading\nstatements about the product.",
+    "text": "## Responsible AI\nThe assistant is constrained by design:\n\n1. Retrieval from a curated corpus before any LLM call\n2. Relevance threshold \u2014 low-similarity questions are refused\n3. System prompt forbids inventing features, endpoints, or guarantees\n4. Citations required for grounded answers\n\nFraud **decisioning** is not performed by the LLM \u2014 it is performed by the\ncalibrated ML model and rule engine.",
     "heading": "Responsible AI",
     "chunk_index": 7,
-    "word_count": 41,
+    "word_count": 62,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/06-security-and-compliance.md"
     }
@@ -602,10 +706,10 @@
     "doc_id": "07-access-and-onboarding",
     "title": "Access and Onboarding",
     "filename": "07-access-and-onboarding.md",
-    "text": "## How to get access\nFraudPulse is available through early access. To request access, use the\n**Request access** form on the FraudPulse landing page. Submit your work email\nand, optionally, your company name. The team typically follows up within one\nbusiness day with next steps.\n\nThere is no self-serve signup on the public site; access is granted by the\nFraudPulse team so that each deployment can be configured for the customer's\nportfolio.",
-    "heading": "How to get access",
+    "text": "## How to get access to FraudPulse\nFraudPulse is available through **early access**. To request access:\n\n1. Visit the landing page: `https://fraudpulse-u2va.onrender.com/`\n2. Use the **Request access** form\n3. Submit your work email and optionally your company name\n4. The team typically follows up within **one business day**\n\nThere is no self-serve public signup. Access is provisioned by the FraudPulse\nteam so each deployment can be configured for the customer's portfolio.",
+    "heading": "How to get access to FraudPulse",
     "chunk_index": 1,
-    "word_count": 72,
+    "word_count": 71,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
     }
@@ -615,10 +719,10 @@
     "doc_id": "07-access-and-onboarding",
     "title": "Access and Onboarding",
     "filename": "07-access-and-onboarding.md",
-    "text": "## Signing in\nOnce your account has been provisioned, sign in from the **Sign In** link in\nthe top navigation of the FraudPulse site. Authentication is handled by\nSupabase Auth. After signing in you reach the analyst dashboard.",
-    "heading": "Signing in",
+    "text": "## Signing in to the dashboard\nOnce your account is provisioned:\n\n1. Go to the FraudPulse site and click **Sign In**\n2. Authenticate through **Supabase Auth**\n3. You land in the analyst dashboard (default route: **Overview**)\n\nDashboard sections: Overview, Transactions, Alerts, Cases, Watchlist, and Model\nDemo.",
+    "heading": "Signing in to the dashboard",
     "chunk_index": 2,
-    "word_count": 38,
+    "word_count": 46,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
     }
@@ -628,10 +732,10 @@
     "doc_id": "07-access-and-onboarding",
     "title": "Access and Onboarding",
     "filename": "07-access-and-onboarding.md",
-    "text": "## Trying the model demo\nYou do not need an account to try FraudPulse scoring. The public model demo on\nthe site lets you score sample transactions through the live model without\nsigning in and without persisting any data. This is a good way to see how\nscoring and decisions work before onboarding.",
-    "heading": "Trying the model demo",
+    "text": "## Trying the model demo without an account\nYou do **not** need an account to try scoring:\n\n- Use the **model demo** on the landing page\n- Or call the public demo API: `POST /api/v1/demo/score`\n- Demo scoring uses sample data and does **not** persist to the database\n\nThis is a good way to see ALLOW / REVIEW / BLOCK outcomes before full onboarding.",
+    "heading": "Trying the model demo without an account",
     "chunk_index": 3,
-    "word_count": 53,
+    "word_count": 64,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
     }
@@ -641,10 +745,10 @@
     "doc_id": "07-access-and-onboarding",
     "title": "Access and Onboarding",
     "filename": "07-access-and-onboarding.md",
-    "text": "## Onboarding steps for new customers\nA typical onboarding follows these steps:\n\n1. Submit the Request access form and have an introductory call.\n2. Receive provisioned dashboard accounts for your analysts.\n3. Integrate the REST API into your authorization or checkout flow to send\n   transactions for scoring.\n4. Tune decision thresholds and rules for your portfolio with the FraudPulse\n   team.\n5. Train your analysts on the alert and case workflow in the dashboard.",
-    "heading": "Onboarding steps for new customers",
+    "text": "## Using the landing-page assistant\nThe public **chatbot widget** answers common questions about FraudPulse \u2014\nscoring, decisions, the API, architecture, security, and onboarding. It draws\nanswers only from the product documentation.",
+    "heading": "Using the landing-page assistant",
     "chunk_index": 4,
-    "word_count": 73,
+    "word_count": 31,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
     }
@@ -654,10 +758,10 @@
     "doc_id": "07-access-and-onboarding",
     "title": "Access and Onboarding",
     "filename": "07-access-and-onboarding.md",
-    "text": "## Pricing\nPricing is not published on the public site. It depends on volume and use case.\nSubmit the Request access form and the team will follow up with pricing details\ntailored to your needs.",
-    "heading": "Pricing",
+    "text": "## Onboarding steps for new customers\nA typical onboarding path:\n\n1. Submit the Request access form and introductory call\n2. Receive provisioned dashboard accounts for analysts\n3. Integrate `POST /api/v1/transactions` into your authorization flow\n4. Tune decision thresholds and rules with the FraudPulse team\n5. Train analysts on alerts, cases, and watchlists in the dashboard",
+    "heading": "Onboarding steps for new customers",
     "chunk_index": 5,
-    "word_count": 35,
+    "word_count": 55,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
     }
@@ -667,10 +771,36 @@
     "doc_id": "07-access-and-onboarding",
     "title": "Access and Onboarding",
     "filename": "07-access-and-onboarding.md",
-    "text": "## Getting help and support\nThe best way to reach the FraudPulse team is the **Request access** form on the\nlanding page; the team responds within one business day. For product questions,\nthe landing-page assistant can answer common questions about how FraudPulse\nworks, the API, the tech stack, security, and onboarding.",
-    "heading": "Getting help and support",
+    "text": "## API documentation for integrators\nInteractive API docs are available at:\n\n- Local: `http://localhost:8000/docs`\n- Production: `https://fraudpulse.duckdns.org/docs`",
+    "heading": "API documentation for integrators",
     "chunk_index": 6,
-    "word_count": 51,
+    "word_count": 17,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
+    }
+  },
+  {
+    "chunk_id": "07-access-and-onboarding::7",
+    "doc_id": "07-access-and-onboarding",
+    "title": "Access and Onboarding",
+    "filename": "07-access-and-onboarding.md",
+    "text": "## Pricing\nPricing is **not published** on the public site. It depends on transaction\nvolume and use case. Submit the Request access form for tailored pricing.",
+    "heading": "Pricing",
+    "chunk_index": 7,
+    "word_count": 26,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
+    }
+  },
+  {
+    "chunk_id": "07-access-and-onboarding::8",
+    "doc_id": "07-access-and-onboarding",
+    "title": "Access and Onboarding",
+    "filename": "07-access-and-onboarding.md",
+    "text": "## Getting help\n- **Product questions:** use the landing-page assistant or Request access form\n- **Access requests:** Request access form (response within one business day)\n- **API health:** `GET https://fraudpulse.duckdns.org/health`",
+    "heading": "Getting help",
+    "chunk_index": 8,
+    "word_count": 30,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/07-access-and-onboarding.md"
     }
@@ -693,10 +823,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## What does FraudPulse do?\nFraudPulse is a real-time fraud detection platform for card and account\npayments. It scores each transaction for fraud risk and routes it to ALLOW,\nREVIEW, or BLOCK, helping stop fraud before it settles while keeping friction\nlow for legitimate customers.",
+    "text": "## What does FraudPulse do?\nFraudPulse is a real-time fraud detection platform for card and account\npayments. It scores each transaction for fraud risk (0\u20131) and routes it to\n**ALLOW**, **REVIEW**, or **BLOCK** \u2014 helping stop fraud before settlement while\nkeeping friction low for legitimate customers.",
     "heading": "What does FraudPulse do?",
     "chunk_index": 1,
-    "word_count": 45,
+    "word_count": 46,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -706,10 +836,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## How fast is scoring?\nScoring happens in real time, within milliseconds, so it can run inline during\npayment authorization without adding noticeable latency.",
-    "heading": "How fast is scoring?",
+    "text": "## What are the allow, review, and block decisions?\nThree outcomes exist for every transaction:\n\n| Label (dashboard) | API value | Meaning |\n| --- | --- | --- |\n| ALLOW | `APPROVE` | Cleared \u2014 low risk |\n| REVIEW | `APPROVE_WITH_REVIEW` | Held for analyst investigation |\n| BLOCK | `DECLINE` | Declined \u2014 high risk |\n\nREVIEW and BLOCK create alerts and cases.",
+    "heading": "What are the allow, review, and block decisions?",
     "chunk_index": 2,
-    "word_count": 24,
+    "word_count": 68,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -719,10 +849,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## Does FraudPulse use machine learning or rules?\nBoth. FraudPulse runs a deterministic rule engine alongside a calibrated\nLightGBM machine-learning model. Rules capture known, explainable patterns and\nthe model catches subtler anomalies; their results are combined into the final\ndecision.",
-    "heading": "Does FraudPulse use machine learning or rules?",
+    "text": "## How fast is transaction scoring?\nScoring runs in **real time**, typically within **milliseconds**, so it fits\ninline during payment authorization without noticeable latency.",
+    "heading": "How fast is transaction scoring?",
     "chunk_index": 3,
-    "word_count": 40,
+    "word_count": 24,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -732,10 +862,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## What are the possible decisions?\nThere are three: ALLOW (cleared), REVIEW (held for an analyst), and BLOCK\n(declined as high risk). REVIEW and BLOCK outcomes create alerts and cases.",
-    "heading": "What are the possible decisions?",
+    "text": "## Does FraudPulse use machine learning or rules?\n**Both.** A deterministic rule engine runs alongside a **calibrated LightGBM**\nmodel. Rules capture known patterns; the model catches subtler anomalies. The\nML engine is the primary decision layer.",
+    "heading": "Does FraudPulse use machine learning or rules?",
     "chunk_index": 4,
-    "word_count": 30,
+    "word_count": 36,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -745,10 +875,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## Can I see why a transaction was flagged?\nYes. Every score stores its top contributing features and any rules that fired.\nAnalysts can see this explanation in the dashboard, and it is kept in the audit\ntrail.",
-    "heading": "Can I see why a transaction was flagged?",
+    "text": "## What machine learning model does FraudPulse use?\nA **calibrated LightGBM** gradient-boosted tree model. It outputs a fraud\nprobability between 0 and 1. Thresholds map scores to APPROVE,\nAPPROVE_WITH_REVIEW, or DECLINE.",
+    "heading": "What machine learning model does FraudPulse use?",
     "chunk_index": 5,
-    "word_count": 38,
+    "word_count": 31,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -758,10 +888,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## What is the difference between an alert and a case?\nAn alert is a single thing that needs attention, created when a transaction is\nsent to REVIEW or BLOCK. A case is the unit of investigation an analyst works;\nrelated alerts are grouped into a case with a lifecycle from open to closed.",
-    "heading": "What is the difference between an alert and a case?",
+    "text": "## How does FraudPulse extract features for scoring?\nA real-time feature builder creates vectors from the transaction payload and\ncard history \u2014 including **amount**, **velocity** (recent transaction counts),\ntemporal signals, and entity/watchlist features. Feature order is defined in\nthe model schema (`GET /api/v1/scoring/schema`).",
+    "heading": "How does FraudPulse extract features for scoring?",
     "chunk_index": 6,
-    "word_count": 54,
+    "word_count": 43,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -771,10 +901,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## How do I integrate FraudPulse?\nIntegrate through the REST API under ``/api/v1``. Send transactions to the\nscoring endpoint and act on the returned decision. Protected endpoints require\na Supabase-issued JWT. See the API Reference for details.",
-    "heading": "How do I integrate FraudPulse?",
+    "text": "## Can I see why a transaction was flagged?\nYes. Scores store top contributing features and any rules that fired. Use\n`?explain=true` on ingest or score endpoints for SHAP-style contributions.\nAnalysts also see explanations in the dashboard audit trail.",
+    "heading": "Can I see why a transaction was flagged?",
     "chunk_index": 7,
-    "word_count": 37,
+    "word_count": 39,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -784,10 +914,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## Is there a way to try it without signing up?\nYes. The public model demo lets you score sample transactions through the live\nmodel without an account and without storing any data.",
-    "heading": "Is there a way to try it without signing up?",
+    "text": "## What is the difference between an alert and a case?\nAn **alert** is a single item needing attention (created on REVIEW or BLOCK).\nA **case** is the investigation unit \u2014 related alerts are grouped into a case\nwith a lifecycle from open to closed.",
+    "heading": "What is the difference between an alert and a case?",
     "chunk_index": 8,
-    "word_count": 33,
+    "word_count": 45,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -797,10 +927,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## How is FraudPulse hosted?\nThe FastAPI backend runs as a Docker container on Oracle Cloud Infrastructure.\nThe Angular dashboard is hosted on Render. Data lives in Postgres via Supabase.",
-    "heading": "How is FraudPulse hosted?",
+    "text": "## How do I integrate FraudPulse?\nSend transactions to `POST /api/v1/transactions` under `/api/v1`. Protected\nendpoints need a Supabase JWT in the `Authorization` header. See the API\nReference for full endpoint details.",
+    "heading": "How do I integrate FraudPulse?",
     "chunk_index": 9,
-    "word_count": 30,
+    "word_count": 31,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -810,10 +940,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## How much does FraudPulse cost?\nPricing is not listed publicly and depends on volume and use case. Submit the\nRequest access form for details tailored to your needs.",
-    "heading": "How much does FraudPulse cost?",
+    "text": "## Is there a way to try FraudPulse without signing up?\nYes. The **model demo** on the landing page and `POST /api/v1/demo/score` let\nyou score sample transactions without an account or database writes.",
+    "heading": "Is there a way to try FraudPulse without signing up?",
     "chunk_index": 10,
-    "word_count": 29,
+    "word_count": 33,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -823,10 +953,10 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## How do I contact the team?\nUse the Request access form on the landing page. The team responds within one\nbusiness day.",
-    "heading": "How do I contact the team?",
+    "text": "## How is FraudPulse hosted?\n- **Frontend:** Angular on Render (`fraudpulse-u2va.onrender.com`)\n- **Backend:** FastAPI in Docker on Oracle Cloud (`fraudpulse.duckdns.org`)\n- **Database:** Postgres via Supabase",
+    "heading": "How is FraudPulse hosted?",
     "chunk_index": 11,
-    "word_count": 23,
+    "word_count": 25,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }
@@ -836,10 +966,101 @@
     "doc_id": "08-faq",
     "title": "Frequently Asked Questions",
     "filename": "08-faq.md",
-    "text": "## What powers the landing-page assistant?\nThe assistant uses a retrieval-augmented-generation (RAG) pipeline. It\nretrieves relevant passages from FraudPulse's documentation and uses a Groq\nlarge language model to generate a grounded, cited answer. It only answers from\nthe documentation and will say so when a question is out of scope.",
-    "heading": "What powers the landing-page assistant?",
+    "text": "## What is the tech stack behind FraudPulse?\n**FastAPI** (Python) backend, **Angular 21** frontend with **Tailwind CSS**,\n**Supabase Postgres**, **LightGBM** for ML, and a **RAG** pipeline (FAISS +\nGroq LLM) for the landing-page assistant.",
+    "heading": "What is the tech stack behind FraudPulse?",
     "chunk_index": 12,
-    "word_count": 50,
+    "word_count": 34,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::13",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## How does authentication work in the API?\nProtected routes require a **Supabase-issued JWT** bearer token. The backend\nverifies tokens via JWKS. Public routes include health, demo, access requests,\nand the assistant.",
+    "heading": "How does authentication work in the API?",
+    "chunk_index": 13,
+    "word_count": 32,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::14",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## Is FraudPulse data encrypted in transit?\nYes. All client-to-API and API-to-database traffic uses **TLS**. Database\nconnections require SSL (`sslmode=require`).",
+    "heading": "Is FraudPulse data encrypted in transit?",
+    "chunk_index": 14,
+    "word_count": 20,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::15",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## How do I get access to FraudPulse?\nUse the **Request access** form on the landing page with your work email. The\nteam follows up within about one business day.",
+    "heading": "How do I get access to FraudPulse?",
+    "chunk_index": 15,
+    "word_count": 30,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::16",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## How much does FraudPulse cost?\nPricing is not listed publicly and depends on volume and use case. Submit the\nRequest access form for details.",
+    "heading": "How much does FraudPulse cost?",
+    "chunk_index": 16,
+    "word_count": 25,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::17",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## How do I contact the team?\nUse the **Request access** form on `https://fraudpulse-u2va.onrender.com/`.\nThe team responds within one business day.",
+    "heading": "How do I contact the team?",
+    "chunk_index": 17,
+    "word_count": 21,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::18",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## What powers the landing-page assistant?\nA **retrieval-augmented generation (RAG)** pipeline: embed the question, search\na FAISS index of FraudPulse documentation, inject context into a **Groq LLM**,\nand return a cited answer. Out-of-scope questions are refused. The assistant\ndoes not score transactions or access customer data.",
+    "heading": "What powers the landing-page assistant?",
+    "chunk_index": 18,
+    "word_count": 46,
+    "metadata": {
+      "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
+    }
+  },
+  {
+    "chunk_id": "08-faq::19",
+    "doc_id": "08-faq",
+    "title": "Frequently Asked Questions",
+    "filename": "08-faq.md",
+    "text": "## Does the assistant replace the fraud model?\nNo. The assistant is a **support layer** for documentation questions only.\nFraud decisions are made by the **ML model and rule engine**.",
+    "heading": "Does the assistant replace the fraud model?",
+    "chunk_index": 19,
+    "word_count": 30,
     "metadata": {
       "source_path": "/home/sevenly/Downloads/Quantic/Capstone Project/payment-fraud-engine/backend/rag/docs/08-faq.md"
     }

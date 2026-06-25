@@ -2,71 +2,106 @@
 
 ## API overview
 
-FraudPulse exposes a REST API. All application endpoints are served under the
-``/api/v1`` prefix. Responses are JSON. Most endpoints require authentication
-with a Supabase-issued JWT; a small number of public endpoints exist for the
-landing page and the model demo.
+FraudPulse exposes a **REST API** with JSON request and response bodies. Versioned
+application endpoints live under the `/api/v1` prefix.
 
-The interactive API documentation is available at ``/docs`` (Swagger UI) when
-the service is running.
+- **Interactive docs (Swagger UI):** `/docs` — e.g. `https://fraudpulse.duckdns.org/docs`
+- **Health check:** `GET /health` — no authentication required
+- **Base path for app routes:** `/api/v1`
+
+Most endpoints require a Supabase-issued JWT. A small set of public endpoints
+supports the landing page, access requests, model demo, and documentation
+assistant.
 
 ## Authentication
 
-Protected endpoints require a bearer token in the ``Authorization`` header:
+Protected endpoints require a bearer token:
 
 ```
 Authorization: Bearer <supabase-jwt>
 ```
 
-FraudPulse does not issue tokens itself. Tokens are minted by Supabase Auth on
-the frontend, and the backend verifies them using the project's public JWKS.
-Requests without a valid token to a protected route receive ``401
-Unauthorized``.
+FraudPulse does **not** issue tokens. The Angular frontend obtains tokens from
+**Supabase Auth**; the backend verifies them via the project's public JWKS.
+Invalid or missing tokens on protected routes return `401 Unauthorized`.
 
 ## Health check
 
-- ``GET /health`` — returns service status and a timestamp. No authentication
-  required. Useful for uptime monitoring and load-balancer health probes.
+- `GET /health` — returns service status and a UTC timestamp. Used by load
+  balancers, deployment workflows, and uptime monitoring. No auth required.
 
-## Core endpoint groups
+## Core endpoint groups (authenticated)
 
-The API is organized into the following groups, all under ``/api/v1``:
+All groups below require a valid JWT unless noted.
 
-- ``/transactions`` — ingest and query transactions.
-- ``/scoring`` — score transactions and retrieve scores.
-- ``/decisions`` — retrieve decision outcomes (ALLOW / REVIEW / BLOCK).
-- ``/alerts`` — list and manage alerts.
-- ``/cases`` — work the case lifecycle (open, update, resolve, close).
-- ``/watchlist`` — manage watchlisted cards, devices, and accounts.
-- ``/profiles`` — entity profiles and history.
-- ``/admin`` — administrative operations.
-- ``/auth`` — authenticated user/account helpers.
+| Prefix | Purpose |
+| --- | --- |
+| `/api/v1/transactions` | Ingest transactions and query history |
+| `/api/v1/scoring` | Score without full ingest; feature schema |
+| `/api/v1/decisions` | Decision workflow endpoints |
+| `/api/v1/alerts` | List and manage fraud alerts |
+| `/api/v1/cases` | Case lifecycle (open, update, resolve, close) |
+| `/api/v1/watchlist` | Watchlisted cards, devices, merchants, accounts |
+| `/api/v1/profiles` | Entity profiles and history |
+| `/api/v1/admin` | Administrative operations |
+| `/api/v1/auth` | Authenticated user helpers |
 
-These groups require a valid JWT.
+## Key transaction endpoints
 
-## Public endpoints
+### Ingest a transaction (full pipeline)
 
-A few endpoints are intentionally public so the marketing site and demo work
-without sign-in:
+```
+POST /api/v1/transactions?explain=false
+```
 
-- ``/api/v1/demo/transactions`` — returns a fixture set of demo transactions.
-- ``/api/v1/demo/score`` — scores a demo transaction through the model without
-  persisting to the database, so prospective users can try scoring.
-- ``/api/v1/access/requests`` — submit a request for early access to the
-  dashboard and API.
-- ``/api/v1/assistant/chat`` — the public landing-page assistant, which answers
-  product questions from the FraudPulse documentation.
+Runs watchlist checks, feature building, ML scoring, threshold mapping,
+persistence, and optional alert/case creation. Set `explain=true` to include
+top contributing features in the response.
 
-## Scoring a transaction
+### List and retrieve transactions
 
-To score a transaction, submit its details to the scoring endpoint. The
-response includes the fraud risk score, the resulting decision, the model name,
-and (when explanations are requested) the top contributing features. Scoring
-the demo endpoint uses cold-start card history and does not write to the
-database.
+```
+GET /api/v1/transactions
+GET /api/v1/transactions/{transaction_id}
+```
 
-## Rate limits and errors
+## Scoring endpoints
 
-The API uses standard HTTP status codes. ``400`` indicates a malformed request,
-``401`` an authentication failure, ``404`` a missing resource, and ``5xx`` a
-server error. Error responses include a ``detail`` field describing the problem.
+```
+POST /api/v1/scoring/score?explain=false
+GET  /api/v1/scoring/schema
+```
+
+`/score` runs the model without the full ingest persistence path. `/schema`
+returns feature order and decision thresholds from the loaded model artefact.
+
+## Public endpoints (no JWT)
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /health` | Service health |
+| `POST /api/v1/demo/transactions` | Fixture demo transactions |
+| `POST /api/v1/demo/score` | Score a demo transaction without DB writes |
+| `POST /api/v1/access/requests` | Submit early-access request from landing page |
+| `POST /api/v1/assistant/chat` | Landing-page RAG assistant (documentation Q&A) |
+
+### Assistant chat
+
+```
+POST /api/v1/assistant/chat
+Body: { "question": "How does scoring work?" }
+```
+
+Returns a grounded answer with source citations from the FraudPulse
+documentation corpus. Out-of-scope questions are refused without guessing.
+
+## HTTP status codes and errors
+
+| Code | Meaning |
+| --- | --- |
+| `400` | Malformed request or validation error |
+| `401` | Missing or invalid authentication |
+| `404` | Resource not found |
+| `5xx` | Server error |
+
+Error bodies include a `detail` field describing the problem.

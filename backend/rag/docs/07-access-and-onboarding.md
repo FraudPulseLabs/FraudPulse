@@ -1,50 +1,68 @@
 # Access and Onboarding
 
-## How to get access
+## How to get access to FraudPulse
 
-FraudPulse is available through early access. To request access, use the
-**Request access** form on the FraudPulse landing page. Submit your work email
-and, optionally, your company name. The team typically follows up within one
-business day with next steps.
+FraudPulse is available through **early access**. To request access:
 
-There is no self-serve signup on the public site; access is granted by the
-FraudPulse team so that each deployment can be configured for the customer's
-portfolio.
+1. Visit the landing page: `https://fraudpulse-u2va.onrender.com/`
+2. Use the **Request access** form
+3. Submit your work email and optionally your company name
+4. The team typically follows up within **one business day**
 
-## Signing in
+There is no self-serve public signup. Access is provisioned by the FraudPulse
+team so each deployment can be configured for the customer's portfolio.
 
-Once your account has been provisioned, sign in from the **Sign In** link in
-the top navigation of the FraudPulse site. Authentication is handled by
-Supabase Auth. After signing in you reach the analyst dashboard.
+## Signing in to the dashboard
 
-## Trying the model demo
+Once your account is provisioned:
 
-You do not need an account to try FraudPulse scoring. The public model demo on
-the site lets you score sample transactions through the live model without
-signing in and without persisting any data. This is a good way to see how
-scoring and decisions work before onboarding.
+1. Go to the FraudPulse site and click **Sign In**
+2. Authenticate through **Supabase Auth**
+3. You land in the analyst dashboard (default route: **Overview**)
+
+Dashboard sections: Overview, Transactions, Alerts, Cases, Watchlist, and Model
+Demo.
+
+## Trying the model demo without an account
+
+You do **not** need an account to try scoring:
+
+- Use the **model demo** on the landing page
+- Or call the public demo API: `POST /api/v1/demo/score`
+- Demo scoring uses sample data and does **not** persist to the database
+
+This is a good way to see ALLOW / REVIEW / BLOCK outcomes before full onboarding.
+
+## Using the landing-page assistant
+
+The public **chatbot widget** answers common questions about FraudPulse —
+scoring, decisions, the API, architecture, security, and onboarding. It draws
+answers only from the product documentation.
 
 ## Onboarding steps for new customers
 
-A typical onboarding follows these steps:
+A typical onboarding path:
 
-1. Submit the Request access form and have an introductory call.
-2. Receive provisioned dashboard accounts for your analysts.
-3. Integrate the REST API into your authorization or checkout flow to send
-   transactions for scoring.
-4. Tune decision thresholds and rules for your portfolio with the FraudPulse
-   team.
-5. Train your analysts on the alert and case workflow in the dashboard.
+1. Submit the Request access form and introductory call
+2. Receive provisioned dashboard accounts for analysts
+3. Integrate `POST /api/v1/transactions` into your authorization flow
+4. Tune decision thresholds and rules with the FraudPulse team
+5. Train analysts on alerts, cases, and watchlists in the dashboard
+
+## API documentation for integrators
+
+Interactive API docs are available at:
+
+- Local: `http://localhost:8000/docs`
+- Production: `https://fraudpulse.duckdns.org/docs`
 
 ## Pricing
 
-Pricing is not published on the public site. It depends on volume and use case.
-Submit the Request access form and the team will follow up with pricing details
-tailored to your needs.
+Pricing is **not published** on the public site. It depends on transaction
+volume and use case. Submit the Request access form for tailored pricing.
 
-## Getting help and support
+## Getting help
 
-The best way to reach the FraudPulse team is the **Request access** form on the
-landing page; the team responds within one business day. For product questions,
-the landing-page assistant can answer common questions about how FraudPulse
-works, the API, the tech stack, security, and onboarding.
+- **Product questions:** use the landing-page assistant or Request access form
+- **Access requests:** Request access form (response within one business day)
+- **API health:** `GET https://fraudpulse.duckdns.org/health`

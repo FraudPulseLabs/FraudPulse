@@ -1,61 +1,77 @@
 # Decisions and Case Workflow
 
-## The three decisions
+## ALLOW, REVIEW, and BLOCK decisions
 
-Every scored transaction is classified into exactly one of three decisions:
+Every scored transaction receives exactly one decision. FraudPulse uses two
+naming conventions for the same three outcomes:
 
-- **ALLOW**: the transaction is cleared. The risk score is low and no
-  overriding rule fired, so the payment proceeds without friction.
-- **REVIEW**: the transaction is uncertain and needs a human analyst. It is
-  held for investigation and generates an alert and a case.
-- **BLOCK**: the transaction is high risk. It is declined and generates an
-  alert and a case for follow-up.
+| Dashboard / product label | API value | Meaning |
+| --- | --- | --- |
+| **ALLOW** | `APPROVE` | Low risk; payment proceeds without friction |
+| **REVIEW** | `APPROVE_WITH_REVIEW` | Uncertain; held for analyst investigation |
+| **BLOCK** | `DECLINE` | High risk; payment declined |
+
+When users ask about **allow, review, or block** decisions, these map directly
+to the API values above.
 
 ## How decisions are determined
 
-Decisions are produced by mapping the calibrated risk score to configurable
-thresholds, combined with any rules that fired. A low score maps to ALLOW, a
-middle band maps to REVIEW, and a high score maps to BLOCK. Rules can override
-the score-based mapping to escalate a transaction.
+Decisions are produced by mapping the calibrated fraud score (0–1) to
+thresholds, combined with any rules that fired:
 
-Thresholds are configurable so that risk teams can tune the balance between
-fraud capture and customer friction for their portfolio.
+1. If the score is **below** `approve_below` → `APPROVE` (ALLOW).
+2. If the score is **at or above** `decline_from` → `DECLINE` (BLOCK).
+3. Otherwise → `APPROVE_WITH_REVIEW` (REVIEW).
+
+Rules can override score-based mapping to force escalation. Thresholds are
+tunable per portfolio.
+
+## Which outcomes create alerts
+
+`APPROVE_WITH_REVIEW` (REVIEW) and `DECLINE` (BLOCK) outcomes generate
+**alerts** for analyst attention. `APPROVE` (ALLOW) does not.
+
+Common alert reasons include fraud-review-required and fraud-score-decline
+signals tied to the decision type.
 
 ## Alerts
 
-When a transaction results in REVIEW or BLOCK, FraudPulse creates an **alert**.
-Alerts represent something that needs attention. Related alerts are grouped so
-that analysts are not overwhelmed by duplicates from the same underlying
-activity (for example repeated attempts on the same card).
+An **alert** is a single item needing attention, created when a transaction
+lands in REVIEW or BLOCK. Related alerts may be grouped so analysts are not
+overwhelmed by duplicate activity on the same card or account.
 
 ## Cases
 
-Alerts are organized into **cases**. A case is the unit of investigation an
-analyst works. Cases have a lifecycle so that work can be tracked from
-discovery to resolution. A typical lifecycle moves through states such as:
+Alerts feed into **cases** — the unit of investigation. Cases have a lifecycle:
 
-- **Open**: newly created and awaiting triage.
-- **In progress**: an analyst is actively investigating.
-- **Resolved**: a conclusion has been reached (for example confirmed fraud or
-  legitimate).
-- **Closed**: the case is complete and archived.
+- **Open** — newly created, awaiting triage
+- **In progress** — actively under investigation
+- **Resolved** — conclusion reached (confirmed fraud or legitimate)
+- **Closed** — complete and archived
 
-Every action taken on a case is recorded in the audit trail.
+Every case action is recorded in the audit trail.
 
 ## Analyst workflow in the dashboard
 
-Analysts use the FraudPulse dashboard to:
+Analysts typically:
 
-1. Monitor the live stream of scored transactions.
-2. Triage incoming alerts as they are created.
-3. Open and work cases, reviewing the score, the contributing features, and the
-   rules that fired.
-4. Add cards, devices, or accounts to watchlists when fraud is confirmed.
-5. Resolve and close cases, leaving an auditable record of the outcome.
+1. Monitor the transaction stream on the **Transactions** page.
+2. Triage new **Alerts** as they arrive.
+3. Open **Cases**, review the score, contributing features, and triggered rules.
+4. Add confirmed fraud entities to the **Watchlist**.
+5. Resolve and close cases with an auditable outcome.
 
 ## Watchlists
 
-Watchlists let analysts flag specific cards, devices, or accounts as known
-risk. Watchlist membership influences future scoring and can cause rules to
-fire, so confirmed fraud feeds back into the detection system. Watchlist
-changes are versioned and recorded in history for auditability.
+Watchlists flag specific cards, devices, merchants, or accounts as known risk.
+Membership influences future scoring and can cause rules to fire, so confirmed
+fraud feeds back into detection. Changes are versioned in watchlist history for
+auditability.
+
+## Transaction ingest vs read-only queries
+
+- `POST /api/v1/transactions` — full ingest pipeline (score, decide, persist,
+  optionally create alerts/cases). Supports `?explain=true` for feature
+  contributions.
+- `GET /api/v1/transactions` — list recent transactions.
+- `GET /api/v1/transactions/{id}` — single transaction with latest score and reasons.

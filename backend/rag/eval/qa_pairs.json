@@ -11,6 +11,11 @@
       "expected_source": "03-decisions-and-case-workflow.md"
     },
     {
+      "question": "What is the difference between APPROVE and ALLOW?",
+      "expected_keywords": ["approve", "allow", "api"],
+      "expected_source": "03-decisions-and-case-workflow.md"
+    },
+    {
       "question": "What machine learning model does FraudPulse use?",
       "expected_keywords": ["lightgbm", "calibrated"],
       "expected_source": "02-scoring-methodology.md"
