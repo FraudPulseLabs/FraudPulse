@@ -81,6 +81,8 @@ jobs:
       - name: Install RAG dependencies
         run: |
           python -m pip install --upgrade pip
+          # CPU-only torch keeps CI fast and avoids CUDA wheel downloads.
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements-rag.txt
 
       - name: Build vector index

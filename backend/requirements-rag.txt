@@ -3,6 +3,7 @@
 # alongside requirements.txt. See backend/rag/README.md.
 #   pip install -r requirements.txt -r requirements-rag.txt
 
+python-dotenv==1.0.1          # rag/config.py loads backend/.env for GROQ_API_KEY
 sentence-transformers==3.3.1   # local embeddings (all-MiniLM-L6-v2), pulls torch
 faiss-cpu==1.9.0               # vector store (IndexFlatIP / cosine)
 groq==0.13.0                   # Groq LLM client for answer generation
