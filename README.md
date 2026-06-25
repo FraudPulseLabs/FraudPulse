@@ -25,6 +25,8 @@ FraudPulse is a modular fraud detection platform for card payments that combines
 
 FraudPulse is a modular fraud detection system that processes transactions, computes fraud risk scores, and classifies payments into **ALLOW**, **REVIEW**, or **BLOCK**. It is designed as an end-to-end workflow covering ingestion, scoring, decisioning, investigation, and monitoring.
 
+**Supplementary documentation:** [deployed.md](deployed.md) · [design-and-evaluation.md](design-and-evaluation.md) · [ai-tooling.md](ai-tooling.md)
+
 ## 2. Live Deployments
 
 - Frontend: [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
@@ -137,11 +139,14 @@ flowchart TD
 
 ```text
 .
-├── backend/      -> FastAPI API, ML engine, RAG services, tests
-├── frontend/     -> Angular application (UI, routing, feature modules)
-├── .github/      -> CI workflows and project automation
-├── render.yaml   -> deployment configuration
-└── README.md     -> project documentation
+├── backend/                 -> FastAPI API, ML engine, RAG services, tests
+├── frontend/                -> Angular application (UI, routing, feature modules)
+├── .github/                 -> CI workflows and project automation
+├── ai-tooling.md            -> team AI tooling notes
+├── deployed.md              -> deployment guide
+├── design-and-evaluation.md -> architecture patterns and testing documentation
+├── render.yaml              -> deployment configuration
+└── README.md                -> project documentation
 ```
 
 ## 10. Branch Protection Rules
@@ -164,8 +169,10 @@ flowchart TD
 - **Olalekan Erinoso** · Team Member
 - **James Kilonzo** · Team Member
 
+For AI-assisted development notes, see [ai-tooling.md](ai-tooling.md).
+
 ## 13. License
 
 FraudPulse is licensed under the **MIT License**.
 
-This license allows you to use, modify, and distribute the software with minimal restrictions. See the [LICENSE](LICENSE) file for full terms and details.
+You may use, modify, and distribute the software with minimal restrictions.

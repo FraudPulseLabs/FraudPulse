@@ -110,4 +110,4 @@ Render frontend deploys are configured separately via the Render dashboard / `re
 - **ML over RAG** — fraud decisioning is driven by the ML pipeline; the assistant is a support layer only.
 - **Branch protection** — changes merge to `main` via PR with passing CI; backend auto-deploys after CI succeeds.
 
-For full project documentation, see [README.md](README.md).
+**See also:** [README.md](README.md) · [design-and-evaluation.md](design-and-evaluation.md) · [ai-tooling.md](ai-tooling.md)
