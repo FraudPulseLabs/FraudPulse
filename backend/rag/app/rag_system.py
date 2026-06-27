@@ -242,7 +242,7 @@ class RagSystem:
                     "The assistant is temporarily unavailable. Please try again "
                     "later or use the Request access form to reach the team."
                 ),
-                sources=sources,
+                sources=[],
                 grounded=False,
                 refused=False,
                 retrieval_scores=scores,

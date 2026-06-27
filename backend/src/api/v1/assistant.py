@@ -10,12 +10,11 @@ The endpoint is defined synchronously so FastAPI runs the CPU-bound embedding
 and the blocking LLM call in its worker threadpool.
 """
 
-from __future__ import annotations
-
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
+from src.core.rate_limit import LIMIT_ASSISTANT, limiter
 from src.schemas.assistant import AssistantQuery, AssistantResponse, AssistantSource
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,8 @@ router = APIRouter()
 
 
 @router.post("/chat", response_model=AssistantResponse)
-def assistant_chat(payload: AssistantQuery) -> AssistantResponse:
+@limiter.limit(LIMIT_ASSISTANT)
+def assistant_chat(request: Request, payload: AssistantQuery) -> AssistantResponse:
     try:
         # Imported lazily so the API can boot even if the RAG extras
         # (faiss / sentence-transformers) or the built index are unavailable.

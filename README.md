@@ -41,9 +41,8 @@ FraudPulse is a modular fraud detection system that processes transactions, comp
 
 All capstone planning, sprint tasks, and delivered features are tracked on our Trello Scrum board.
 
-| | |
-|---|---|
 | **Board** | [MSSE Capstone — Payment Card Fraud Detection System](https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system) |
+|---|---|
 | **URL** | https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system |
 
 The board documents user stories, work in progress, completed features, and backlog items across the FraudPulse delivery.
@@ -111,6 +110,7 @@ The AI support assistant is a secondary support layer for product guidance and o
   2. Relevant context is retrieved from the indexed knowledge base
   3. Retrieved context is injected into the LLM prompt
   4. The LLM generates a context-grounded answer
+- **Rate limiting**: public assistant, demo, and access-request endpoints are capped per client IP (HTTP `429` when exceeded); analyst APIs behind JWT are not.
 
 ```mermaid
 flowchart TD
@@ -179,10 +179,10 @@ flowchart TD
 
 ## 12. Team
 
-- **Macharia Kibandi** · Project Owner
-- **Victor Asena** · Scrum Master
-- **Olalekan Erinoso** · Team Member
-- **James Kilonzo** · Team Member
+- [**Macharia Kibandi**](https://github.com/KibandiMacharia "KibandiMacharia by GitHub") · Project Owner
+- [**Victor Asena**](https://github.com/namema1 "namema1 on GitHub") · Scrum Master
+- [**Olalekan Erinoso**](https://github.com/lagjracia "lagjracia on GitHub") · Team Member
+- [**James Kilonzo**](https://github.com/KilonzoJames "KilonzoJames on GitHub") · Team Member
 
 For AI-assisted development notes, see [ai-tooling.md](ai-tooling.md).
 

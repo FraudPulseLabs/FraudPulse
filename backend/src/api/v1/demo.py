@@ -8,13 +8,13 @@ can evaluate held-out rows without polluting production data or tripping
 watchlist side effects.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+
+from src.core.rate_limit import LIMIT_DEMO, limiter
 
 from src.schemas.transaction_ingest import TransactionIngestRequest
 from src.services.decision_service import _map_decision
@@ -44,7 +44,8 @@ def _cold_start_card_history(payload: TransactionIngestRequest) -> dict[str, Any
 
 
 @router.get("/transactions")
-async def list_demo_transactions() -> list[dict[str, Any]]:
+@limiter.limit(LIMIT_DEMO)
+async def list_demo_transactions(request: Request) -> list[dict[str, Any]]:
     if not _DEMO_PATH.exists():
         raise HTTPException(
             status_code=503,
@@ -57,7 +58,9 @@ async def list_demo_transactions() -> list[dict[str, Any]]:
 
 
 @router.post("/score")
+@limiter.limit(LIMIT_DEMO)
 async def score_demo_transaction(
+    request: Request,
     payload: TransactionIngestRequest,
     explain: bool = Query(default=False),
 ) -> dict[str, Any]:

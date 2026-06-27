@@ -75,6 +75,10 @@ cp .env.example .env   # run from backend/
 | `DATABASE_URL` | Supabase/Postgres connection (`postgresql+psycopg://…`) |
 | `GROQ_API_KEY` | RAG assistant LLM (optional locally; required for chat responses) |
 | `GROQ_MODEL` | LLM override (default: `llama-3.3-70b-versatile`) |
+| `RATE_LIMIT_ASSISTANT` | Per-IP limit for `POST /api/v1/assistant/chat` (default: `10/minute`) |
+| `RATE_LIMIT_DEMO` | Per-IP limit for demo routes (default: `30/minute`) |
+| `RATE_LIMIT_ACCESS` | Per-IP limit for `POST /api/v1/access/requests` (default: `5/minute`) |
+| `RATE_LIMIT_HEALTH` | Per-IP limit for `GET /health` (default: `120/minute`) |
 
 Do not commit `.env`. Frontend env files hold **public** config only (`apiUrl`, etc.).
 
@@ -89,10 +93,14 @@ Do not commit `.env`. Frontend env files hold **public** config only (`apiUrl`, 
 
 ### Backend — Oracle Cloud + DuckDNS
 
-- Docker image built from `backend/Dockerfile` (includes ML + RAG index).
-- Hosted on Oracle Cloud Infrastructure (OCI); exposed at `fraudpulse.duckdns.org`.
-- Container listens on port `8000`; health check at `/health`.
-- Secrets (`DATABASE_URL`, `GROQ_API_KEY`) are injected at deploy time — never committed.
+- Docker image built from `backend/Dockerfile` (includes ML models + RAG index).
+- Hosted on Oracle Cloud Infrastructure (OCI); public API at `fraudpulse.duckdns.org`.
+- Health check at `/health`.
+- Secrets (`DATABASE_URL`, `GROQ_API_KEY`) are injected at deploy time through GitHub Actions — never committed to the repository.
+
+> **Assistant key:** `GROQ_API_KEY` must be set in production for the RAG assistant to generate answers. If it is missing or invalid, retrieval still runs but the API returns a graceful "temporarily unavailable" response with no sources.
+
+**Public endpoint rate limiting** — unauthenticated routes (`/health`, assistant, demo, and access-request endpoints) are limited per client IP via `slowapi`. Excess traffic receives HTTP `429` with `{"error": "Rate limit exceeded: ..."}`. JWT-protected analyst routes are not subject to these limits. Tune with the `RATE_LIMIT_*` variables above (see `backend/.env.example`).
 
 ### CI/CD
 
