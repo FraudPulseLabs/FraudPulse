@@ -16,6 +16,18 @@ TEST_JWT_SECRET = "integration-test-jwt-secret"
 
 
 @pytest.fixture(autouse=True)
+def _disable_rate_limits():
+    """Keep existing tests from tripping per-IP limits in the shared TestClient."""
+    from src.core.rate_limit import limiter
+
+    was_enabled = limiter.enabled
+    limiter.enabled = False
+    yield
+    limiter.enabled = was_enabled
+    limiter.reset()
+
+
+@pytest.fixture(autouse=True)
 def _hs256_jwt_secret(monkeypatch):
     """Force HS256 verification so tests never hit Supabase JWKS."""
     monkeypatch.setattr(config, "SUPABASE_JWT_SECRET", TEST_JWT_SECRET)
