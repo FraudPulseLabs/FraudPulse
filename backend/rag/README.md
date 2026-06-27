@@ -40,7 +40,7 @@ The key is read in [`rag/config.py`](./config.py) via
 | --- | --- | --- |
 | Local dev | `GROQ_API_KEY` | `backend/.env` |
 | Render | `GROQ_API_KEY` | Dashboard → Environment (`render.yaml` declares it `sync: false`) |
-| OCI deploy | `BACKEND_GROQ_API_KEY` | GitHub Actions repo secret (written to the server `.env` by `deploy.yml`) |
+| OCI deploy | `GROQ_API_KEY` | GitHub Actions repository secret (injected by the deploy workflow) |
 
 > Without a key, **retrieval still works** but generation is disabled and the
 > assistant returns a "temporarily unavailable" message. Refusal of

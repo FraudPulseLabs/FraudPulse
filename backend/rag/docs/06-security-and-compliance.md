@@ -12,10 +12,14 @@ Authorization: Bearer <supabase-jwt>
 **Public endpoints** (no JWT required):
 
 - `GET /health`
-- `POST /api/v1/demo/transactions`
+- `GET /api/v1/demo/transactions`
 - `POST /api/v1/demo/score`
 - `POST /api/v1/access/requests`
 - `POST /api/v1/assistant/chat`
+
+Public routes are **rate-limited per client IP** to reduce abuse (assistant LLM
+cost, demo scoring load, and access-request spam). Excess traffic receives HTTP
+`429 Too Many Requests`.
 
 Tokens are minted by Supabase Auth on the frontend and verified by the backend
 against the project's public JWKS. The FraudPulse backend does not handle raw
