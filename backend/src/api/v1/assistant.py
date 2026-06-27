@@ -10,8 +10,6 @@ The endpoint is defined synchronously so FastAPI runs the CPU-bound embedding
 and the blocking LLM call in its worker threadpool.
 """
 
-from __future__ import annotations
-
 import logging
 
 from fastapi import APIRouter, HTTPException, Request

@@ -8,8 +8,6 @@ can evaluate held-out rows without polluting production data or tripping
 watchlist side effects.
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any
