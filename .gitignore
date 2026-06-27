@@ -1,0 +1,4 @@
+# Secrets — never commit credentials or local env files
+.env
+*.key
+.claude
