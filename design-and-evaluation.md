@@ -128,6 +128,7 @@ Side effects (e.g. alert creation after a flagged transaction) are decoupled via
 - **Static frontend** — built and served from Render (`render.yaml`)
 - **CI/CD** — GitHub Actions runs tests on every PR; backend auto-deploys to OCI on `main`
 - **Secrets injection** — `DATABASE_URL`, `GROQ_API_KEY` via environment, never committed
+- **Public rate limiting** — per-IP caps on unauthenticated routes (assistant, demo, access, health) via `slowapi`; returns HTTP `429` on abuse
 
 **Why:** Reproducible builds, automated quality gates, and safe secret handling for production.
 

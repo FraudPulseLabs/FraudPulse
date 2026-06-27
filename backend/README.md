@@ -68,6 +68,20 @@ Current route modules:
 - `profiles.py` — profile endpoints.
 - `admin.py` — admin/settings endpoints.
 - `assistant.py` — **public** `POST /assistant/chat`, the landing-page RAG assistant. It answers questions strictly from the FraudPulse docs corpus and refuses out-of-corpus questions. See `rag/README.md` (incl. where to put the `GROQ_API_KEY`).
+- `demo.py` and `access.py` — other **public** routes (model demo and access requests).
+
+### Public endpoint rate limiting
+
+Unauthenticated routes are rate-limited per client IP (`src/core/rate_limit.py`, `slowapi`). Protected JWT routes are exempt.
+
+| Route | Default limit |
+| --- | --- |
+| `POST /api/v1/assistant/chat` | 10 / minute |
+| `GET /api/v1/demo/transactions`, `POST /api/v1/demo/score` | 30 / minute |
+| `POST /api/v1/access/requests` | 5 / minute |
+| `GET /health` | 120 / minute |
+
+Override with `RATE_LIMIT_ASSISTANT`, `RATE_LIMIT_DEMO`, `RATE_LIMIT_ACCESS`, and `RATE_LIMIT_HEALTH` in `backend/.env`. When exceeded, the API returns HTTP `429` and `{"error": "Rate limit exceeded: ..."}`.
 
 ## Database
 
