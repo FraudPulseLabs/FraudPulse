@@ -1,15 +1,16 @@
+// src/app/core/models/alert.model.ts
+
+export type AlertReason =
+  | 'FRAUD_REVIEW_REQUIRED'
+  | 'FRAUD_SCORE_DECLINE'
+  | 'MERCHANT_BLACKLISTED';
+
 export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH';
-export type AlertStatus = 'NEW' | 'ACKNOWLEDGED' | 'RESOLVED';
 
 export interface Alert {
   id: string;
   transactionId: string;
-  reason: string;
+  reason: AlertReason;
   severity: AlertSeverity;
-  status: AlertStatus;
-  createdAt: string;
-  acknowledgedAt?: string;
-  resolvedAt?: string;
-  resolutionNote?: string;
-  caseId?: string;
+  createdAt: string; // ISO 8601 timestamp
 }

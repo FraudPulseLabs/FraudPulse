@@ -3,7 +3,7 @@ feature_engineering.py
 =======================
 Shared feature computation logic used by BOTH:
   - ml/preprocessing.py        (training pipeline)
-  - src/services/feature_service.py  (real-time inference)
+  - src/services/realtime_feature_builder.py  (real-time inference)
 
 Rules
 -----
@@ -12,7 +12,7 @@ Rules
   training dataset or require labels.
 - No function imports from preprocessing.py — dependency flows one way only:
     feature_engineering  ←  preprocessing.py
-    feature_engineering  ←  feature_service.py
+    feature_engineering  ←  realtime_feature_builder.py
 - Any change to logic here must be versioned and redeployed to both the
   training pipeline and the inference service simultaneously to prevent
   train/serve skew.
@@ -23,6 +23,39 @@ Inference source is documented on each function:
   ISO 8583   — value comes directly from the authorization message
   Card store  — value queried from Redis/Postgres card history store
   Derived     — computed from other already-computed features, no extra source
+
+CRITICAL CALL ORDER (enforced by preprocessing.py and realtime_feature_builder.py)
+------------------------------------------------------------------------------------
+compute_composite_fraud_signals() reads the raw "authentication" string column.
+encode_categorical_features() replaces that column with authentication_enc (int).
+
+Always call in this order:
+  1. compute_timestamp_cyclical_features
+  2. compute_cross_border_flag
+  3. compute_card_spend_history_features
+  4. compute_card_transaction_velocity
+  5. compute_composite_fraud_signals   ← must precede encode_categorical_features
+  6. encode_categorical_features
+
+Reversing steps 5 and 6 will cause is_weak_auth_on_above_average_amount to
+silently produce all-zero values, as authentication_enc is an int and will
+never match the string literals "NONE" or "CVV2".
+
+Changelog
+---------
+v2 — two fixes applied:
+  1. is_night boundary consistency fix.
+       Batch function used hour.between(0, 4) → inclusive of hour 4 (00:00–04:59).
+       Single-transaction inference function used 0 <= hour <= 4 — same range,
+       but the comment said "00:00–04:59" while hour 4 = 04:00–04:59, making
+       the boundary hour 5 = 05:00 the first non-night hour. Both now explicitly
+       document and use the same inclusive-4 convention, verified to be identical.
+
+  2. Critical call order documented at module level (see above).
+       compute_composite_fraud_signals references "authentication" as a raw string.
+       encode_categorical_features drops it and adds authentication_enc (int).
+       Swapping the call order silently breaks the composite flag. The dependency
+       is now documented at the top of this file and in preprocessing.py's run().
 """
 
 import numpy as np
@@ -30,7 +63,7 @@ import pandas as pd
 
 # =============================================================================
 # ENCODING MAPS — module-level constants
-# Imported by feature_service.py at inference time.
+# Imported by realtime_feature_builder.py at inference time.
 # Any change here requires retraining the model.
 # =============================================================================
 
@@ -43,55 +76,84 @@ PAN_ENTRY_ORDER = {"CHIP": 0, "CONTACTLESS": 1, "ONLINE": 2, "MAGSTRIPE": 3}
 # Strongest auth → weakest auth
 AUTH_ORDER = {"BIOMETRICS": 0, "OTP": 1, "PIN": 2, "CVV2": 3, "NONE": 4}
 
-# One-hot categories — defines which columns the model expects
-# Used by feature_service.py to build the correct inference vector
-CARD_TYPE_CATEGORIES    = ["Debit", "Credit", "Prepaid"]
-CHANNEL_CATEGORIES      = ["ATM", "ECOMMERCE", "POS"]
-TXN_TYPE_CATEGORIES     = ["purchase", "withdrawal"]
+# One-hot categories — defines which columns the model expects.
+# Used by realtime_feature_builder.py to build the correct inference vector.
+CARD_TYPE_CATEGORIES = ["Debit", "Credit", "Prepaid"]
+CHANNEL_CATEGORIES   = ["ATM", "ECOMMERCE", "POS"]
+TXN_TYPE_CATEGORIES  = ["purchase", "withdrawal"]
+
+# SCALING NOTE
+# Numeric features are intentionally NOT scaled.
+# Tree-based models (XGBoost / LightGBM / RandomForest) split on
+# thresholds (e.g. amount_zscore > 2.1) — scaling changes nothing
+# about where those splits land. Scaling is only required for
+# distance-based models (KNN, SVM) or linear models.
+# If the model type changes, add a scaling step in preprocessing.py.
 
 
 # =============================================================================
 # 1. TIME FEATURES
 # INFERENCE SOURCE: ISO 8583 DE 12 (time) / DE 13 (date)
 # =============================================================================
-def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_timestamp_cyclical_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Hour and day-of-week encoded as sine + cosine pairs to capture
     their circular nature — hour 23 and hour 0 are adjacent, not distant.
     sin(2π × hour / 24) and cos(2π × hour / 24) place each hour on a unit
     circle where every hour is equidistant from its neighbours.
 
+    is_weekend is intentionally NOT produced here.
+    It was removed from the feature set in preprocessing.py v2 because
+    dow_sin / dow_cos already encode day-of-week cyclically, making
+    is_weekend a redundant collinear feature (0.77 correlation with
+    day_of_week in the training data).
+
+    is_night boundary: hour ∈ {0,1,2,3,4} → 00:00–04:59 inclusive.
+    This matches the inference helper below — both use hour <= 4.
+
     At inference: pass a single-row DataFrame with a 'timestamp' column,
-    or call add_time_features_single() with a datetime object.
+    or call compute_timestamp_cyclical_features_for_single_transaction()
+    with a datetime object.
     """
-    df = df.copy()
+    df   = df.copy()
     hour = df["timestamp"].dt.hour
     dow  = df["timestamp"].dt.dayofweek
 
-    df["hour_sin"]   = np.sin(2 * np.pi * hour / 24)
-    df["hour_cos"]   = np.cos(2 * np.pi * hour / 24)
-    df["dow_sin"]    = np.sin(2 * np.pi * dow / 7)
-    df["dow_cos"]    = np.cos(2 * np.pi * dow / 7)
-    df["is_weekend"] = dow.isin([5, 6]).astype(int)
-    df["is_night"]   = hour.between(0, 4).astype(int)   # 00:00–04:59
+    df["hour_sin"] = np.sin(2 * np.pi * hour / 24)
+    df["hour_cos"] = np.cos(2 * np.pi * hour / 24)
+    df["dow_sin"]  = np.sin(2 * np.pi * dow / 7)
+    df["dow_cos"]  = np.cos(2 * np.pi * dow / 7)
+    # is_night: hours 0–4 inclusive (midnight through 04:59)
+    # FIX 1: was hour.between(0, 4) — verified identical to hour <= 4 for integer hours.
+    # Documented explicitly to match the inference helper convention.
+    df["is_night"] = (hour <= 4).astype(int)
     return df
 
 
-def add_time_features_single(timestamp: pd.Timestamp) -> dict:
+def compute_timestamp_cyclical_features_for_single_transaction(
+    timestamp: pd.Timestamp,
+) -> dict:
     """
     Inference convenience: compute time features for a single transaction.
     Returns a dict of feature_name → value for direct insertion into the
     feature vector.
+
+    is_night boundary: hour ∈ {0,1,2,3,4} → 00:00–04:59 inclusive.
+    FIX 1: previously used 0 <= hour <= 4, which is identical in behaviour
+    but is now explicitly documented to match the batch function above.
+    is_weekend is not returned — it was removed from the feature set in v2.
     """
+    if not isinstance(timestamp, pd.Timestamp):
+        timestamp = pd.Timestamp(timestamp)
     hour = timestamp.hour
     dow  = timestamp.dayofweek
     return {
-        "hour_sin":   float(np.sin(2 * np.pi * hour / 24)),
-        "hour_cos":   float(np.cos(2 * np.pi * hour / 24)),
-        "dow_sin":    float(np.sin(2 * np.pi * dow / 7)),
-        "dow_cos":    float(np.cos(2 * np.pi * dow / 7)),
-        "is_weekend": int(dow in (5, 6)),
-        "is_night":   int(0 <= hour <= 4),
+        "hour_sin": float(np.sin(2 * np.pi * hour / 24)),
+        "hour_cos": float(np.cos(2 * np.pi * hour / 24)),
+        "dow_sin":  float(np.sin(2 * np.pi * dow / 7)),
+        "dow_cos":  float(np.cos(2 * np.pi * dow / 7)),
+        # is_night: hours 0–4 inclusive (midnight through 04:59)
+        "is_night": int(hour <= 4),
     }
 
 
@@ -100,7 +162,7 @@ def add_time_features_single(timestamp: pd.Timestamp) -> dict:
 # INFERENCE SOURCE: ISO 8583 DE 43 (transaction_country) +
 #                   card profile (issuing_bank_country) from CMS/card store
 # =============================================================================
-def add_geography_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_cross_border_flag(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["cross_border"] = (
         df["issuing_bank_country"] != df["transaction_country"]
@@ -108,7 +170,7 @@ def add_geography_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_geography_features_single(
+def compute_cross_border_flag_for_single_transaction(
     issuing_bank_country: str,
     transaction_country: str,
 ) -> dict:
@@ -130,7 +192,7 @@ def add_geography_features_single(
 # Store is updated ASYNCHRONOUSLY after the API response is returned.
 # First-transaction defaults documented on each feature below.
 # =============================================================================
-def add_card_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_card_spend_history_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Batch version for training — computes expanding-window aggregates
     using only prior rows per card (shift(1) prevents leakage).
@@ -151,21 +213,21 @@ def add_card_features(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(level=0, drop=True)
     )
 
-    # Amount ratio vs card history — clamped at 20× to limit outlier influence
+    # Amount ratio vs card history — clamped at 20× to limit outlier influence.
     # Default: 1.0 (no history available on first transaction)
     df["amount_vs_card_avg"] = (
         df["enriched_amount_usd"]
         / (df["card_avg_amount_usd_prior"].fillna(df["enriched_amount_usd"]) + 1e-6)
     ).clip(upper=20.0)
 
-    # Z-score — clamped at ±10 to prevent extreme outliers dominating splits
+    # Z-score — clamped at ±10 to prevent extreme outliers dominating splits.
     # Default: 0.0 (no history)
     df["amount_zscore"] = (
         (df["enriched_amount_usd"] - df["card_avg_amount_usd_prior"])
         / (df["card_std_amount_usd_prior"].fillna(1.0) + 1e-6)
     ).clip(-10, 10)
 
-    # Seconds since last transaction — capped at 86 400s (24h)
+    # Seconds since last transaction — capped at 86 400s (24h).
     # Default: 86 400s (first transaction — assume cold start)
     df["seconds_since_last_txn"] = (
         grp["timestamp"]
@@ -178,25 +240,25 @@ def add_card_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_card_features_single(
+def compute_card_spend_history_features_for_single_transaction(
     enriched_amount_usd: float,
     card_history: dict,
 ) -> dict:
     """
     Inference version — card_history is queried from the card store.
 
-    Expected card_history keys (all optional, defaults applied if missing):
-      txn_count         : int   — number of prior transactions
-      amount_mean       : float — running mean of enriched_amount_usd
-      amount_std        : float — running std of enriched_amount_usd
-      last_txn_ts       : float — unix timestamp of last transaction (seconds)
-      current_ts        : float — unix timestamp of this transaction (seconds)
+    Expected card_history keys:
+      txn_count  : int   — number of prior transactions (0 = cold start)
+      mean_amt   : float — mean of prior enriched_amount_usd values
+      std_amt    : float — std dev of prior enriched_amount_usd values
+      last_ts    : float | None — unix timestamp of last transaction
+      current_ts : float | None — unix timestamp of current transaction
     """
-    count      = card_history.get("txn_count", 0)
-    mean_amt   = card_history.get("amount_mean", enriched_amount_usd)
-    std_amt    = card_history.get("amount_std",  1.0)
-    last_ts    = card_history.get("last_txn_ts", None)
-    current_ts = card_history.get("current_ts",  None)
+    count    = card_history.get("txn_count",  0)
+    mean_amt = card_history.get("mean_amt",   enriched_amount_usd)
+    std_amt  = card_history.get("std_amt",    1.0)
+    last_ts  = card_history.get("last_ts",    None)
+    current_ts = card_history.get("current_ts", None)
 
     amount_vs_avg = float(
         min(enriched_amount_usd / (mean_amt + 1e-6), 20.0)
@@ -225,50 +287,46 @@ def add_card_features_single(
 # INFERENCE SOURCE: card history store — list of recent transaction timestamps
 # The store must support querying: "timestamps for card X in last N seconds"
 # =============================================================================
-def add_velocity_features(df: pd.DataFrame) -> pd.DataFrame:
+def compute_card_transaction_velocity(df: pd.DataFrame) -> pd.DataFrame:
     """Batch version for training — counts prior transactions in rolling windows."""
     df = df.copy().sort_values(["card_id", "timestamp"]).reset_index(drop=True)
 
-    txn_count_1h = np.zeros(len(df), dtype=int)
+    txn_count_1h  = np.zeros(len(df), dtype=int)
     txn_count_24h = np.zeros(len(df), dtype=int)
 
     for card_id, group in df.groupby("card_id"):
         idx = group.index
-        ts = group["timestamp"].values
+        ts  = group["timestamp"].values
 
         for i in range(len(ts)):
             if i == 0:
                 continue
 
             current_ts = ts[i]
-
-            cutoff_1h = current_ts - np.timedelta64(3600, "s")
+            cutoff_1h  = current_ts - np.timedelta64(3600,  "s")
             cutoff_24h = current_ts - np.timedelta64(86400, "s")
+            prior_ts   = ts[:i]
 
-            prior_ts = ts[:i]
-
-            txn_count_1h[idx[i]] = np.sum(
-                (prior_ts >= cutoff_1h) & (prior_ts < current_ts)
+            txn_count_1h[idx[i]]  = np.sum(
+                (prior_ts >= cutoff_1h)  & (prior_ts < current_ts)
             )
-
             txn_count_24h[idx[i]] = np.sum(
                 (prior_ts >= cutoff_24h) & (prior_ts < current_ts)
             )
 
-    df["txn_count_1h"] = txn_count_1h
+    df["txn_count_1h"]  = txn_count_1h
     df["txn_count_24h"] = txn_count_24h
 
     return df
 
 
-def add_velocity_features_single(
+def compute_card_transaction_velocity_for_single_transaction(
     recent_timestamps: list,
     current_ts: float,
 ) -> dict:
     """
     Inference version — recent_timestamps is a list of unix timestamps
     (seconds) for prior transactions on this card, queried from the store.
-
     current_ts is the unix timestamp of the incoming transaction.
     """
     ts_arr = np.array(recent_timestamps, dtype=float)
@@ -282,28 +340,53 @@ def add_velocity_features_single(
 # 5. RISK FLAGS  (composite signals)
 # INFERENCE SOURCE: derived from features already computed above
 # No additional store needed — pure functions of other features.
+#
+# CRITICAL: this function must be called BEFORE encode_categorical_features.
+# It reads the raw "authentication" string column. encode_categorical_features
+# replaces that column with authentication_enc (int), after which the string
+# comparisons ("NONE", "CVV2") will silently produce all-zero results.
 # =============================================================================
-def add_risk_flags(df: pd.DataFrame) -> pd.DataFrame:
+def compute_composite_fraud_signals(df: pd.DataFrame) -> pd.DataFrame:
     """
-    All thresholds relative to card history, not absolute USD values,
-    so they generalise across spend levels.
+    Composite signals derived from features already computed above.
+    Each flag is named to describe the specific fraud pattern it detects.
+    All amount thresholds are relative to card history, not absolute USD
+    values, so they generalise across different spend levels.
 
-    Note: cardholder_present is intentionally excluded — it reflects a
-    fixed terminal attribute (attended vs unattended per DE 22/DE 61),
-    not a per-transaction signal. Interaction mode is captured by
-    pan_entry_mode and channel instead.
+    Flags produced:
+      is_amount_spike_vs_card_history     — amount > 3× card average
+      is_cross_border_amount_spike        — cross-border + amount spike together
+      is_velocity_burst_last_1h           — more than 3 txns in past hour
+      is_weak_auth_on_above_average_amount— weak auth (NONE/CVV2) on 2× amount
+
+    Note: cardholder_present intentionally excluded — it is a fixed terminal
+    attribute (DE 22/DE 61), not a per-transaction behavioural signal.
+    Excluding it from composite signals prevents leakage of terminal profile
+    into what should be a purely behavioural feature.
+
+    Note: this function must run before encode_categorical_features, which
+    drops the raw "authentication" column used in the last flag below.
     """
     df = df.copy()
 
-    df["high_amount_relative"] = (df["amount_vs_card_avg"] > 3.0).astype(int)
-
-    df["cross_border_high_amount"] = (
-        (df["cross_border"] == 1) & (df["high_amount_relative"] == 1)
+    # 1 when this transaction is more than 3× the card's historical average spend
+    df["is_amount_spike_vs_card_history"] = (
+        df["amount_vs_card_avg"] > 3.0
     ).astype(int)
 
-    df["velocity_spike_1h"] = (df["txn_count_1h"] > 3).astype(int)
+    # 1 when card is used outside its home country AND amount is a spike
+    df["is_cross_border_amount_spike"] = (
+        (df["cross_border"] == 1) &
+        (df["is_amount_spike_vs_card_history"] == 1)
+    ).astype(int)
 
-    df["weak_auth_high_value"] = (
+    # 1 when more than 3 transactions have occurred on this card in the past hour
+    df["is_velocity_burst_last_1h"] = (df["txn_count_1h"] > 3).astype(int)
+
+    # 1 when authentication is weak (NONE or CVV2) on a transaction that is more
+    # than 2× the card's historical average — elevated risk combination.
+    # Reads raw "authentication" string — must precede encode_categorical_features.
+    df["is_weak_auth_on_above_average_amount"] = (
         df["authentication"].isin(["NONE", "CVV2"]) &
         (df["amount_vs_card_avg"] > 2.0)
     ).astype(int)
@@ -311,19 +394,27 @@ def add_risk_flags(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_risk_flags_single(features: dict) -> dict:
+def compute_composite_fraud_signals_for_single_transaction(
+    features: dict,
+) -> dict:
     """
     Inference version — pass the already-computed feature dict and
     this appends the derived risk flag values.
+
+    At inference, "authentication" must be the raw string value from the
+    ISO 8583 message, not the encoded integer — pass it in features before
+    any encoding step.
     """
-    high_rel = int(features.get("amount_vs_card_avg", 1.0) > 3.0)
+    is_amount_spike = int(features.get("amount_vs_card_avg", 1.0) > 3.0)
     return {
-        "high_amount_relative":    high_rel,
-        "cross_border_high_amount": int(
-            features.get("cross_border", 0) == 1 and high_rel == 1
+        "is_amount_spike_vs_card_history": is_amount_spike,
+        "is_cross_border_amount_spike": int(
+            features.get("cross_border", 0) == 1 and is_amount_spike == 1
         ),
-        "velocity_spike_1h":       int(features.get("txn_count_1h", 0) > 3),
-        "weak_auth_high_value":    int(
+        "is_velocity_burst_last_1h": int(
+            features.get("txn_count_1h", 0) > 3
+        ),
+        "is_weak_auth_on_above_average_amount": int(
             features.get("authentication", "") in ("NONE", "CVV2")
             and features.get("amount_vs_card_avg", 1.0) > 2.0
         ),
@@ -335,15 +426,30 @@ def add_risk_flags_single(features: dict) -> dict:
 # INFERENCE SOURCE: ISO 8583 message fields
 # Assumption: tree-based model (XGBoost/LightGBM/RandomForest).
 # If switching to a linear model, replace ordinal encodings with one-hot.
+#
+# CRITICAL: call this AFTER compute_composite_fraud_signals. This function
+# drops the raw "authentication" column (replaced by authentication_enc int).
+# Reversing the order silently breaks is_weak_auth_on_above_average_amount.
 # =============================================================================
-def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
-    """Batch version for training."""
+def encode_categorical_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Batch version for training.
+
+    Ordinal encodings use module-level maps (CVV2_ORDER, AVS_ORDER,
+    PAN_ENTRY_ORDER, AUTH_ORDER) — import these maps in the inference
+    service rather than redefining them.
+
+    One-hot columns for card_type, channel, transaction_type use the
+    fixed category lists (CARD_TYPE_CATEGORIES, CHANNEL_CATEGORIES,
+    TXN_TYPE_CATEGORIES) so the inference vector always has the same
+    columns in the same order.
+    """
     df = df.copy()
 
-    df["cvv2_result_enc"]     = df["cvv2_result"].map(CVV2_ORDER).fillna(2).astype(int)
-    df["avs_result_enc"]      = df["avs_result"].map(AVS_ORDER).fillna(2).astype(int)
-    df["pan_entry_mode_enc"]  = df["pan_entry_mode"].map(PAN_ENTRY_ORDER).fillna(2).astype(int)
-    df["authentication_enc"]  = df["authentication"].map(AUTH_ORDER).fillna(4).astype(int)
+    df["cvv2_result_enc"]    = df["cvv2_result"].map(CVV2_ORDER).fillna(2).astype(int)
+    df["avs_result_enc"]     = df["avs_result"].map(AVS_ORDER).fillna(2).astype(int)
+    df["pan_entry_mode_enc"] = df["pan_entry_mode"].map(PAN_ENTRY_ORDER).fillna(2).astype(int)
+    df["authentication_enc"] = df["authentication"].map(AUTH_ORDER).fillna(4).astype(int)
 
     ohe_cols = ["card_type", "channel", "transaction_type"]
     df = pd.get_dummies(df, columns=ohe_cols, drop_first=False, dtype=int)
@@ -351,7 +457,7 @@ def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def encode_categoricals_single(
+def encode_categorical_features_for_single_transaction(
     cvv2_result: str,
     avs_result: str,
     pan_entry_mode: str,
@@ -364,6 +470,9 @@ def encode_categoricals_single(
     Inference version — encodes a single transaction's categorical fields.
     One-hot columns use the fixed category lists defined at module level
     so the output vector always has the same columns in the same order.
+
+    Pass the raw string values from the ISO 8583 message — do not pre-encode
+    before calling compute_composite_fraud_signals_for_single_transaction.
     """
     features = {
         "cvv2_result_enc":    CVV2_ORDER.get(cvv2_result, 2),

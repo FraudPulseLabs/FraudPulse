@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 .env
 venv/
+.venv/
+# Hugging Face / sentence-transformers model cache (downloaded, not source).
+.cache/
+# Generated RAG evaluation output (regenerate with `python -m rag.scripts.evaluate`).
+rag/eval/results.json

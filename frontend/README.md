@@ -36,13 +36,32 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Environment files
+
+Angular needs `src/environments/environment.ts` to exist in source control because the app imports it directly during compilation.
+
+The values in these frontend environment files are bundled into the browser app, so only public configuration belongs there. Do not store server secrets in them.
+
+This project actively uses:
+
+- `src/environments/environment.ts` for production builds
+- `src/environments/environment.development.ts` for development builds via Angular file replacement
+
 ## Running unit tests
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Unit and component tests use Jest:
 
 ```bash
-ng test
+npm test
 ```
+
+Watch mode:
+
+```bash
+npm run test:watch
+```
+
+Coverage includes core services (alerts, cases, watchlist, transactions), model mappers, pipes, auth guards, and the overview dashboard component.
 
 ## Running end-to-end tests
 

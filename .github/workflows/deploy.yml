@@ -1,0 +1,153 @@
+name: Deploy Backend (OCI)
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-backend-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_repo: ${{ steps.vars.outputs.image_repo }}
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+
+    steps:
+      - name: Checkout commit from CI run
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Prepare image variables
+        id: vars
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          repo="${repo,,}"
+          echo "image_repo=ghcr.io/${owner}/${repo}-backend" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.image_repo }}:${{ steps.vars.outputs.image_tag }}
+            ${{ steps.vars.outputs.image_repo }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    env:
+      OCI_SSH_HOST: ${{ secrets.OCI_SSH_HOST }}
+      OCI_SSH_USER: ${{ secrets.OCI_SSH_USER }}
+      OCI_SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+      OCI_SSH_KNOWN_HOSTS: ${{ secrets.OCI_SSH_KNOWN_HOSTS }}
+      BACKEND_DATABASE_URL: ${{ secrets.BACKEND_DATABASE_URL }}
+      BACKEND_GROQ_API_KEY: ${{ secrets.BACKEND_GROQ_API_KEY }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+      IMAGE_REPO: ${{ needs.build-and-push.outputs.image_repo }}
+      IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
+
+    steps:
+      - name: Mask sensitive values
+        run: |
+          echo "::add-mask::$OCI_SSH_PRIVATE_KEY"
+          echo "::add-mask::$BACKEND_DATABASE_URL"
+          echo "::add-mask::$BACKEND_GROQ_API_KEY"
+          echo "::add-mask::$GHCR_READ_TOKEN"
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$OCI_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$OCI_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Write remote env and compose files
+        run: |
+          set +x
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "mkdir -p ~/fraudpulse && chmod 700 ~/fraudpulse"
+
+          {
+            printf 'DATABASE_URL=%s\n' "$BACKEND_DATABASE_URL"
+            printf 'GROQ_API_KEY=%s\n' "$BACKEND_GROQ_API_KEY"
+          } | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/.env && chmod 600 ~/fraudpulse/.env"
+
+          printf '%s\n' \
+            'services:' \
+            '  backend:' \
+            "    image: $IMAGE_REPO:$IMAGE_TAG" \
+            '    container_name: fraudpulse-backend' \
+            '    restart: unless-stopped' \
+            '    env_file:' \
+            '      - .env' \
+            '    ports:' \
+            '      - "127.0.0.1:8000:8000"' \
+            '    healthcheck:' \
+            '      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]' \
+            '      interval: 30s' \
+            '      timeout: 5s' \
+            '      retries: 5' \
+            '      start_period: 20s' \
+            | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "cat > ~/fraudpulse/docker-compose.yml"
+
+          if [ -n "$GHCR_USERNAME" ] && [ -n "$GHCR_READ_TOKEN" ]; then
+            printf '%s\n' "$GHCR_READ_TOKEN" | ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "docker login ghcr.io -u '$GHCR_USERNAME' --password-stdin"
+          else
+            echo "GHCR credentials not set; assuming package is public."
+          fi
+
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" \
+            "cd ~/fraudpulse && docker compose pull && docker compose up -d --remove-orphans"
+
+      - name: Verify backend health
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "$OCI_SSH_USER@$OCI_SSH_HOST" "
+            set -e
+            ok=0
+            for i in \$(seq 1 20); do
+              if curl -fsS http://127.0.0.1:8000/health >/dev/null; then
+                ok=1
+                break
+              fi
+              sleep 3
+            done
+
+            if [ \"\$ok\" -ne 1 ]; then
+              echo 'Backend health check failed after retries.'
+              docker ps -a --filter name=fraudpulse-backend
+              docker inspect --format='status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} restart={{.RestartCount}}' fraudpulse-backend || true
+              docker logs --tail 200 fraudpulse-backend || true
+              exit 1
+            fi
+
+            curl -fsS http://127.0.0.1:8000/health
+          "
+

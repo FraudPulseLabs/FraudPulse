@@ -1,0 +1,114 @@
+<div class="chatbot">
+  @if (open()) {
+    <section
+      class="chatbot__panel"
+      role="dialog"
+      aria-label="FraudPulse assistant"
+      aria-modal="false"
+    >
+      <header class="chatbot__header">
+        <span class="chatbot__avatar" aria-hidden="true">
+          <lucide-icon name="sparkles" [size]="16" [strokeWidth]="1.75" />
+        </span>
+        <div class="chatbot__heading">
+          <p class="chatbot__title">FraudPulse assistant</p>
+          <p class="chatbot__subtitle">Ask about the system</p>
+        </div>
+        @if (canClear) {
+          <button
+            type="button"
+            class="chatbot__action"
+            (click)="clear()"
+            aria-label="Clear conversation"
+            title="Clear conversation"
+          >
+            <lucide-icon name="refresh-cw" [size]="16" [strokeWidth]="1.75" aria-hidden="true" />
+          </button>
+        }
+        <button
+          type="button"
+          class="chatbot__close"
+          (click)="close()"
+          aria-label="Close assistant"
+        >
+          <lucide-icon name="x" [size]="18" [strokeWidth]="1.75" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div #scrollRegion class="chatbot__messages" aria-live="polite">
+        @for (message of messages(); track message.id) {
+          <div class="chatbot__row" [class.chatbot__row--user]="message.role === 'user'">
+            <p class="chatbot__bubble" [class.chatbot__bubble--user]="message.role === 'user'">
+              {{ message.text }}
+            </p>
+            @if (message.sources?.length) {
+              <p class="chatbot__sources">
+                Sources: {{ message.sources!.join(' · ') }}
+              </p>
+            }
+          </div>
+        }
+
+        @if (typing()) {
+          <div class="chatbot__row">
+            <p class="chatbot__bubble chatbot__bubble--typing" aria-label="Assistant is typing">
+              <span class="chatbot__dot"></span>
+              <span class="chatbot__dot"></span>
+              <span class="chatbot__dot"></span>
+            </p>
+          </div>
+        }
+      </div>
+
+      @if (messages().length <= 1) {
+        <div class="chatbot__suggestions">
+          @for (suggestion of suggestions; track suggestion.label) {
+            <button
+              type="button"
+              class="chatbot__chip"
+              (click)="askSuggestion(suggestion.query, suggestion.label)"
+            >
+              {{ suggestion.label }}
+            </button>
+          }
+        </div>
+      }
+
+      <form class="chatbot__input" (ngSubmit)="send()">
+        <input
+          type="text"
+          name="message"
+          class="chatbot__field"
+          placeholder="Ask a question…"
+          autocomplete="off"
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          aria-label="Type your question"
+        />
+        <button
+          type="submit"
+          class="chatbot__send"
+          [disabled]="!draft().trim() || typing()"
+          aria-label="Send message"
+        >
+          <lucide-icon name="send-horizontal" [size]="18" [strokeWidth]="1.75" aria-hidden="true" />
+        </button>
+      </form>
+    </section>
+  }
+
+  <button
+    type="button"
+    class="chatbot__launcher"
+    [class.chatbot__launcher--open]="open()"
+    (click)="toggle()"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="open() ? 'Close assistant' : 'Open assistant to ask about FraudPulse'"
+  >
+    @if (open()) {
+      <lucide-icon name="x" [size]="22" [strokeWidth]="1.75" aria-hidden="true" />
+    } @else {
+      <lucide-icon name="message-circle" [size]="22" [strokeWidth]="1.75" aria-hidden="true" />
+    }
+  </button>
+</div>

@@ -1,29 +1,139 @@
-import { Injectable } from '@angular/core';
-import { watchlistStore } from '../mock/watchlist.mock';
-import type { WatchlistEntry, WatchlistEntityType } from '../models';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { watchlistStore } from '../stores/watchlist.store';
+import type { ApiResponse } from '../models/api-response.model';
+import type {
+  WatchlistApiEntry,
+  WatchlistCreatePayload,
+  WatchlistEntityType,
+  WatchlistEntry,
+  WatchlistUpdatePayload,
+} from '../models';
+import { isWatchlistEntryExpired, mapWatchlistFromApi } from '../models/watchlist.model';
+import { ToastService } from './toast.service';
+
+const CREATED_BY = 'fraud_analyst_01';
+
+function httpErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status === 0) {
+      return 'Cannot reach the API. Is the backend running? (CORS/network)';
+    }
+    const body = err.error as { detail?: string; message?: string } | null;
+    if (typeof body?.detail === 'string') return body.detail;
+    if (typeof body?.message === 'string') return body.message;
+    return err.message || fallback;
+  }
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
 
 @Injectable({ providedIn: 'root' })
 export class WatchlistService {
+  private http = inject(HttpClient);
+  private toast = inject(ToastService);
+  private readonly baseUrl = `${environment.apiUrl}/api/v1/watchlist`;
+
   readonly entries = watchlistStore.asReadonly();
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
   isWatchlisted(entityType: WatchlistEntityType, entityId: string): boolean {
     return watchlistStore().some((e) => e.entityType === entityType && e.entityId === entityId);
   }
 
-  add(entry: Omit<WatchlistEntry, 'id' | 'createdAt'>): void {
-    // TODO: POST /watchlist { ...entry }
-    console.warn('[TODO] add to watchlist', entry.entityId);
-    const newEntry: WatchlistEntry = {
-      ...entry,
-      id: `WL-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    watchlistStore.update((list) => [newEntry, ...list]);
+  async loadEntries(options?: { includeExpired?: boolean; entityType?: WatchlistEntityType }): Promise<void> {
+    this.error.set(null);
+    this.loading.set(true);
+    try {
+      let params = new HttpParams().set(
+        'include_expired',
+        String(options?.includeExpired ?? false),
+      );
+      if (options?.entityType) {
+        params = params.set('entity_type', options.entityType);
+      }
+
+      const res = await firstValueFrom(
+        this.http.get<ApiResponse<WatchlistApiEntry[]>>(this.baseUrl, { params }),
+      );
+      if (!res.success) {
+        throw new Error(res.message || 'Failed to load watchlist');
+      }
+      const mapped = (res.data ?? []).map(mapWatchlistFromApi);
+      watchlistStore.set(
+        options?.includeExpired ? mapped : mapped.filter((e) => !isWatchlistEntryExpired(e)),
+      );
+    } catch (err: unknown) {
+      const message = httpErrorMessage(err, 'Failed to load watchlist');
+      this.error.set(message);
+      throw err;
+    } finally {
+      this.loading.set(false);
+    }
   }
 
-  remove(id: string): void {
-    // TODO: DELETE /watchlist/:id
-    console.warn('[TODO] remove from watchlist', id);
-    watchlistStore.update((list) => list.filter((e) => e.id !== id));
+  async add(entry: Omit<WatchlistEntry, 'id' | 'createdAt'>): Promise<WatchlistEntry> {
+    this.error.set(null);
+    const payload: WatchlistCreatePayload = {
+      watchlist_entity_type: entry.entityType,
+      watchlist_entity_id: entry.entityId,
+      watchlist_reason: entry.reason,
+      risk_severity: entry.severity,
+      is_blacklist: entry.isBlacklist,
+      created_by: entry.addedBy || CREATED_BY,
+      expires_at: entry.expiresAt ?? null,
+    };
+
+    const res = await firstValueFrom(
+      this.http.post<ApiResponse<WatchlistApiEntry>>(this.baseUrl, payload),
+    );
+    if (!res.success || !res.data) {
+      throw new Error(res.message || 'Failed to add watchlist entry');
+    }
+    const created = mapWatchlistFromApi(res.data);
+    watchlistStore.update((list) => [created, ...list]);
+    this.toast.success('Added to watchlist');
+    return created;
+  }
+
+  async update(
+    entityType: WatchlistEntityType,
+    entityId: string,
+    payload: WatchlistUpdatePayload,
+  ): Promise<WatchlistEntry> {
+    this.error.set(null);
+    const url = `${this.baseUrl}/${entityType}/${encodeURIComponent(entityId)}`;
+
+    const res = await firstValueFrom(
+      this.http.patch<ApiResponse<WatchlistApiEntry>>(url, payload),
+    );
+    if (!res.success || !res.data) {
+      throw new Error(res.message || 'Failed to update watchlist entry');
+    }
+    const updated = mapWatchlistFromApi(res.data);
+    watchlistStore.update((list) =>
+      list.map((e) =>
+        e.entityType === entityType && e.entityId === entityId ? updated : e,
+      ),
+    );
+    this.toast.success('Watchlist entry updated');
+    return updated;
+  }
+
+  async remove(entityType: WatchlistEntityType, entityId: string): Promise<void> {
+    this.error.set(null);
+    const url = `${this.baseUrl}/${entityType}/${encodeURIComponent(entityId)}`;
+
+    const res = await firstValueFrom(this.http.delete<ApiResponse<null>>(url));
+    if (!res.success) {
+      throw new Error(res.message || 'Failed to remove watchlist entry');
+    }
+    watchlistStore.update((list) =>
+      list.filter((e) => !(e.entityType === entityType && e.entityId === entityId)),
+    );
+    this.toast.success('Removed from watchlist');
   }
 }

@@ -1,11 +1,26 @@
 name: CI
 
+# Trigger rules:
+# - push: only on `main` so merges produce a build, but feature-branch pushes
+#   don't run twice (once for push, once for the open PR).
+# - pull_request: fires on every PR commit — this is the check used for
+#   branch protection / required reviews.
 on:
   push:
+    branches: [main]
   pull_request:
 
+# Cancel any in-flight run for the same ref (branch / PR) when a new commit
+# lands, so rapid pushes don't pile up runners.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  # Backend job: installs Python deps from backend/requirements.txt and runs
+  # pytest with coverage across the ml/ and src/ packages.
+  backend-tests:
+    name: Backend (pytest)
     runs-on: ubuntu-latest
 
     defaults:
@@ -20,6 +35,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          # Cache pip downloads keyed off requirements.txt to speed up reruns.
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
         run: |
@@ -28,5 +46,96 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run tests
+        # DATABASE_URL is read at import time by src/core/config.py; tests
+        # don't actually connect, so an in-memory sqlite URL is sufficient
+        # to let imports succeed in CI.
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
+        run: python -m pytest -v --cov=ml --cov=src
+
+  # RAG job: installs the assistant extras, builds the vector index from the
+  # docs corpus, and runs a retrieval smoke test. Generation (Groq) is not
+  # exercised here since it needs a secret API key; retrieval + refusal logic
+  # are fully validated offline.
+  rag-index:
+    name: RAG (build index + smoke test)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-rag.txt
+
+      - name: Install RAG dependencies
         run: |
-          python -m pytest -v --cov=ml
+          python -m pip install --upgrade pip
+          # CPU-only torch keeps CI fast and avoids CUDA wheel downloads.
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-rag.txt
+
+      - name: Build vector index
+        run: python -m rag.scripts.build_vector_db
+
+      - name: Retrieval smoke test
+        run: |
+          python - <<'PY'
+          from rag.app.rag_system import RagSystem
+          from rag.config import MIN_RELEVANCE_SCORE
+
+          rag = RagSystem()
+          # In-corpus question should retrieve a relevant chunk.
+          hits = rag.retrieve("What are the allow review block decisions?")
+          assert hits, "no chunks retrieved for an in-corpus question"
+          assert hits[0].score >= MIN_RELEVANCE_SCORE, hits[0].score
+
+          # Out-of-corpus question should be refused without an LLM call.
+          ans = rag.answer("What is the capital of France?")
+          assert ans.refused, "out-of-corpus question was not refused"
+          print("RAG smoke test passed:", round(hits[0].score, 3))
+          PY
+
+  # Frontend job: installs Node deps and runs Jest. Jest picks up any
+  # *.spec.ts files via frontend/jest.config.js and tsconfig.spec.json.
+  frontend-tests:
+    name: Frontend (jest)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          # Cache the npm store keyed off the lockfile for faster installs.
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # `npm ci` does a strict, reproducible install from package-lock.json.
+      # The legacy-peer-deps flag is picked up automatically from frontend/.npmrc
+      # to tolerate the @angular-builders/jest peer-dep conflict.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest tests
+        # --passWithNoTests keeps the job green when there are no spec files yet;
+        # any failing test in the paths picked up by jest.config.js will still
+        # fail the job and surface in the PR checks.
+        run: npm test -- --ci --passWithNoTests --reporters=default

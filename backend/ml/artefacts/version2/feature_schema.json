@@ -1,0 +1,74 @@
+{
+  "model_name": "calibrated_lightgbm_version2",
+  "model_file": "fraud_model.pkl",
+  "dataset_version": "version2",
+  "target": "is_fraud",
+  "feature_count": 32,
+  "features": [
+    "enriched_amount_usd",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos",
+    "is_night",
+    "cross_border",
+    "card_txn_count_prior",
+    "card_avg_amount_usd_prior",
+    "card_std_amount_usd_prior",
+    "amount_vs_card_avg",
+    "amount_zscore",
+    "seconds_since_last_txn",
+    "txn_count_1h",
+    "txn_count_24h",
+    "is_amount_spike_vs_card_history",
+    "is_cross_border_amount_spike",
+    "is_velocity_burst_last_1h",
+    "is_weak_auth_on_above_average_amount",
+    "cvv2_result_enc",
+    "avs_result_enc",
+    "pan_entry_mode_enc",
+    "authentication_enc",
+    "card_type_Credit",
+    "card_type_Debit",
+    "card_type_Prepaid",
+    "channel_ATM",
+    "channel_ECOMMERCE",
+    "channel_POS",
+    "transaction_type_purchase",
+    "transaction_type_withdrawal",
+    "merchant_category_code_fraud_rate"
+  ],
+  "thresholds": {
+    "approve_below": 0.007462753555984572,
+    "review_from": 0.007462753555984572,
+    "decline_from": 0.7038172753507491,
+    "optimisation": {
+      "fbeta_beta": 0.5,
+      "fbeta_threshold": {
+        "threshold": 0.7038172753507491,
+        "precision": 0.9027237354085603,
+        "recall": 0.4344569288389513,
+        "fbeta": 0.7426376440449698
+      },
+      "ks_threshold": {
+        "threshold": 0.007462753555984572,
+        "ks": 0.7819273079065067
+      }
+    },
+    "decision_policy": {
+      "APPROVE": "score < 0.007463",
+      "APPROVE_WITH_REVIEW": "0.007463 <= score < 0.703817",
+      "DECLINE": "score >= 0.703817"
+    }
+  },
+  "metrics": {
+    "roc_auc": 0.9611335903574798,
+    "pr_auc": 0.7169206368305494
+  },
+  "notes": [
+    "Version 2 model trained on X_train2/y_train2 and tested on X_test2/y_test2.",
+    "Features must be provided in exactly this order at inference time.",
+    "Model output is a calibrated fraud probability between 0 and 1.",
+    "Decision thresholds were generated from final test set probabilities."
+  ]
+}
