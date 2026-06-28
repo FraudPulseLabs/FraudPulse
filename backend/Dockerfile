@@ -11,7 +11,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements-rag.txt ./
+# Pin CPU-only torch before RAG deps so pip does not pull the large default wheel.
 RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir -r requirements.txt -r requirements-rag.txt
 
 # Pre-download the embedding model so the assistant needs no network at runtime.

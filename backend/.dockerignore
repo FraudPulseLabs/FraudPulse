@@ -10,6 +10,8 @@ __pycache__
 .mypy_cache
 .ruff_cache
 .coverage
+.cache
+**/.cache
 .env
 tests
 scripts
@@ -24,3 +26,4 @@ ml/data/processed/*
 *.md
 # Keep the RAG corpus in the image (overrides the *.md ignore above).
 !rag/docs/*.md
+rag/eval/results.json
