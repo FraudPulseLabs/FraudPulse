@@ -15,7 +15,7 @@ from src.services.realtime_feature_builder import RealtimeFeatureBuilder
 
 logger = logging.getLogger(__name__)
 
-_MODEL_PATH = ML_ARTEFACTS_DIR / "fraud_model.pkl"
+_MODEL_PATH = ML_ARTEFACTS_DIR / "fraud_model_tuned.pkl"
 
 
 # =============================================================================
