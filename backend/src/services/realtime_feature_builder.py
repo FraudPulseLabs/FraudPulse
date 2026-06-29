@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 #   ML_ARTEFACTS_DIR = BASE_DIR / "ml" / "artefacts"
 # Both files are written here by ml/preprocessing.py and ml/train_lightgbm.py.
 ENCODING_MAPS_PATH  = DATA_DIR / "processed" / "encoding_maps.json"
-FEATURE_SCHEMA_PATH = ML_ARTEFACTS_DIR / "feature_schema.json"
+FEATURE_SCHEMA_PATH = ML_ARTEFACTS_DIR / "feature_schema_tuned.json"
 
 
 # =============================================================================
