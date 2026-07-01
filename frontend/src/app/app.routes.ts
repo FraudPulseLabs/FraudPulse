@@ -28,6 +28,7 @@ export const routes: Routes = [
       { path: 'cases/:id',    loadComponent: () => import('./features/cases/case-detail/case-detail.component').then(m => m.CaseDetailComponent) },
       { path: 'watchlist',    loadComponent: () => import('./features/watchlist/watchlist.component').then(m => m.WatchlistComponent) },
       { path: 'model-demo',   loadComponent: () => import('./features/model-demo/model-demo.component').then(m => m.ModelDemoComponent) },
+      { path: 'live-demo',    loadComponent: () => import('./features/live-demo/live-demo.component').then(m => m.LiveDemoComponent) },
     ],
   },
   { path: '**', redirectTo: '' },

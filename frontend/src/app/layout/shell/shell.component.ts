@@ -154,6 +154,7 @@ export class ShellComponent {
     { path: 'cases',        label: 'Cases',             icon: 'folder-open' },
     { path: 'watchlist',    label: 'Watchlist',         icon: 'eye' },
     { path: 'model-demo',   label: 'Model Validation',  icon: 'flask-conical' },
+    { path: 'live-demo',    label: 'Live Pipeline Demo', icon: 'zap' },
   ];
 
   toggleNav(): void {

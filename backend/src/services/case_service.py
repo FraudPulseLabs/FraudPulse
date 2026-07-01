@@ -198,8 +198,17 @@ def list_case_events(db: Session, case_id: uuid.UUID) -> list[CaseEvent]:
 # Event handler
 # =============================================================================
 
-def handle_case_creation(db: Session, transaction_id: uuid.UUID) -> None:
-    create_case(db=db, transaction_id=transaction_id)
+def handle_case_creation(
+    db: Session,
+    transaction_id: uuid.UUID,
+    risk_level: CaseRiskLevel = CaseRiskLevel.MEDIUM,
+) -> None:
+    create_case(db=db, transaction_id=transaction_id, risk_level=risk_level)
 
 
 event_emitter.subscribe("fraud_review_required", handle_case_creation)
+"""
+event_emitter.subscribe("fraud_decline", lambda db, transaction_id: handle_case_creation(
+    db=db, transaction_id=transaction_id, risk_level=CaseRiskLevel.HIGH,
+))
+"""
