@@ -15,7 +15,14 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
   standalone: true,
   imports: [BadgeComponent, DatePipe, DecimalPipe, EmptyStateComponent, ScoreBarComponent, TimeAgoPipe],
   template: `
-    @if (c(); as current) {
+    @if (loading()) {
+      <div class="card py-12">
+        <div class="flex items-center justify-center gap-3">
+          <div class="h-5 w-5 rounded-full border-2 border-slate-300 border-t-sky-600 animate-spin"></div>
+          <span class="fp-text-secondary">Loading case details...</span>
+        </div>
+      </div>
+    } @else if (c(); as current) {
       <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] gap-6">
         <div class="space-y-6">
 
@@ -251,8 +258,11 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 
         </div>
       </div>
-    } @else {
-      <app-empty-state message="Case not found" />
+    }@else {
+      <app-empty-state
+        title="Case not found"
+        description="The requested case could not be loaded."
+      />
     }
   `,
 })
@@ -269,6 +279,7 @@ export class CaseDetailComponent implements OnInit {
   noteBody                 = signal('');
   showAssignPicker         = signal(false);
   pendingAnalyst           = signal<string>('');
+  loading                  = signal(true);
 
   c           = computed(() => this.caseService.getById(this.id()));
   notes       = computed(() => this.caseService.notesForCase(this.id()));
@@ -294,17 +305,30 @@ export class CaseDetailComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loading.set(true);
+
     this.caseService.load();
     this.caseService.loadNotes(this.id());
     this.caseService.loadEvents(this.id());
     this.alertService.load();
     this.profileService.loadAnalysts();
 
-    // Load transaction once the case signal resolves
-    const current = this.c();
-    if (current) {
-      this.caseService.loadTransaction(current.transactionId);
-    }
+    const waitForCase = setInterval(() => {
+      const current = this.c();
+
+      if (current) {
+        clearInterval(waitForCase);
+
+        this.caseService.loadTransaction(current.transactionId);
+
+        const waitForTransaction = setInterval(() => {
+          if (this.transaction()) {
+            clearInterval(waitForTransaction);
+            this.loading.set(false);
+          }
+        }, 100);
+      }
+    }, 100);
   }
 
   ngOnChanges(): void {
