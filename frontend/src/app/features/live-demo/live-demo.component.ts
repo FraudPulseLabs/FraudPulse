@@ -54,10 +54,12 @@ interface IngestResult {
 }
 
 interface SubmittedEntry {
+  id: string;
   payload: IngestPayload;
   bucket: PresetBucket;
   status: 'sending' | 'done' | 'error';
   result?: IngestResult;
+  caseId?: string;
   error?: string;
 }
 
@@ -67,13 +69,10 @@ interface Preset {
   bucket: PresetBucket;
   label: string;
   helpText: string;
-  // Fixed card_id per bucket: reusing the same card across clicks lets the
-  // feature builder's expanding-window history (card_txn_count_prior,
-  // amount_zscore, velocity windows) build up naturally rather than always
-  // scoring cold-start. DECLINE in particular leans on this after 2-3 clicks.
   cardId: string;
   generate: () => Omit<IngestPayload, 'card_id'>;
 }
+
 
 const MERCHANTS_LOW_RISK = ['MCH-GROCERY-014', 'MCH-PHARMACY-002', 'MCH-UTILITY-009'];
 const MERCHANTS_HIGH_RISK = ['MCH-ELECTRONICS-118', 'MCH-GIFTCARD-077', 'MCH-CRYPTO-203'];
@@ -234,10 +233,10 @@ const PRESETS: Preset[] = [
             <button
               type="button"
               class="btn-primary !min-h-0 px-3 py-1.5 mt-auto"
-              [disabled]="sending()"
+              [disabled]="sendingPreset() !== null"
               (click)="submit(preset)"
             >
-              {{ sending() ? 'Sending…' : 'Generate & Send' }}
+              {{ sendingPreset() === preset.bucket ? 'Sending…' : 'Generate & Send' }}
             </button>
           </div>
         }
@@ -259,7 +258,7 @@ const PRESETS: Preset[] = [
             </tr>
           </thead>
           <tbody>
-            @for (entry of entries(); track entry.payload.timestamp + entry.payload.card_id) {
+            @for (entry of entries(); track entry.id) {
               <tr class="align-top">
                 <td class="fp-data-mono">{{ entry.payload.timestamp | date:'short' }}</td>
                 <td>
@@ -293,10 +292,12 @@ const PRESETS: Preset[] = [
                   } @else { — }
                 </td>
                 <td class="text-right">
-                  @if (entry.result && entry.result.decision !== 'APPROVE') {
-                    <a routerLink="/cases" class="text-xs text-sky-700 underline" (click)="$event.stopPropagation()">
-                      View in Cases →
-                    </a>
+                  @if (entry.result?.decision === 'APPROVE_WITH_REVIEW' && entry.caseId) {
+                    <a
+                      [routerLink]="['/cases', entry.caseId]"
+                      class="text-xs text-sky-700 underline"
+                      (click)="$event.stopPropagation()"
+                    >View case →</a>
                   }
                 </td>
               </tr>
@@ -333,35 +334,74 @@ export class LiveDemoComponent {
 
   presets = PRESETS;
   entries = signal<SubmittedEntry[]>([]);
-  sending = signal(false);
+  sendingPreset = signal<PresetBucket | null>(null);
 
   submit(preset: Preset): void {
-    this.sending.set(true);
+    this.sendingPreset.set(preset.bucket);
     const payload: IngestPayload = {
       card_id: preset.cardId,
       ...preset.generate(),
     };
 
-    const entry: SubmittedEntry = { payload, bucket: preset.bucket, status: 'sending' };
+    const entryId = crypto.randomUUID();
+
+    const entry: SubmittedEntry = {
+      id: entryId,
+      payload,
+      bucket: preset.bucket,
+      status: 'sending'
+    };
     this.entries.update((rows) => [entry, ...rows]);
 
     this.http
       .post<IngestResult>(`${environment.apiUrl}/api/v1/transactions?explain=true`, payload)
       .subscribe({
         next: (result) => {
-          this.updateEntry(entry, { status: 'done', result });
-          this.sending.set(false);
+          this.updateEntry(entryId, {
+            status: 'done',
+            result,
+          });
+
+          this.sendingPreset.set(null);
+
+          if (result.decision === 'APPROVE_WITH_REVIEW') {
+            this.lookupCase(entryId, result.transaction_id);
+          }
         },
         error: (err) => {
-          this.updateEntry(entry, { status: 'error', error: this.formatError(err) });
-          this.sending.set(false);
+          // No transaction_id on error — fall back to timestamp+card key isn't possible here,
+          // so we mark the pending entry (still status:'sending') by finding it.
+          this.entries.update((rows) => {
+            const idx = rows.findIndex((r) => r.status === 'sending');
+            if (idx === -1) return rows;
+            const updated = [...rows];
+            updated[idx] = { ...updated[idx], status: 'error', error: this.formatError(err) };
+            return updated;
+          });
+          this.sendingPreset.set(null);
         },
       });
   }
 
-  private updateEntry(target: SubmittedEntry, patch: Partial<SubmittedEntry>): void {
-    this.entries.update((rows) =>
-      rows.map((r) => (r === target ? { ...r, ...patch } : r)),
+  private lookupCase(entryId: string, transactionId: string): void {
+    this.http
+      .get<Array<{ id: string; transaction_id: string }>>(`${environment.apiUrl}/api/v1/cases`)
+      .subscribe({
+        next: (cases) => {
+          const match = cases.find((c) => c.transaction_id === transactionId);
+          if (match) this.updateEntry(entryId, { caseId: match.id });
+        },
+        error: () => { /* silently ignore — link just won't appear */ },
+      });
+  }
+
+  private updateEntry(id: string, patch: Partial<SubmittedEntry>): void {
+    this.entries.update(rows =>
+      rows.map(row =>
+        row.id === id
+          ? { ...row, ...patch }
+          : row
+      )
     );
   }
 
