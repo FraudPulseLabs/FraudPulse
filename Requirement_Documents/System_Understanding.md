@@ -1,7 +1,5 @@
 # FraudPulse — Team Scope & System Understanding
 
-> **Harmonization note:** This document originally used the decision labels `APPROVE` / `APPROVE_WITH_REVIEW` / `DECLINE`. They have been renamed to `ALLOW` / `REVIEW` / `BLOCK` to match the terminology used in the SRS, Functional Requirements, NFRs, User Stories, and Backlog. See `CHANGELOG.md` for details.
-
 ## 1. System Purpose
 
 ### What We Are Building
@@ -75,31 +73,27 @@ Our system:
 5. Creates investigation cases
 6. Provides fraud monitoring dashboards
 
-## 5. High-Level Architecture
-
-> *Architecture diagram omitted from this markdown export — see the original `.docx` for `media/image1.png`, or add an SVG/PNG under `docs/assets/` and link it here.*
-
-## 6. Core Business Logic
+## 5. Core Business Logic
 
 ### Possible Decisions
 
-| Decision | Meaning |
-|---|---|
-| **ALLOW** | Transaction appears legitimate |
-| **REVIEW** | Transaction approved but flagged for analyst investigation |
-| **BLOCK** | Transaction considered high fraud risk |
+| Decision              | Meaning                                                    |
+| --------------------- | ---------------------------------------------------------- |
+| **ALLOW**             | Transaction appears legitimate                             |
+| **ALLOW_WITH_REVIEW** | Transaction approved but flagged for analyst investigation |
+| **BLOCK**             | Transaction considered high fraud risk                     |
 
-## 7. Important Understanding of REVIEW
+## 6. Important Understanding of ALLOW_WITH_REVIEW
 
 This is extremely important.
 
-**REVIEW DOES NOT:**
+**ALLOW_WITH_REVIEW DOES NOT:**
 
 - delay the transaction
 - pause authorization
 - require customer confirmation
 
-**REVIEW DOES:**
+**ALLOW_WITH_REVIEW DOES:**
 
 - approve the transaction
 - create an internal fraud alert
@@ -107,7 +101,7 @@ This is extremely important.
 
 **Example:** Customer purchase succeeds. Fraud team later investigates suspicious behavior. This mirrors how real banks often operate.
 
-## 8. Real-Time Transaction Flow (Detailed)
+## 7. Real-Time Transaction Flow (Detailed)
 
 ### Step 1 — Transaction Received
 
@@ -120,7 +114,7 @@ This is extremely important.
   "transaction_id": "TX1001",
   "customer_id": "CUST900",
   "merchant_id": "M100",
-  "amount": 250.00,
+  "amount": 250.0,
   "currency": "USD",
   "timestamp": "2026-05-10T10:30:00Z"
 }
@@ -175,13 +169,13 @@ We only calculate features useful for fraud scoring.
 
 **Example Features**
 
-| Feature | Description |
-|---|---|
-| `merchant_fraud_rate` | Historical fraud rate |
+| Feature                    | Description              |
+| -------------------------- | ------------------------ |
+| `merchant_fraud_rate`      | Historical fraud rate    |
 | `recent_customer_activity` | Customer activity window |
-| `transaction_hour` | Time-of-day |
-| `cross_border_flag` | Country mismatch |
-| `merchant_risk_level` | Merchant risk category |
+| `transaction_hour`         | Time-of-day              |
+| `cross_border_flag`        | Country mismatch         |
+| `merchant_risk_level`      | Merchant risk category   |
 
 **Operations** — system:
 
@@ -211,11 +205,11 @@ We only calculate features useful for fraud scoring.
 
 **Decision Logic** — example thresholds (configurable):
 
-| Score Range | Decision |
-|---|---|
-| 0.00–0.39 | `ALLOW` |
-| 0.40–0.74 | `REVIEW` |
-| 0.75–1.00 | `BLOCK` |
+| Score Range | Decision            |
+| ----------- | ------------------- |
+| 0.00–0.39   | `ALLOW`             |
+| 0.40–0.74   | `ALLOW_WITH_REVIEW` |
+| 0.75–1.00   | `BLOCK`             |
 
 **Additional Rules** — rules may override the ML score, e.g.:
 
@@ -228,7 +222,7 @@ We only calculate features useful for fraud scoring.
 ```json
 {
   "transaction_id": "TX1001",
-  "decision": "REVIEW",
+  "decision": "ALLOW_WITH_REVIEW",
   "fraud_score": 0.63,
   "reason_code": "HIGH_RISK_PATTERN"
 }
@@ -249,7 +243,7 @@ Our system only provides:
 - fraud assessment
 - recommendation indicator
 
-## 9. Asynchronous Processing (After Response)
+## 8. Asynchronous Processing (After Response)
 
 This happens **after** the API response returns. Critical for performance.
 
@@ -276,26 +270,26 @@ Generate Explanation
 Update Dashboard Data
 ```
 
-## 10. Alert Management
+## 9. Alert Management
 
 **Purpose:** Track suspicious transactions requiring attention.
 
 **When Alerts Are Created** — create an alert when:
 
-- decision = `REVIEW`
+- decision = `ALLOW_WITH_REVIEW`
 - decision = `BLOCK`
 
 **Alert Example**
 
-| Field | Value |
-|---|---|
-| `alert_id` | ALT1001 |
-| `transaction_id` | TX1001 |
-| `severity` | HIGH |
-| `reason` | HIGH_RISK_PATTERN |
-| `status` | OPEN |
+| Field            | Value             |
+| ---------------- | ----------------- |
+| `alert_id`       | ALT1001           |
+| `transaction_id` | TX1001            |
+| `severity`       | HIGH              |
+| `reason`         | HIGH_RISK_PATTERN |
+| `status`         | OPEN              |
 
-## 11. Case Management
+## 10. Case Management
 
 **Purpose:** Fraud analysts investigate groups of suspicious activity instead of isolated transactions.
 
@@ -303,7 +297,7 @@ Update Dashboard Data
 
 Without cases:
 
-- analysts review transactions individually
+- analysts ALLOW_WITH_REVIEW transactions individually
 - patterns are missed
 - duplicated investigations occur
 
@@ -338,9 +332,9 @@ OPEN → INVESTIGATING → RESOLVED / FALSE_POSITIVE
 
 - multiple suspicious transactions
 - repeated merchant flags
-- repeated customer review decisions
+- repeated customer ALLOW_WITH_REVIEW decisions
 
-## 12. Merchant Monitoring
+## 11. Merchant Monitoring
 
 **Purpose:** Track merchant fraud trends over time.
 
@@ -348,30 +342,30 @@ OPEN → INVESTIGATING → RESOLVED / FALSE_POSITIVE
 
 **Example Merchant Metrics**
 
-| Metric | Meaning |
-|---|---|
-| `review_rate` | % of transactions reviewed |
-| `decline_rate` | % blocked |
-| `fraud_score_avg` | Average fraud score |
-| `suspicious_txn_count` | Suspicious transaction volume |
+| Metric                   | Meaning                               |
+| ------------------------ | ------------------------------------- |
+| `ALLOW_WITH_REVIEW_rate` | % of transactions ALLOW_WITH_REVIEWed |
+| `decline_rate`           | % blocked                             |
+| `fraud_score_avg`        | Average fraud score                   |
+| `suspicious_txn_count`   | Suspicious transaction volume         |
 
-## 13. Fraud Metrics & Analytics
+## 12. Fraud Metrics & Analytics
 
 **Purpose:** Provide operational visibility into system behavior.
 
 **Example Metrics**
 
-| Metric | Purpose |
-|---|---|
-| `total_transactions` | System volume |
-| `fraud_rate` | Suspected fraud percentage |
-| `approval_rate` | Operational behavior |
-| `review_rate` | Analyst workload |
-| `decline_rate` | Fraud prevention effectiveness |
+| Metric                   | Purpose                        |
+| ------------------------ | ------------------------------ |
+| `total_transactions`     | System volume                  |
+| `fraud_rate`             | Suspected fraud percentage     |
+| `approval_rate`          | Operational behavior           |
+| `ALLOW_WITH_REVIEW_rate` | Analyst workload               |
+| `decline_rate`           | Fraud prevention effectiveness |
 
-## 14. Explainability
+## 13. Explainability
 
-**Goal:** Allow analysts to understand *why* a transaction was flagged.
+**Goal:** Allow analysts to understand _why_ a transaction was flagged.
 
 **Important Performance Rule:** explanation generation must **not** happen inside the real-time API path.
 
@@ -388,7 +382,7 @@ OPEN → INVESTIGATING → RESOLVED / FALSE_POSITIVE
 - abnormal timing pattern
 - elevated model risk contribution
 
-## 15. Merchant Watchlist System
+## 14. Merchant Watchlist System
 
 **Purpose:** Allow manual and automatic merchant blocking.
 
@@ -407,7 +401,7 @@ IF merchant exceeds fraud threshold
 THEN add merchant to blacklist
 ```
 
-## 16. UI Components
+## 15. UI Components
 
 **Transaction Dashboard** — displays: transactions, fraud scores, decisions, timestamps, filters, search.
 
@@ -415,9 +409,10 @@ THEN add merchant to blacklist
 
 **Merchant Watchlist UI** — displays: blocked merchants, expiry dates, blacklist reasons, merchant statistics.
 
-## 17. Suggested Team Ownership
+## 16. Suggested Team Ownership
 
 **Backend Team**
+
 - Flask
 - Scoring engine
 - Decision engine
@@ -425,6 +420,7 @@ THEN add merchant to blacklist
 - Async processing
 
 **ML Team**
+
 - Preprocessing
 - Feature engineering
 - Model training
@@ -432,12 +428,13 @@ THEN add merchant to blacklist
 - Explainability
 
 **Frontend Team**
+
 - Dashboards
 - Filters / search
 - Case UI
 - Watchlist UI
 
-## 18. Most Important Architectural Rule
+## 17. Most Important Architectural Rule
 
 Only these happen synchronously:
 

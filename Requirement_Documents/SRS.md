@@ -2,8 +2,6 @@
 
 ## Project: FraudPulse End-to-End Fraud Detection System
 
-> **Harmonization note:** Section 3.1 previously used a standalone FR-1…FR-15 numbering scheme that did not line up with the Functional Requirements document or the Backlog. It now references the canonical FR-1…FR-19 list in `Functional_Requirements.md`. See `CHANGELOG.md`.
-
 ## 1. Introduction
 
 ### 1.1 Purpose
@@ -12,12 +10,12 @@ This document defines the software requirements for FraudPulse, an end-to-end pa
 
 ### 1.2 Scope
 
-FraudPulse ingests payment transactions, computes fraud risk scores, applies policy-based decisions (`ALLOW`, `REVIEW`, `BLOCK`), supports analyst investigations through alerts and case management, and provides operational dashboards. The system includes REST APIs, decision workflows, and administrative controls for fraud operations.
+FraudPulse ingests payment transactions, computes fraud risk scores, applies policy-based decisions (`ALLOW`, `ALLOW_WITH_REVIEW`, `BLOCK`), supports analyst investigations through alerts and case management, and provides operational dashboards. The system includes REST APIs, decision workflows, and administrative controls for fraud operations.
 
 ### 1.3 Definitions
 
 - **ALLOW** — low-risk transaction accepted.
-- **REVIEW** — transaction routed to analysts (the transaction itself is still allowed to proceed; see `System_Understanding.md` §7 for why REVIEW does not block or delay the transaction).
+- **ALLOW_WITH_REVIEW** — transaction routed to analysts (the transaction itself is still allowed to proceed; see `System_Understanding.md` §7 for why ALLOW_WITH_REVIEW does not block or delay the transaction).
 - **BLOCK** — transaction stopped due to high risk.
 
 ## 2. Overall Description
@@ -30,7 +28,7 @@ FraudPulse is a modular fraud operations system composed of transaction ingestio
 
 - Accept and validate transaction submissions via API.
 - Generate a fraud score and supporting score-explanation signals.
-- Classify transactions into `ALLOW`, `REVIEW`, or `BLOCK` using configurable thresholds.
+- Classify transactions into `ALLOW`, `ALLOW_WITH_REVIEW`, or `BLOCK` using configurable thresholds.
 - Create, route, and track investigation cases from fraud events.
 - Present analyst and admin dashboards with real-time operational metrics.
 - Allow administrators to manage rules, thresholds, model versions, and role-based permissions.
@@ -65,27 +63,27 @@ FraudPulse is a modular fraud operations system composed of transaction ingestio
 
 The full functional requirements list (FR-1 through FR-19) lives in **`Functional_Requirements.md`**, and is the canonical source of truth shared with the Backlog traceability matrix. Summary of in-scope areas for this release:
 
-| FR | Area | In scope for this release? |
-|---|---|---|
-| FR-1 | User authentication and roles | Yes |
-| FR-2 | Transaction ingestion | Yes |
-| FR-3 | Fraud scoring | Yes |
-| FR-4 | Real-time decision engine | Yes |
-| FR-5 | Rule-based fraud detection | Yes |
-| FR-6 | Watchlist management | Yes |
-| FR-7 | Alert generation | Yes |
-| FR-8 | Case management | Yes |
-| FR-9 | Transaction lifecycle | Yes |
-| FR-10 | Reconciliation | No — v2 |
-| FR-11 | Dispute handling | No — v2 |
-| FR-12 | Chargeback decisioning | No — v2 |
-| FR-13 | Back-office processing | No — v2 |
-| FR-14 | Event management | No — v2 |
-| FR-15 | Dashboard and UI | Yes |
-| FR-16 | Reports and analytics | Yes |
-| FR-17 | Administration | Yes |
-| FR-18 | Testing and simulation | Yes |
-| FR-19 | Audit and logging | Yes |
+| FR    | Area                          | In scope for this release? |
+| ----- | ----------------------------- | -------------------------- |
+| FR-1  | User authentication and roles | Yes                        |
+| FR-2  | Transaction ingestion         | Yes                        |
+| FR-3  | Fraud scoring                 | Yes                        |
+| FR-4  | Real-time decision engine     | Yes                        |
+| FR-5  | Rule-based fraud detection    | Yes                        |
+| FR-6  | Watchlist management          | Yes                        |
+| FR-7  | Alert generation              | Yes                        |
+| FR-8  | Case management               | Yes                        |
+| FR-9  | Transaction lifecycle         | Yes                        |
+| FR-10 | Reconciliation                | No — v2                    |
+| FR-11 | Dispute handling              | No — v2                    |
+| FR-12 | Chargeback decisioning        | No — v2                    |
+| FR-13 | Back-office processing        | No — v2                    |
+| FR-14 | Event management              | No — v2                    |
+| FR-15 | Dashboard and UI              | Yes                        |
+| FR-16 | Reports and analytics         | Yes                        |
+| FR-17 | Administration                | Yes                        |
+| FR-18 | Testing and simulation        | Yes                        |
+| FR-19 | Audit and logging             | Yes                        |
 
 ### 3.2 Non-Functional Requirements
 
@@ -111,7 +109,6 @@ The full NFR list (NFR-1 through NFR-15) lives in **`Non_Functional_Requirements
 ### 5.1 Assumptions
 
 - Production deployment includes secure secret management and role provisioning processes.
-- A model governance process exists for validation before model promotion.
 
 ### 5.2 Known Risks
 
@@ -120,5 +117,4 @@ The full NFR list (NFR-1 through NFR-15) lives in **`Non_Functional_Requirements
 
 ### 5.3 Future Enhancements (v2)
 
-- Pluggable model experimentation and champion–challenger evaluation.
 - Expanded integrations for external dispute and chargeback systems (FR-10 through FR-14).
