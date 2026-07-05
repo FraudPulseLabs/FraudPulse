@@ -206,9 +206,10 @@ def handle_case_creation(
     create_case(db=db, transaction_id=transaction_id, risk_level=risk_level)
 
 
+# Cases open only for APPROVE_WITH_REVIEW — the transaction was approved (money
+# moved) but flagged, so a human must investigate live risk. DECLINE still raises
+# a HIGH alert (see alert_service) but deliberately does NOT open a case: the
+# transaction was blocked, nothing moved, and declines can arrive in high-volume
+# bursts (card testing) that would flood the case queue. Do not subscribe
+# fraud_decline here.
 event_emitter.subscribe("fraud_review_required", handle_case_creation)
-"""
-event_emitter.subscribe("fraud_decline", lambda db, transaction_id: handle_case_creation(
-    db=db, transaction_id=transaction_id, risk_level=CaseRiskLevel.HIGH,
-))
-"""

@@ -26,6 +26,23 @@
       </div>
 
       <form (ngSubmit)="submit()" class="login-form">
+        <!--
+          Honeypot: visually hidden field. Real users leave it blank; bots
+          that fill every input trigger a silent failure in the component.
+        -->
+        <div class="login-honeypot" aria-hidden="true">
+          <label for="website">Website</label>
+          <input
+            id="website"
+            type="text"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+            [ngModel]="website()"
+            (ngModelChange)="website.set($event)"
+          />
+        </div>
+
         <div class="login-field">
           <label for="email" class="type-label">Email</label>
           <input

@@ -43,6 +43,8 @@ export class LandingComponent implements OnInit, OnDestroy {
   readonly navOpen = signal(false);
   readonly accessEmail = signal('');
   readonly accessCompany = signal('');
+  // Hidden honeypot input — real users leave it blank, bots fill everything.
+  readonly accessWebsite = signal('');
   readonly accessSubmitting = signal(false);
   readonly accessError = signal('');
   readonly accessSuccess = signal('');
@@ -108,6 +110,7 @@ export class LandingComponent implements OnInit, OnDestroy {
       .submit({
         email,
         company: this.accessCompany().trim() || undefined,
+        website: this.accessWebsite(),
       })
       .subscribe({
         next: (res) => {
@@ -115,6 +118,7 @@ export class LandingComponent implements OnInit, OnDestroy {
           this.accessSuccess.set(res.message);
           this.accessEmail.set('');
           this.accessCompany.set('');
+          this.accessWebsite.set('');
         },
         error: (err) => {
           this.accessSubmitting.set(false);

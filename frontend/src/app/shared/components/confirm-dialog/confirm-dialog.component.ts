@@ -11,7 +11,12 @@ import { Component, input, output } from '@angular/core';
           <p class="text-sm fp-text-secondary mb-4">{{ message() }}</p>
           <div class="flex justify-end gap-2">
             <button class="btn-secondary" (click)="confirmed.emit(false)">Cancel</button>
-            <button class="btn-danger"    (click)="confirmed.emit(true)">Confirm</button>
+            <button
+              [class]="confirmVariant() === 'primary' ? 'btn-primary' : 'btn-danger'"
+              (click)="confirmed.emit(true)"
+            >
+              {{ confirmLabel() }}
+            </button>
           </div>
         </div>
       </div>
@@ -22,5 +27,7 @@ export class ConfirmDialogComponent {
   open    = input(false);
   title   = input('Confirm');
   message = input('Are you sure?');
+  confirmLabel = input('Confirm');
+  confirmVariant = input<'danger' | 'primary'>('danger');
   confirmed = output<boolean>();
 }

@@ -48,6 +48,16 @@
   gap: 1.25rem;
 }
 
+/* Honeypot: hidden from real users, still visible to naive bots. */
+.login-honeypot {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .login-field {
   display: flex;
   flex-direction: column;

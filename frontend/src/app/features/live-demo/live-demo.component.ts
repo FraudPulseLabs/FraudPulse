@@ -1,8 +1,10 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../core/services/auth.service';
+import { FpIconsModule } from '../../shared/icons/fp-icons.module';
 import type {
   FeatureContribution,
 } from '../../core/models/transaction.model';
@@ -199,11 +201,11 @@ const PRESETS: Preset[] = [
 @Component({
   selector: 'app-live-demo',
   standalone: true,
-  imports: [CommonModule, DatePipe, DecimalPipe, RouterLink],
+  imports: [CommonModule, DatePipe, DecimalPipe, RouterLink, FpIconsModule],
   template: `
     <div class="space-y-4">
       <header class="card">
-        <h1 class="text-lg font-semibold fp-text-primary">Live Pipeline Demo</h1>
+        <h1 class="text-lg font-semibold fp-text-primary">Live Scoring Demo</h1>
         <p class="mt-1 text-sm fp-text-secondary">
           Sends real transactions through <code>POST /api/v1/transactions</code> — the same
           path production traffic uses. Each submission is persisted, scored, decisioned, and
@@ -219,6 +221,26 @@ const PRESETS: Preset[] = [
         </p>
       </header>
 
+      @if (!isAuthenticated()) {
+        <div class="card flex flex-col items-center gap-3 py-10 text-center">
+          <span
+            class="flex h-11 w-11 items-center justify-center rounded-full"
+            style="background-color: var(--fp-hover); color: var(--fp-text-secondary)"
+          >
+            <lucide-icon name="lock" [size]="20" [strokeWidth]="1.75" aria-hidden="true" />
+          </span>
+          <h2 class="text-base font-semibold fp-text-primary">Sign in to run the live pipeline</h2>
+          <p class="max-w-md text-sm fp-text-secondary">
+            This demo posts real transactions through the production pipeline — each one is
+            persisted, scored and can open alerts and cases. It's available to signed-in analysts.
+            <span class="fp-text-muted">The Model Validation page is fully usable without signing in.</span>
+          </p>
+          <a routerLink="/login" class="btn-primary mt-1 inline-flex items-center gap-2 px-4 py-2 no-underline">
+            <lucide-icon name="log-in" [size]="16" [strokeWidth]="1.75" aria-hidden="true" />
+            Sign in to continue
+          </a>
+        </div>
+      } @else {
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         @for (preset of presets; track preset.bucket) {
           <div class="card flex flex-col gap-2">
@@ -326,11 +348,15 @@ const PRESETS: Preset[] = [
           </tbody>
         </table>
       </div>
+      }
     </div>
   `,
 })
 export class LiveDemoComponent {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
+
+  readonly isAuthenticated = computed(() => this.auth.isAuthenticated());
 
   presets = PRESETS;
   entries = signal<SubmittedEntry[]>([]);

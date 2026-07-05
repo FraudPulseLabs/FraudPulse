@@ -10,6 +10,8 @@ interface NavItem {
   path:  string;
   label: string;
   icon:  string;
+  /** Only rendered for the admin account (e.g. access-request administration). */
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -47,7 +49,7 @@ interface NavItem {
         </div>
 
         <nav class="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-4 md:px-3">
-          @for (item of navItems; track item.path) {
+          @for (item of visibleNavItems(); track item.path) {
             <a
               [routerLink]="item.path"
               routerLinkActive="nav-link-active"
@@ -154,8 +156,14 @@ export class ShellComponent {
     { path: 'cases',        label: 'Cases',             icon: 'folder-open' },
     { path: 'watchlist',    label: 'Watchlist',         icon: 'eye' },
     { path: 'model-demo',   label: 'Model Validation',  icon: 'flask-conical' },
-    { path: 'live-demo',    label: 'Live Pipeline Demo', icon: 'zap' },
+    { path: 'live-demo',    label: 'Live Scoring Demo', icon: 'zap' },
+    { path: 'access',       label: 'Access',            icon: 'inbox', adminOnly: true },
   ];
+
+  // Access administration is restricted to the admin account.
+  readonly visibleNavItems = computed(() =>
+    this.navItems.filter((item) => !item.adminOnly || this.auth.isAdmin()),
+  );
 
   toggleNav(): void {
     this.navOpen.update((value) => !value);

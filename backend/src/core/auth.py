@@ -98,3 +98,19 @@ async def get_current_user(
         ) from exc
 
     return AuthUser(id=user_id, email=claims.get("email"))
+
+
+async def require_admin(
+    current_user: AuthUser = Depends(get_current_user),
+) -> AuthUser:
+    """Dependency that only admits the single configured admin account.
+
+    Used to gate access-request administration (viewing and approving). Any other
+    authenticated user gets a 403.
+    """
+    if (current_user.email or "").lower() != config.ADMIN_EMAIL.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action.",
+        )
+    return current_user

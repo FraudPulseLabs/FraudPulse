@@ -66,6 +66,9 @@
 /* ─── Theme surfaces (light default for SSR; dark applied via data-fp-theme) */
 :root,
 [data-fp-theme='light'] {
+  /* Tell the UA to paint native controls (select popups, checkboxes,
+     scrollbars, caret) with the light palette. */
+  color-scheme: light;
   --fp-bg: #f8fafc;
   --fp-surface: #ffffff;
   --fp-surface-muted: #f1f5f9;
@@ -118,6 +121,9 @@
 }
 
 [data-fp-theme='dark'] {
+  /* Without this, native <select> option popups, the dropdown caret and
+     scrollbars render with the light UA theme — unreadable on dark surfaces. */
+  color-scheme: dark;
   --fp-bg: #0a0a0a;
   --fp-surface: #0c0c0c;
   --fp-surface-muted: #0a0a0a;
@@ -481,6 +487,40 @@
   color: var(--fp-text-muted);
 }
 
+/* Native <select> dark-mode fix.
+   Chromium on Windows doesn't reliably paint the <option> popup from the
+   inherited color-scheme, so it renders white-on-grey (unreadable). Pin the
+   control's color-scheme and the option colors explicitly for dark surfaces. */
+[data-fp-theme='dark'] .fp-select,
+[data-fp-theme='dark'] .fp-input,
+[data-fp-theme='dark'] select {
+  color-scheme: dark;
+}
+[data-fp-theme='dark'] .fp-select,
+[data-fp-theme='dark'] select {
+  background-color: var(--fp-surface-elevated);
+}
+[data-fp-theme='dark'] .fp-select option,
+[data-fp-theme='dark'] select option {
+  background-color: var(--fp-surface-elevated);
+  color: var(--fp-text);
+}
+
+/* Skeleton loading placeholder */
+.fp-skeleton {
+  display: block;
+  border-radius: var(--radius-card);
+  background-color: var(--fp-hover);
+  animation: fp-skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes fp-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fp-skeleton { animation: none; }
+}
+
 /* Score bar */
 .score-bar-track {
   height: 0.375rem;
@@ -755,6 +795,17 @@
 
 .access-form .fp-field-input {
   font-weight: 500;
+}
+
+/* Honeypot: visually and accessibly hidden. Bots that fill every field
+   will still populate it — the backend then silently drops the submission. */
+.access-form__honeypot {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
 
 /* ─── Body defaults ─────────────────────────────────────────────── */

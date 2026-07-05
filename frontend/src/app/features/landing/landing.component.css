@@ -353,6 +353,29 @@
   font-weight: 600;
 }
 
+/* Secondary hero action — outline button for the public demo entry point. */
+.landing .cta-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.875rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--fp-text);
+  background-color: transparent;
+  border: 1px solid var(--fp-border);
+  border-radius: 2px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.landing .cta-outline:hover {
+  border-color: var(--fp-text-secondary);
+  background-color: var(--fp-hover);
+}
+
 /* ─── Documentation link ───────────────────────────────────────────── */
 .doc-link {
   font-size: 0.9375rem;
