@@ -3,6 +3,12 @@ import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
 /**
+ * The single admin account permitted to view and approve access requests.
+ * Keep in sync with ADMIN_EMAIL in the backend (backend/src/core/config.py).
+ */
+export const ADMIN_EMAIL = 'analyst@fraudpulse.io';
+
+/**
  * Thin wrapper over Supabase Auth (GoTrue). Supabase owns users, passwords and
  * token issuance; this service exposes the current session as signals, signs in
  * and out, and surfaces the access token for the HTTP interceptor.
@@ -19,6 +25,9 @@ export class AuthService {
   readonly session = this._session.asReadonly();
   readonly user = computed<User | null>(() => this._session()?.user ?? null);
   readonly isAuthenticated = computed(() => this._session() !== null);
+  readonly isAdmin = computed(
+    () => (this.user()?.email ?? '').toLowerCase() === ADMIN_EMAIL,
+  );
 
   constructor() {
     // Hydrate from any persisted session, then stay in sync with refreshes.

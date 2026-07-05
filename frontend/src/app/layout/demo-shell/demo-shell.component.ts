@@ -1,23 +1,25 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { ToastService } from '../../core/services/toast.service';
-import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ThemeToggleComponent } from '../../shared/components/theme-toggle/theme-toggle.component';
 import { FpIconsModule } from '../../shared/icons/fp-icons.module';
 
-interface NavItem {
-  path:  string;
+interface DemoNavItem {
+  path: string;
   label: string;
-  icon:  string;
-  /** Only rendered for the admin account (e.g. access-request administration). */
-  adminOnly?: boolean;
+  icon: string;
 }
 
+/**
+ * Public, unauthenticated layout for the pre-access demo dashboard. Visitors
+ * can explore Model Validation and the Live Pipeline Demo before requesting
+ * access — no session required. The guest identity block replaces the analyst
+ * profile/logout of the authenticated shell.
+ */
 @Component({
-  selector: 'app-shell',
+  selector: 'app-demo-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConfirmDialogComponent, ThemeToggleComponent, FpIconsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ThemeToggleComponent, FpIconsModule],
   template: `
     <div class="min-h-screen md:flex md:h-screen md:overflow-hidden" style="background-color: var(--fp-bg)">
       @if (navOpen()) {
@@ -36,20 +38,20 @@ interface NavItem {
         style="background-color: var(--fp-sidebar-bg); border-color: var(--fp-sidebar-border)"
       >
         <div class="border-b px-4 py-4 md:px-5 md:py-5" style="border-color: var(--fp-sidebar-border)">
-          <div class="flex items-center gap-2.5">
+          <a routerLink="/" class="flex items-center gap-2.5 no-underline">
             <span
               class="flex h-7 w-7 items-center justify-center rounded-sm text-[10px] font-bold tracking-tighter"
               style="background-color: var(--fp-brand-mark-bg); color: var(--fp-brand-mark-text)"
             >FP</span>
             <div>
               <p class="text-sm font-semibold tracking-tight fp-sidebar-text">FraudPulse</p>
-              <p class="text-xs fp-sidebar-text-muted">Detection System</p>
+              <p class="text-xs fp-sidebar-text-muted">Demo Preview</p>
             </div>
-          </div>
+          </a>
         </div>
 
         <nav class="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-4 md:px-3">
-          @for (item of visibleNavItems(); track item.path) {
+          @for (item of navItems; track item.path) {
             <a
               [routerLink]="item.path"
               routerLinkActive="nav-link-active"
@@ -67,32 +69,25 @@ interface NavItem {
           <div class="flex items-center gap-2 px-2 py-2">
             <div
               class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
-              style="background-color: #dc2626; color: #fff"
-            >
-              {{ userInitial() }}
-            </div>
+              style="background-color: var(--fp-hover); color: var(--fp-sidebar-text)"
+            >G</div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-xs font-semibold fp-sidebar-text">{{ userEmail() || 'Signed in' }}</p>
-              <p class="truncate text-xs fp-sidebar-text-muted">FraudPulse analyst</p>
+              <p class="truncate text-xs font-semibold fp-sidebar-text">Guest account</p>
+              <p class="truncate text-xs fp-sidebar-text-muted">Preview access</p>
             </div>
           </div>
-          <button
-            type="button"
-            class="fp-sidebar-logout mt-1 flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-xs font-medium fp-sidebar-text-muted"
-            (click)="confirmingLogout.set(true)"
+          <a
+            [routerLink]="['/']"
+            fragment="access"
+            class="mt-1 flex w-full items-center justify-center gap-2 rounded-sm px-2 py-2 text-xs font-semibold no-underline"
+            style="background-color: var(--fp-brand-mark-bg); color: var(--fp-brand-mark-text)"
+            (click)="closeNav()"
           >
-            <lucide-icon class="fp-icon" name="log-out" [size]="16" [strokeWidth]="1.75" aria-hidden="true" />
-            Log out
-          </button>
+            <lucide-icon class="fp-icon" name="sparkles" [size]="15" [strokeWidth]="1.75" aria-hidden="true" />
+            Request access
+          </a>
         </div>
       </aside>
-
-      <app-confirm-dialog
-        [open]="confirmingLogout()"
-        title="Log out"
-        message="You'll need to sign in again to continue. Log out now?"
-        (confirmed)="onLogoutConfirmed($event)"
-      />
 
       <div class="flex min-h-screen min-w-0 flex-1 flex-col md:min-h-0 md:overflow-hidden">
         <header
@@ -110,8 +105,8 @@ interface NavItem {
               <lucide-icon name="menu" [size]="20" [strokeWidth]="1.75" aria-hidden="true" />
             </button>
             <div class="min-w-0">
-              <h1 class="truncate text-sm font-semibold tracking-tight fp-text-primary sm:text-base">FraudPulse Analytics</h1>
-              <p class="text-xs fp-text-muted md:hidden">Fraud operations console</p>
+              <h1 class="truncate text-sm font-semibold tracking-tight fp-text-primary sm:text-base">FraudPulse Demo</h1>
+              <p class="text-xs fp-text-muted md:hidden">Public preview</p>
             </div>
           </div>
           <div class="flex items-center gap-3">
@@ -120,6 +115,16 @@ interface NavItem {
               <span class="fp-status-badge__dot" aria-hidden="true"></span>
               System Active
             </span>
+            @if (isAuthenticated()) {
+              <a routerLink="/overview" class="text-xs font-semibold fp-text-secondary hover:fp-text-primary no-underline">
+                Open dashboard →
+              </a>
+            } @else {
+              <a routerLink="/login" class="inline-flex items-center gap-1.5 text-xs font-semibold fp-text-secondary hover:fp-text-primary no-underline">
+                <lucide-icon class="fp-icon" name="log-in" [size]="15" [strokeWidth]="1.75" aria-hidden="true" />
+                Sign in
+              </a>
+            }
           </div>
         </header>
 
@@ -130,40 +135,17 @@ interface NavItem {
     </div>
   `,
 })
-export class ShellComponent {
+export class DemoShellComponent {
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
 
   navOpen = signal(false);
-  confirmingLogout = signal(false);
 
-  readonly userEmail = computed(() => this.auth.user()?.email ?? '');
-  readonly userInitial = computed(() => (this.userEmail()[0] ?? 'U').toUpperCase());
+  readonly isAuthenticated = computed(() => this.auth.isAuthenticated());
 
-  async onLogoutConfirmed(confirmed: boolean): Promise<void> {
-    this.confirmingLogout.set(false);
-    if (!confirmed) return;
-    await this.auth.signOut();
-    await this.router.navigateByUrl('/login');
-    this.toast.success('You have been logged out');
-  }
-
-  navItems: NavItem[] = [
-    { path: 'overview',     label: 'Overview',          icon: 'activity' },
-    { path: 'transactions', label: 'Transactions',      icon: 'credit-card' },
-    { path: 'alerts',       label: 'Alert Queue',         icon: 'bell' },
-    { path: 'cases',        label: 'Cases',             icon: 'folder-open' },
-    { path: 'watchlist',    label: 'Watchlist',         icon: 'eye' },
-    { path: 'model-demo',   label: 'Model Validation',  icon: 'flask-conical' },
-    { path: 'live-demo',    label: 'Live Scoring Demo', icon: 'zap' },
-    { path: 'access',       label: 'Access',            icon: 'inbox', adminOnly: true },
+  navItems: DemoNavItem[] = [
+    { path: 'model-validation', label: 'Model Validation',  icon: 'flask-conical' },
+    { path: 'live-pipeline',    label: 'Live Scoring Demo', icon: 'zap' },
   ];
-
-  // Access administration is restricted to the admin account.
-  readonly visibleNavItems = computed(() =>
-    this.navItems.filter((item) => !item.adminOnly || this.auth.isAdmin()),
-  );
 
   toggleNav(): void {
     this.navOpen.update((value) => !value);

@@ -25,6 +25,9 @@
           <button type="button" class="site-nav__link" (click)="scrollTo('architecture')">Architecture</button>
         </li>
         <li>
+          <a routerLink="/demo/model-validation" class="site-nav__link" (click)="closeNav()">Live Demo</a>
+        </li>
+        <li>
           <button type="button" class="site-nav__link" (click)="scrollTo('documentation')">Documentation</button>
         </li>
       </ul>
@@ -65,6 +68,9 @@
           <button type="button" class="site-nav__drawer-link" (click)="scrollTo('architecture')">Architecture</button>
         </li>
         <li>
+          <a routerLink="/demo/model-validation" class="site-nav__drawer-link" (click)="closeNav()">Live Demo</a>
+        </li>
+        <li>
           <button type="button" class="site-nav__drawer-link" (click)="scrollTo('documentation')">Documentation</button>
         </li>
       </ul>
@@ -99,9 +105,14 @@
               is ingested, scored, and routed to ALLOW, REVIEW, or BLOCK.
             </p>
             <div class="hero-actions mt-10">
-              <button type="button" class="cta-solid cta-solid--lg" (click)="scrollTo('access')">
-                Request Access
-              </button>
+              <div class="flex flex-wrap items-center gap-3">
+                <button type="button" class="cta-solid cta-solid--lg" (click)="scrollTo('access')">
+                  Request Access
+                </button>
+                <a routerLink="/demo/model-validation" class="cta-outline" (click)="closeNav()">
+                  Explore the live demo →
+                </a>
+              </div>
               <p class="hero-stat mt-5 font-mono fp-text-secondary">
                 <span class="hero-stat__highlight">Demo</span> scan stream
                 · {{ throughput() | number }} events scored this session
@@ -254,15 +265,24 @@
           <h2 class="type-heading mt-3 fp-text-primary">Explore the live system</h2>
           <p class="type-body mt-5 fp-text-secondary">
             REST APIs cover transaction ingestion, scoring, alerts, cases, and watchlists.
-            Sign in to use the analyst dashboard and model demo.
+            Explore the model validation demo without an account, or sign in for the full
+            analyst dashboard.
           </p>
         </header>
-        <a
-          routerLink="/login"
-          class="doc-link fp-text-secondary transition-colors hover:fp-text-primary"
-        >
-          Sign in to open the dashboard →
-        </a>
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+          <a
+            routerLink="/demo/model-validation"
+            class="doc-link fp-text-secondary transition-colors hover:fp-text-primary"
+          >
+            Explore the live demo →
+          </a>
+          <a
+            routerLink="/login"
+            class="doc-link fp-text-secondary transition-colors hover:fp-text-primary"
+          >
+            Sign in to open the dashboard →
+          </a>
+        </div>
       </div>
     </section>
 
@@ -292,6 +312,25 @@
               [ngModel]="accessEmail()"
               (ngModelChange)="accessEmail.set($event); accessError.set('')"
               [disabled]="accessSubmitting()"
+            />
+          </div>
+
+          <!--
+            Honeypot: hidden from real users (visually and from assistive tech
+            via aria-hidden + tabindex=-1). Bots that fill every input reveal
+            themselves by populating this field, and the backend silently
+            drops the submission.
+          -->
+          <div class="access-form__honeypot" aria-hidden="true">
+            <label for="access-website">Website</label>
+            <input
+              id="access-website"
+              type="text"
+              name="website"
+              tabindex="-1"
+              autocomplete="off"
+              [ngModel]="accessWebsite()"
+              (ngModelChange)="accessWebsite.set($event)"
             />
           </div>
 

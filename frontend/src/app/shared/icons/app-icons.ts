@@ -1,6 +1,7 @@
 import {
   LucideAngularModule,
   Activity,
+  ArrowRight,
   BarChart3,
   Bell,
   CreditCard,
@@ -8,6 +9,9 @@ import {
   EyeOff,
   FlaskConical,
   FolderOpen,
+  Inbox,
+  Lock,
+  LogIn,
   LogOut,
   MessageCircle,
   Menu,
@@ -17,10 +21,12 @@ import {
   Sparkles,
   Sun,
   X,
+  Zap,
 } from 'lucide-angular';
 
 export const lucideIcons = {
   Activity,
+  ArrowRight,
   BarChart3,
   Bell,
   CreditCard,
@@ -28,6 +34,9 @@ export const lucideIcons = {
   EyeOff,
   FlaskConical,
   FolderOpen,
+  Inbox,
+  Lock,
+  LogIn,
   LogOut,
   MessageCircle,
   Menu,
@@ -37,4 +46,5 @@ export const lucideIcons = {
   Sparkles,
   Sun,
   X,
+  Zap,
 };

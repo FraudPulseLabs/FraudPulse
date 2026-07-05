@@ -67,3 +67,12 @@ SUPABASE_JWT_AUD: str = "authenticated"
 # Optional legacy fallback: set this to verify HS256-signed tokens with the
 # shared "JWT Secret" instead of the JWKS asymmetric keys. Leave unset to use JWKS.
 SUPABASE_JWT_SECRET: str | None = get_optional_env("SUPABASE_JWT_SECRET")
+
+# Service-role key — grants the backend the Supabase Auth *admin* API (creating
+# users when an access request is approved). This is a privileged secret that
+# must NEVER be exposed to the browser; it lives only in the backend .env.
+SUPABASE_SERVICE_ROLE_KEY: str | None = get_optional_env("SUPABASE_SERVICE_ROLE_KEY")
+
+# The single admin account allowed to view and approve access requests. Override
+# via ADMIN_EMAIL in .env; defaults to the FraudPulse analyst account.
+ADMIN_EMAIL: str = get_optional_env("ADMIN_EMAIL", "analyst@fraudpulse.io") or "analyst@fraudpulse.io"

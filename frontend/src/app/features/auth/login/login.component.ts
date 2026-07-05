@@ -20,6 +20,9 @@ export class LoginComponent {
 
   readonly email = signal('');
   readonly password = signal('');
+  // Honeypot: bots that autofill every input will populate it. Any non-empty
+  // value short-circuits sign-in so the credentials never leave the browser.
+  readonly website = signal('');
   readonly showPassword = signal(false);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -30,6 +33,12 @@ export class LoginComponent {
 
   async submit(): Promise<void> {
     if (this.loading()) return;
+    if (this.website().trim()) {
+      // Silently fail closed — same UX as an invalid password so bots can't
+      // fingerprint the honeypot.
+      this.error.set('Sign in failed. Check your credentials.');
+      return;
+    }
     this.error.set(null);
     this.loading.set(true);
     try {
