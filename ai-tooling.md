@@ -10,7 +10,11 @@ All output was reviewed before use. Design decisions were made by Macharia with 
 
 ## Victor Asena
 
-_Entry pending._
+I used a mix of AI tools throughout my work on FraudPulse — **OpenAI Codex**, **GitHub Copilot**, **Claude Code**, and **Claude (web)** — across the frontend, authentication, deployment, and backend integration.
+
+My work spanned scaffolding the Angular frontend (Tailwind UI and mock workflows) and its responsive layouts, wiring Supabase authentication (login, route guard, and JWT verification), and building out the CI/CD and OCI deployment pipeline — GHCR image builds, SSH-based deploys, and the Nginx/Docker runtime configuration. On the backend I wired the `POST /transactions` flow end to end and aligned the DB schema, added the overview aggregation endpoint, and implemented the access-request approval flow alongside the public demo dashboard.
+
+I used Copilot and Codex mainly for in-editor completions and quick edits, and Claude Code and Claude web for larger changes, debugging deployment issues, and thinking through design trade-offs. All output was reviewed before it was committed, and the design decisions were mine, with the tools providing suggestions and analysis of the options.
 
 ## Olalekan Erinoso
 
