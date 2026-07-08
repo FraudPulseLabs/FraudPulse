@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.db.session import get_db
 from src.schemas.watchlist_schemas import (
-    ApiResponse,
+    WatchlistApiResponse,
     EntityType,
     RiskSeverity,
     WatchlistCreate,
@@ -23,7 +23,7 @@ from src.services.watchlist_service import (
 router = APIRouter(tags=["Watchlist"])
 
 
-@router.get("", response_model=ApiResponse)
+@router.get("", response_model=WatchlistApiResponse)
 async def list_watchlist(
     include_expired: bool = False,
     entity_type: EntityType | None = None,
@@ -32,7 +32,7 @@ async def list_watchlist(
     is_blacklist: bool | None = None,
     watchlist_reason: str | None = None,
     db: Session = Depends(get_db),
-) -> ApiResponse:
+) -> WatchlistApiResponse:
     entries = await get_watchlist_entries(
         db=db,
         include_expired=include_expired,
@@ -42,54 +42,54 @@ async def list_watchlist(
         is_blacklist=is_blacklist,
         watchlist_reason=watchlist_reason,
     )
-    return ApiResponse(
+    return WatchlistApiResponse(
         success=True,
         message="Watchlist entries retrieved successfully",
         data=entries,
     )
 
 
-@router.post("", response_model=ApiResponse, status_code=201)
+@router.post("", response_model=WatchlistApiResponse, status_code=201)
 async def create_watchlist_entry(
     payload: WatchlistCreate,
     db: Session = Depends(get_db),
-) -> ApiResponse:
+) -> WatchlistApiResponse:
     entry = await add_watchlist_entry(db=db, payload=payload)
-    return ApiResponse(
+    return WatchlistApiResponse(
         success=True,
         message="Watchlist entry created successfully",
         data=entry,
     )
 
 
-@router.patch("/{entity_type}/{entity_id}", response_model=ApiResponse)
+@router.patch("/{entity_type}/{entity_id}", response_model=WatchlistApiResponse)
 async def edit_watchlist_entry(
     entity_type: EntityType,
     entity_id: str,
     payload: WatchlistUpdate,
     db: Session = Depends(get_db),
-) -> ApiResponse:
+) -> WatchlistApiResponse:
     updated = await update_watchlist_entry(
         db=db,
         entity_type=entity_type,
         entity_id=entity_id,
         payload=payload,
     )
-    return ApiResponse(
+    return WatchlistApiResponse(
         success=True,
         message="Watchlist entry updated successfully",
         data=updated,
     )
 
 
-@router.delete("/{entity_type}/{entity_id}", response_model=ApiResponse)
+@router.delete("/{entity_type}/{entity_id}", response_model=WatchlistApiResponse)
 async def delete_watchlist_entry(
     entity_type: EntityType,
     entity_id: str,
     db: Session = Depends(get_db),
-) -> ApiResponse:
+) -> WatchlistApiResponse:
     await remove_watchlist_entry(db=db, entity_type=entity_type, entity_id=entity_id)
-    return ApiResponse(
+    return WatchlistApiResponse(
         success=True,
         message="Watchlist entry removed successfully",
         data=None,

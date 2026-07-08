@@ -1,0 +1,201 @@
+# Schema introspection — schema='public', 15 tables
+
+## alerts
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - transaction_id: UUID NOT NULL
+  - case_id: UUID NULL
+  - reason: TEXT NOT NULL
+  - severity: TEXT NOT NULL
+  - status: TEXT NOT NULL  [default='NEW'::text]
+  - acknowledged_by: UUID NULL
+  - acknowledged_at: TIMESTAMP NULL
+  - resolved_by: UUID NULL
+  - resolved_at: TIMESTAMP NULL
+  - resolution_note: TEXT NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['acknowledged_by'] -> public.profiles['id']
+  FK: ['resolved_by'] -> public.profiles['id']
+  FK: ['transaction_id'] -> public.transactions['id']
+  FK: ['case_id'] -> public.cases['id']
+  INDEX: idx_al_case cols=['case_id'] unique=False
+  INDEX: idx_al_status cols=['status', 'severity', 'created_at'] unique=False
+  INDEX: idx_al_tx cols=['transaction_id'] unique=False
+
+## audit_log
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - event_type: TEXT NOT NULL
+  - entity_type: TEXT NULL
+  - entity_id: TEXT NULL
+  - actor_id: TEXT NULL
+  - details: JSONB NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  INDEX: idx_alog_actor cols=['actor_id', 'created_at'] unique=False
+  INDEX: idx_alog_entity cols=['entity_id', 'created_at'] unique=False
+  INDEX: idx_alog_ts cols=['created_at'] unique=False
+  INDEX: idx_alog_type cols=['event_type', 'created_at'] unique=False
+
+## case_events
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - case_id: UUID NOT NULL
+  - event_type: TEXT NOT NULL
+  - description: TEXT NOT NULL
+  - actor: TEXT NOT NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['case_id'] -> public.cases['id']
+  INDEX: idx_ce_case cols=['case_id', 'created_at'] unique=False
+
+## case_notes
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - case_id: UUID NOT NULL
+  - author_id: TEXT NOT NULL
+  - body: TEXT NOT NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['case_id'] -> public.cases['id']
+  INDEX: idx_cn_case cols=['case_id', 'created_at'] unique=False
+
+## cases
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - title: TEXT NOT NULL
+  - status: TEXT NOT NULL  [default='OPEN'::text]
+  - risk_level: TEXT NOT NULL  [default='MEDIUM'::text]
+  - resolution_code: TEXT NULL
+  - assigned_to: UUID NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  - updated_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['assigned_to'] -> public.profiles['id']
+  INDEX: idx_ca_assigned cols=['assigned_to'] unique=False
+  INDEX: idx_ca_status cols=['status', 'risk_level', 'created_at'] unique=False
+
+## fraud_scores
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - transaction_id: UUID NOT NULL
+  - score: NUMERIC(6, 4) NOT NULL
+  - model_version: TEXT NOT NULL
+  - features_snapshot: JSONB NULL
+  - scored_at: TIMESTAMP NOT NULL  [default=now()]
+  - is_rescore: BOOLEAN NOT NULL  [default=false]
+  FK: ['transaction_id'] -> public.transactions['id']
+  INDEX: idx_fs_score cols=['score'] unique=False
+  INDEX: idx_fs_tx cols=['transaction_id', 'scored_at'] unique=False
+
+## profiles
+  - id: UUID NOT NULL  [PK]
+  - role: TEXT NOT NULL
+  - full_name: TEXT NOT NULL
+  - is_active: BOOLEAN NOT NULL  [default=true]
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['id'] -> auth.users['id']
+
+## rejected_requests
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - payload: JSONB NULL
+  - errors: JSONB NOT NULL
+  - source_ip: TEXT NULL
+  - submitted_at: TIMESTAMP NOT NULL  [default=now()]
+  INDEX: idx_rr_submitted cols=['submitted_at'] unique=False
+
+## rule_triggers
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - transaction_id: UUID NOT NULL
+  - rule_name: TEXT NOT NULL
+  - description: TEXT NULL
+  - triggered_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['transaction_id'] -> public.transactions['id']
+  INDEX: idx_rt_tx cols=['transaction_id'] unique=False
+
+## score_reasons
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - score_id: UUID NOT NULL
+  - feature: TEXT NOT NULL
+  - direction: TEXT NOT NULL
+  - contribution: NUMERIC(6, 4) NOT NULL
+  INDEX: idx_sr_score cols=['score_id'] unique=False
+
+## system_config
+  - key: TEXT NOT NULL  [PK]
+  - value: JSONB NOT NULL
+  - updated_by: TEXT NULL
+  - updated_at: TIMESTAMP NOT NULL  [default=now()]
+
+## transaction_lifecycle
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - transaction_id: UUID NOT NULL
+  - from_status: TEXT NULL
+  - to_status: TEXT NOT NULL
+  - event_name: TEXT NOT NULL
+  - actor: TEXT NOT NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['transaction_id'] -> public.transactions['id']
+  INDEX: idx_lc_tx cols=['transaction_id', 'created_at'] unique=False
+
+## transactions
+  - id: UUID NOT NULL  [PK]
+  - transaction_amount: NUMERIC(14, 2) NOT NULL
+  - transaction_currency: TEXT NOT NULL  [default='KES'::text]
+  - merchant_id: TEXT NOT NULL
+  - ts: TIMESTAMP NOT NULL
+  - user_ip: TEXT NULL
+  - device_info: JSONB NULL
+  - decision: TEXT NULL
+  - lifecycle_status: TEXT NOT NULL  [default='AUTHORIZED'::text]
+  - is_simulated: BOOLEAN NOT NULL  [default=false]
+  - is_manually_created: BOOLEAN NOT NULL  [default=false]
+  - annotation: TEXT NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  - billing_amount: NUMERIC(12, 2) NULL
+  - channel: VARCHAR(20) NULL
+  - card_id: VARCHAR(100) NULL
+  - card_type: VARCHAR(20) NULL
+  - cardholder_present: BOOLEAN NULL
+  - card_present: BOOLEAN NULL
+  - card_entry_mode: VARCHAR(30) NULL
+  - merchant_category_code: VARCHAR(10) NULL
+  - issuing_bank_country: TEXT NULL
+  - transaction_city: TEXT NULL
+  - enriched_amount_usd: NUMERIC(14, 2) NULL
+  - pan_entry_mode: TEXT NULL
+  - terminal_id: TEXT NULL
+  - authentication: TEXT NULL
+  - reason_code: TEXT NULL
+  - transaction_type: TEXT NULL
+  - transaction_country: TEXT NULL
+  - is_fraud: BOOLEAN NULL
+  INDEX: idx_transactions_card_id cols=['card_id'] unique=False
+  INDEX: idx_transactions_card_id_ts cols=['card_id', 'ts'] unique=False
+  INDEX: idx_transactions_card_reference_timestamp cols=['card_id', 'ts'] unique=False
+  INDEX: idx_tx_fraud_decision cols=['decision'] unique=False
+  INDEX: idx_tx_simulated cols=['is_simulated'] unique=False
+  INDEX: idx_tx_transaction_status cols=['lifecycle_status'] unique=False
+  INDEX: idx_tx_transaction_timestamp_desc cols=['ts'] unique=False
+
+## watchlist
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - watchlist_entity_type: TEXT NOT NULL
+  - watchlist_entity_id: TEXT NOT NULL
+  - watchlist_reason: TEXT NOT NULL
+  - risk_severity: TEXT NOT NULL
+  - is_blacklist: BOOLEAN NOT NULL  [default=false]
+  - created_by: TEXT NOT NULL
+  - expires_at: TIMESTAMP NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  UNIQUE: ['watchlist_entity_type', 'watchlist_entity_id']
+  INDEX: idx_wl_entity cols=['watchlist_entity_type', 'watchlist_entity_id'] unique=False
+  INDEX: idx_wl_expires cols=['expires_at'] unique=False
+  INDEX: uq_watchlist_entity cols=['watchlist_entity_type', 'watchlist_entity_id'] unique=True
+
+## watchlist_history
+  - id: UUID NOT NULL  [PK, default=gen_random_uuid()]
+  - watchlist_id: UUID NOT NULL
+  - watchlist_entity_type: TEXT NOT NULL
+  - watchlist_entity_id: TEXT NOT NULL
+  - action: TEXT NOT NULL
+  - watchlist_reason: TEXT NULL
+  - risk_severity: TEXT NULL
+  - is_blacklist: BOOLEAN NULL
+  - created_by: TEXT NOT NULL
+  - expires_at: TIMESTAMP NULL
+  - created_at: TIMESTAMP NOT NULL  [default=now()]
+  FK: ['watchlist_id'] -> public.watchlist['id']
+  INDEX: idx_wlh_action cols=['action'] unique=False
+  INDEX: idx_wlh_entity cols=['watchlist_entity_id', 'created_at'] unique=False
+  INDEX: idx_wlh_watchlist_id cols=['watchlist_id'] unique=False

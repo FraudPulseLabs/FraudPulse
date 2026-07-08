@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TransactionService } from '../../../core/services/transaction.service';
 import type { Transaction, TransactionFeatures } from '../../../core/models';
@@ -82,10 +82,16 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     <div class="page-header">
       <div class="min-w-0">
         <h2 class="page-title">Transaction Monitor</h2>
-        <p class="text-sm text-slate-500">Live fraud scoring decisions from the mock stream.</p>
+        <p class="text-sm fp-text-secondary">
+          Live fraud scoring decisions from the API.
+        </p>
       </div>
       <button type="button" class="btn-ghost" (click)="rescoreSelected()">Rescore selected</button>
     </div>
+
+    @if (error()) {
+      <div class="card mb-4 border border-red-200 bg-red-50 text-sm text-red-700">{{ error() }}</div>
+    }
 
     <div class="card mb-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -122,30 +128,32 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     </div>
 
     <div class="card overflow-hidden">
-      @if (filtered().length === 0) {
+      @if (loading()) {
+        <p class="p-6 text-sm fp-text-secondary">Loading transactions…</p>
+      } @else if (filtered().length === 0) {
         <app-empty-state message="No transactions match these filters" />
       } @else {
         <div class="space-y-3 md:hidden">
           @for (tx of paginated(); track tx.id) {
-            <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <article class="rounded-sm border border-[var(--fp-border)] bg-[var(--fp-surface)] p-4">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p class="font-mono text-sm text-slate-700">{{ tx.id }}</p>
-                  <p class="text-sm text-slate-500">{{ tx.ts | date: 'dd MMM, HH:mm' }} · {{ tx.userId }}</p>
+                  <p class="fp-data-mono">{{ tx.id }}</p>
+                  <p class="mt-1 fp-data-cell !text-sm">{{ tx.ts | date: 'dd MMM, HH:mm' }} · {{ tx.userId }}</p>
                 </div>
                 <app-badge [value]="tx.decision" />
               </div>
-              <div class="mt-4 space-y-2 text-sm text-slate-600">
-                <div class="flex items-center justify-between gap-3">
-                  <span>Merchant</span>
-                  <span class="max-w-[60%] text-right text-slate-900">{{ tx.merchant }}</span>
+              <div class="mt-4 fp-table-divide">
+                <div class="flex items-center justify-between gap-3 py-2">
+                  <span class="fp-text-muted text-sm font-medium">Merchant</span>
+                  <span class="max-w-[60%] text-right fp-data-cell">{{ tx.merchant }}</span>
                 </div>
-                <div class="flex items-center justify-between gap-3">
-                  <span>Amount</span>
-                  <span class="text-slate-900">KES {{ tx.amount | number: '1.0-0' }}</span>
+                <div class="flex items-center justify-between gap-3 py-2">
+                  <span class="fp-text-muted text-sm font-medium">Amount</span>
+                  <span class="fp-data-cell">KES {{ tx.amount | number: '1.0-0' }}</span>
                 </div>
-                <div class="flex items-center justify-between gap-3">
-                  <span>Status</span>
+                <div class="flex items-center justify-between gap-3 py-2">
+                  <span class="fp-text-muted text-sm font-medium">Status</span>
                   <app-badge [value]="tx.lifecycleStatus" />
                 </div>
               </div>
@@ -178,7 +186,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
               @for (tx of paginated(); track tx.id) {
                 <tr>
                   <td>{{ tx.ts | date: 'dd MMM, HH:mm' }}</td>
-                  <td><span class="font-mono" [title]="tx.id">{{ tx.id }}</span></td>
+                  <td><span class="fp-data-mono" [title]="tx.id">{{ tx.id }}</span></td>
                   <td>{{ tx.userId }}</td>
                   <td>{{ tx.merchant }}</td>
                   <td>KES {{ tx.amount | number: '1.0-0' }}</td>
@@ -194,7 +202,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
           </table>
         </div>
 
-        <div class="mt-4 flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div class="mt-4 flex flex-col gap-3 text-sm fp-text-secondary sm:flex-row sm:items-center sm:justify-between">
           <span>Showing {{ rangeStart() }}-{{ rangeEnd() }} of {{ filtered().length }} results</span>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" class="btn-secondary" [disabled]="page() === 1" (click)="page.set(page() - 1)">Previous</button>
@@ -206,27 +214,30 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     </div>
 
     @if (selectedTx(); as tx) {
-      <div class="fixed inset-0 z-40 bg-slate-950/45" (click)="closeTransaction()"></div>
-      <section class="fixed inset-x-0 bottom-0 z-50 h-[92vh] overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl md:inset-y-0 md:right-0 md:left-auto md:h-auto md:w-[min(720px,92vw)] md:max-h-none md:rounded-none md:rounded-l-3xl">
+      <div class="fixed inset-0 z-40" style="background-color: var(--fp-overlay)" (click)="closeTransaction()"></div>
+      <section class="fixed inset-x-0 bottom-0 z-50 h-[92vh] overflow-hidden rounded-t-sm border border-[var(--fp-border)] shadow-2xl md:inset-y-0 md:right-0 md:left-auto md:h-auto md:w-[min(720px,92vw)] md:max-h-none md:rounded-none md:rounded-l-sm" style="background-color: var(--fp-surface)">
         <div class="flex h-full flex-col">
-          <div class="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div class="flex flex-col gap-4 border-b border-[var(--fp-border)] px-4 py-4 sm:px-6">
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Transaction detail</p>
-                <h3 class="mt-1 text-lg font-semibold text-slate-900">Transaction {{ tx.id }}</h3>
-                <p class="text-sm text-slate-500">{{ tx.merchant }} - {{ tx.userId }}</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] fp-text-muted">Transaction detail</p>
+                <h3 class="mt-1 text-lg font-semibold fp-text-primary">Transaction {{ tx.id }}</h3>
+                <p class="text-sm fp-text-secondary">{{ tx.merchant }} - {{ tx.userId }}</p>
               </div>
               <button type="button" class="btn-ghost" (click)="closeTransaction()">Close</button>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <app-badge [value]="tx.decision" />
               <app-badge [value]="tx.lifecycleStatus" />
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Score {{ tx.score | number: '1.2-2' }}</span>
+              <span class="rounded-full bg-[var(--fp-hover)] px-3 py-1 text-xs font-medium fp-text-secondary">Score {{ tx.score | number: '1.2-2' }}</span>
             </div>
           </div>
 
           <div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
-            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            @if (detailLoading()) {
+              <p class="text-sm fp-text-secondary">Loading transaction detail…</p>
+            }
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-2" [class.opacity-50]="detailLoading()">
               <section>
                 <h4 class="section-title">Transaction fields</h4>
                 <dl class="fp-detail-grid">
@@ -248,7 +259,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
                     @for (reason of tx.reasons; track reason.feature) {
                       <div>
                         <div class="flex items-center justify-between text-sm">
-                          <span class="font-medium text-slate-700">{{ reason.feature }}</span>
+                          <span class="font-medium fp-text-secondary">{{ reason.feature }}</span>
                           <app-badge [value]="reason.direction" />
                         </div>
                         <div class="score-bar-track mt-1">
@@ -262,7 +273,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
                     }
                   </div>
                 } @else {
-                  <p class="text-sm text-slate-500">No material risk factors for this transaction.</p>
+                  <p class="text-sm fp-text-secondary">No material risk factors for this transaction.</p>
                 }
               </section>
             </div>
@@ -285,7 +296,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
                 @if (tx.caseId) {
                   <a class="btn-secondary" [routerLink]="['/cases', tx.caseId]" (click)="closeTransaction()">Open {{ tx.caseId }}</a>
                 } @else {
-                  <p class="text-sm text-slate-500">No linked case</p>
+                  <p class="text-sm fp-text-secondary">No linked case</p>
                 }
               </section>
             </div>
@@ -296,8 +307,8 @@ const FEATURE_SECTIONS: FeatureSection[] = [
               <h4 class="section-title">Model features</h4>
               <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
                 @for (section of featureSections; track section.title) {
-                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <h5 class="mb-3 text-sm font-semibold text-slate-800">{{ section.title }}</h5>
+                  <div class="rounded-xl border border-[var(--fp-border)] bg-[var(--fp-surface-muted)] p-4">
+                    <h5 class="mb-3 text-sm font-semibold fp-text-primary">{{ section.title }}</h5>
                     <dl class="fp-feature-list">
                       @for (field of section.fields; track field.key) {
                         <div class="fp-feature-row">
@@ -316,7 +327,7 @@ const FEATURE_SECTIONS: FeatureSection[] = [
     }
   `,
 })
-export class TransactionListComponent {
+export class TransactionListComponent implements OnInit {
   protected txService = inject(TransactionService);
   protected featureSections = FEATURE_SECTIONS;
 
@@ -325,8 +336,16 @@ export class TransactionListComponent {
   scoreFilter = signal<ScoreFilter>('ANY');
   page = signal(1);
   selectedTx = signal<Transaction | null>(null);
+  detailLoading = signal(false);
+
+  readonly loading = this.txService.loading;
+  readonly error = this.txService.error;
 
   private userDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  ngOnInit(): void {
+    void this.txService.loadTransactions();
+  }
 
   filtered = computed(() => {
     const bounds = this.scoreBounds();
@@ -389,6 +408,14 @@ export class TransactionListComponent {
 
   openTransaction(tx: Transaction): void {
     this.selectedTx.set(tx);
+
+    this.detailLoading.set(true);
+    void this.txService
+      .fetchTransactionById(tx.id)
+      .then((detail) => {
+        if (detail) this.selectedTx.set(detail);
+      })
+      .finally(() => this.detailLoading.set(false));
   }
 
   closeTransaction(): void {

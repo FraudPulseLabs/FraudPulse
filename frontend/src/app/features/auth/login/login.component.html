@@ -1,0 +1,107 @@
+<div class="login min-h-screen bg-[var(--fp-bg)] text-[var(--fp-text)] antialiased">
+
+  <header class="border-b border-[var(--fp-border)]">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 lg:px-8">
+      <a routerLink="/" class="flex items-center gap-2.5 no-underline">
+        <span
+          class="flex h-7 w-7 items-center justify-center rounded-sm text-[10px] font-bold tracking-tighter"
+          style="background-color: var(--fp-brand-mark-bg); color: var(--fp-brand-mark-text);"
+          aria-hidden="true"
+        >FP</span>
+        <span class="text-sm font-semibold tracking-tight fp-text-primary">FraudPulse</span>
+      </a>
+      <app-theme-toggle />
+    </div>
+  </header>
+
+  <main class="flex flex-1 items-center justify-center px-6 py-20">
+    <div class="login-card w-full max-w-md">
+
+      <div class="login-card__header">
+        <p class="type-label">Secure access</p>
+        <h1 class="login-card__title">Sign in</h1>
+        <p class="login-card__subtitle">
+          Enter your credentials to access the risk operations workspace.
+        </p>
+      </div>
+
+      <form (ngSubmit)="submit()" class="login-form">
+        <!--
+          Honeypot: visually hidden field. Real users leave it blank; bots
+          that fill every input trigger a silent failure in the component.
+        -->
+        <div class="login-honeypot" aria-hidden="true">
+          <label for="website">Website</label>
+          <input
+            id="website"
+            type="text"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+            [ngModel]="website()"
+            (ngModelChange)="website.set($event)"
+          />
+        </div>
+
+        <div class="login-field">
+          <label for="email" class="type-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            autocomplete="email"
+            required
+            placeholder="you@company.com"
+            class="fp-field-input"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+          />
+        </div>
+
+        <div class="login-field">
+          <label for="password" class="type-label">Password</label>
+          <div class="password-input-wrap">
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              name="password"
+              autocomplete="current-password"
+              required
+              placeholder="••••••••"
+              class="fp-field-input password-input"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event)"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              [attr.aria-pressed]="showPassword()"
+              (click)="togglePasswordVisibility()"
+            >
+              @if (showPassword()) {
+                <lucide-icon name="eye-off" [size]="16" [strokeWidth]="1.75" aria-hidden="true" />
+              } @else {
+                <lucide-icon name="eye" [size]="16" [strokeWidth]="1.75" aria-hidden="true" />
+              }
+            </button>
+          </div>
+        </div>
+
+        @if (error()) {
+          <p class="login-error" role="alert">{{ error() }}</p>
+        }
+
+        <button type="submit" class="cta-solid login-submit" [disabled]="loading()">
+          {{ loading() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+
+      <p class="login-footer">
+        <a routerLink="/" class="login-footer__link">← Back to FraudPulse</a>
+      </p>
+
+    </div>
+  </main>
+
+</div>

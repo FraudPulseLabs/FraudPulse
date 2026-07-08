@@ -1,0 +1,383 @@
+<div class="landing min-h-screen bg-[var(--fp-bg)] text-[var(--fp-text)] antialiased">
+
+  <!-- Navigation -->
+  <header
+    class="site-header sticky top-0 z-50 border-b border-[var(--fp-border)] bg-[var(--fp-bg)]/97 backdrop-blur-sm"
+  >
+    <nav
+      class="site-nav landing-container flex h-16 items-center justify-between gap-3"
+      aria-label="Primary"
+    >
+      <a routerLink="/" class="site-nav__brand flex shrink-0 items-center gap-2.5 no-underline">
+        <span
+          class="flex h-7 w-7 items-center justify-center rounded-sm text-[10px] font-bold tracking-tighter"
+          style="background-color: var(--fp-brand-mark-bg); color: var(--fp-brand-mark-text);"
+          aria-hidden="true"
+        >FP</span>
+        <span class="text-sm font-semibold tracking-tight fp-text-primary">FraudPulse</span>
+      </a>
+
+      <ul class="site-nav__links">
+        <li>
+          <button type="button" class="site-nav__link" (click)="scrollTo('features')">Features</button>
+        </li>
+        <li>
+          <button type="button" class="site-nav__link" (click)="scrollTo('architecture')">Architecture</button>
+        </li>
+        <li>
+          <a routerLink="/demo/model-validation" class="site-nav__link" (click)="closeNav()">Live Demo</a>
+        </li>
+        <li>
+          <button type="button" class="site-nav__link" (click)="scrollTo('documentation')">Documentation</button>
+        </li>
+      </ul>
+
+      <div class="site-nav__actions">
+        <a routerLink="/login" class="site-nav__sign-in" (click)="closeNav()">
+          Sign In
+        </a>
+        <app-theme-toggle />
+        <button
+          type="button"
+          class="site-nav__toggle"
+          [class.site-nav__toggle--open]="navOpen()"
+          (click)="toggleNav()"
+          [attr.aria-expanded]="navOpen()"
+          aria-controls="site-nav-menu"
+          aria-label="Toggle navigation menu"
+        >
+          <span class="site-nav__toggle-bar" aria-hidden="true"></span>
+          <span class="site-nav__toggle-bar" aria-hidden="true"></span>
+          <span class="site-nav__toggle-bar" aria-hidden="true"></span>
+        </button>
+      </div>
+    </nav>
+
+    <div
+      id="site-nav-menu"
+      class="site-nav__drawer"
+      [class.site-nav__drawer--open]="navOpen()"
+      [attr.aria-hidden]="!navOpen()"
+      [attr.inert]="navOpen() ? null : ''"
+    >
+      <ul class="site-nav__drawer-list">
+        <li>
+          <button type="button" class="site-nav__drawer-link" (click)="scrollTo('features')">Features</button>
+        </li>
+        <li>
+          <button type="button" class="site-nav__drawer-link" (click)="scrollTo('architecture')">Architecture</button>
+        </li>
+        <li>
+          <a routerLink="/demo/model-validation" class="site-nav__drawer-link" (click)="closeNav()">Live Demo</a>
+        </li>
+        <li>
+          <button type="button" class="site-nav__drawer-link" (click)="scrollTo('documentation')">Documentation</button>
+        </li>
+      </ul>
+    </div>
+
+    <button
+      type="button"
+      class="site-nav__backdrop"
+      [class.site-nav__backdrop--visible]="navOpen()"
+      [attr.aria-hidden]="!navOpen()"
+      [attr.tabindex]="navOpen() ? 0 : -1"
+      aria-label="Close navigation menu"
+      (click)="closeNav()"
+    ></button>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="landing-section section-pad">
+      <div class="landing-container">
+        <div class="hero__grid">
+          <p class="hero-kicker">Real-time fraud decisioning</p>
+
+          <h1 class="type-display hero-title fp-text-primary">
+            Stop fraud<br />before settlement.
+          </h1>
+
+          <div class="hero__body">
+            <p class="type-lead mt-6 max-w-md fp-text-secondary">
+              Score card payments in real time with rules and machine learning. Each transaction
+              is ingested, scored, and routed to ALLOW, REVIEW, or BLOCK.
+            </p>
+            <div class="hero-actions mt-10">
+              <div class="flex flex-wrap items-center gap-3">
+                <button type="button" class="cta-solid cta-solid--lg" (click)="scrollTo('access')">
+                  Request Access
+                </button>
+                <a routerLink="/demo/model-validation" class="cta-outline" (click)="closeNav()">
+                  Explore the live demo →
+                </a>
+              </div>
+              <p class="hero-stat mt-5 font-mono fp-text-secondary">
+                <span class="hero-stat__highlight">Demo</span> scan stream
+                · {{ throughput() | number }} events scored this session
+              </p>
+            </div>
+          </div>
+
+          <div class="pulse-terminal hero__terminal" aria-label="Live transaction scan stream" role="region">
+            <div class="pulse-terminal__chrome">
+              <span class="pulse-terminal__dot" aria-hidden="true"></span>
+              <span class="pulse-terminal__title">FraudPulse scan stream</span>
+              <span class="pulse-terminal__live">live</span>
+            </div>
+            <div class="pulse-terminal__head">
+              <span>Reference</span>
+              <span>Corridor</span>
+              <span>Amount</span>
+              <span>Status</span>
+              <span class="text-right">Latency</span>
+            </div>
+            <ul class="pulse-terminal__body">
+              @for (event of events(); track event.id) {
+                <li
+                  class="pulse-terminal__row"
+                  [class.pulse-terminal__row--unverified]="event.status === 'unverified'"
+                  [class.pulse-terminal__row--secured]="event.status === 'secured'"
+                  [class.pulse-terminal__row--flagged]="event.status === 'flagged'"
+                >
+                  <span class="font-mono fp-text-secondary">{{ event.ref }}</span>
+                  <span class="truncate font-mono fp-text-muted">{{ event.corridor }}</span>
+                  <span class="font-mono tabular-nums fp-text-secondary">{{ event.amount }}</span>
+                  <span class="status-pill" [attr.data-status]="event.status">
+                    {{ statusLabel(event.status) }}
+                  </span>
+                  <span class="text-right font-mono tabular-nums fp-text-muted">
+                    @if (event.latencyMs !== null) {
+                      {{ event.latencyMs }}ms
+                    } @else {
+                      —
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature grid -->
+    <section id="features" class="landing-section landing-section--band section-pad border-t border-[var(--fp-border)]/80">
+      <div class="landing-container">
+        <header class="section-header">
+          <p class="type-label">Technical capabilities</p>
+          <h2 class="type-heading mt-3 fp-text-primary">
+            Built for decisions, not dashboards alone.
+          </h2>
+        </header>
+
+        <div class="section-content grid gap-x-10 gap-y-10 md:grid-cols-3">
+          <article class="feature-cell">
+            <p class="type-label">Ingestion</p>
+            <h3 class="type-subheading mt-3 fp-text-primary">REST transaction API</h3>
+            <p class="type-body mt-3 fp-text-secondary">
+              FastAPI endpoints validate and persist card payment payloads, then hand them
+              to the scoring and decision pipeline.
+            </p>
+          </article>
+          <article class="feature-cell">
+            <p class="type-label">Scoring</p>
+            <h3 class="type-subheading mt-3 fp-text-primary">Calibrated LightGBM</h3>
+            <p class="type-body mt-3 fp-text-secondary">
+              Real-time feature extraction feeds a calibrated LightGBM model that outputs a
+              fraud risk score for each transaction.
+            </p>
+          </article>
+          <article class="feature-cell">
+            <p class="type-label">Operations</p>
+            <h3 class="type-subheading mt-3 fp-text-primary">Cases &amp; alerts</h3>
+            <p class="type-body mt-3 fp-text-secondary">
+              REVIEW and BLOCK outcomes create alerts and cases so analysts can investigate
+              flagged payments in the dashboard.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture" class="landing-section section-pad border-t border-[var(--fp-border)]/80">
+      <div class="landing-container">
+        <header class="section-header">
+          <p class="type-label">Architecture</p>
+          <h2 class="type-heading mt-3 fp-text-primary">
+            Modular pipeline from ingest to decision.
+          </h2>
+          <p class="type-body mt-5 max-w-2xl fp-text-secondary">
+            FastAPI backend on Oracle Cloud, Angular dashboard on Render, and Postgres storage
+            through Supabase. Transactions move from REST ingestion to feature extraction,
+            calibrated model scoring, and ALLOW / REVIEW / BLOCK routing.
+          </p>
+        </header>
+
+        <dl class="section-content grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="feature-cell">
+            <dt class="type-label">Frontend</dt>
+            <dd class="type-subheading mt-3 fp-text-primary">Render</dd>
+          </div>
+          <div class="feature-cell">
+            <dt class="type-label">Backend</dt>
+            <dd class="type-subheading mt-3 fp-text-primary">Oracle Cloud</dd>
+          </div>
+          <div class="feature-cell">
+            <dt class="type-label">Score</dt>
+            <dd class="type-subheading mt-3 fp-text-primary">Rules + LightGBM</dd>
+          </div>
+          <div class="feature-cell">
+            <dt class="type-label">Data</dt>
+            <dd class="type-subheading mt-3 fp-text-primary">Supabase Postgres</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Trust -->
+    <section class="landing-section landing-section--band section-pad border-t border-[var(--fp-border)]/80">
+      <div class="landing-container">
+        <header class="section-header">
+          <p class="type-label">Partners</p>
+        </header>
+        <ul
+          class="section-content trust-logos flex flex-wrap items-center justify-start gap-x-10 gap-y-6 sm:gap-x-14"
+          aria-label="Partner logo placeholders"
+        >
+          @for (slot of trustPlaceholders; track $index) {
+            <li>
+              <span class="trust-logo-placeholder" aria-hidden="true">{{ slot }}</span>
+              <span class="sr-only">Partner logo placeholder</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+
+    <!-- Documentation teaser -->
+    <section id="documentation" class="landing-section section-pad border-t border-[var(--fp-border)]/80">
+      <div class="landing-container">
+        <header class="section-header">
+          <p class="type-label">Documentation</p>
+          <h2 class="type-heading mt-3 fp-text-primary">Explore the live system</h2>
+          <p class="type-body mt-5 fp-text-secondary">
+            REST APIs cover transaction ingestion, scoring, alerts, cases, and watchlists.
+            Explore the model validation demo without an account, or sign in for the full
+            analyst dashboard.
+          </p>
+        </header>
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+          <a
+            routerLink="/demo/model-validation"
+            class="doc-link fp-text-secondary transition-colors hover:fp-text-primary"
+          >
+            Explore the live demo →
+          </a>
+          <a
+            routerLink="/login"
+            class="doc-link fp-text-secondary transition-colors hover:fp-text-primary"
+          >
+            Sign in to open the dashboard →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Email capture -->
+    <section id="access" class="landing-section landing-section--band section-pad-lg border-t border-[var(--fp-border)]">
+      <div class="landing-container">
+        <header class="section-header">
+          <p class="type-label">Get started</p>
+          <h2 class="type-heading mt-3 fp-text-primary">Request access</h2>
+          <p class="type-body mt-5 fp-text-secondary">
+            Request early access to the analyst dashboard and API.
+          </p>
+        </header>
+
+        <form class="access-form" (ngSubmit)="submitAccess()">
+          <div class="access-form__field">
+            <label for="access-email" class="type-label">Work email</label>
+            <input
+              id="access-email"
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              placeholder="you@company.com"
+              class="fp-field-input mt-2"
+              [class.fp-field-input--error]="accessError()"
+              [ngModel]="accessEmail()"
+              (ngModelChange)="accessEmail.set($event); accessError.set('')"
+              [disabled]="accessSubmitting()"
+            />
+          </div>
+
+          <!--
+            Honeypot: hidden from real users (visually and from assistive tech
+            via aria-hidden + tabindex=-1). Bots that fill every input reveal
+            themselves by populating this field, and the backend silently
+            drops the submission.
+          -->
+          <div class="access-form__honeypot" aria-hidden="true">
+            <label for="access-website">Website</label>
+            <input
+              id="access-website"
+              type="text"
+              name="website"
+              tabindex="-1"
+              autocomplete="off"
+              [ngModel]="accessWebsite()"
+              (ngModelChange)="accessWebsite.set($event)"
+            />
+          </div>
+
+          <div class="access-form__field">
+            <label for="access-company" class="type-label">
+              Company
+              <span class="access-form__optional">(optional)</span>
+            </label>
+            <input
+              id="access-company"
+              type="text"
+              name="company"
+              autocomplete="organization"
+              placeholder="Acme Corp"
+              class="fp-field-input mt-2"
+              [ngModel]="accessCompany()"
+              (ngModelChange)="accessCompany.set($event)"
+              [disabled]="accessSubmitting()"
+            />
+            <p class="access-form__hint fp-text-muted">We respond within one business day.</p>
+          </div>
+
+          @if (accessError()) {
+            <p class="fp-form-message fp-form-message--error" role="alert">{{ accessError() }}</p>
+          }
+          @if (accessSuccess()) {
+            <p class="fp-form-message fp-form-message--success" role="status">{{ accessSuccess() }}</p>
+          }
+
+          <div class="access-form__actions">
+            <button type="submit" class="cta-solid w-full" [disabled]="accessSubmitting()">
+              {{ accessSubmitting() ? 'Submitting…' : 'Submit request' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-[var(--fp-border)]/80 py-10">
+    <div class="landing-container landing-container--footer">
+      <p>© {{ 2026 }} FraudPulse. All rights reserved.</p>
+      <p class="font-mono">Precision risk infrastructure.</p>
+    </div>
+  </footer>
+
+  <app-chatbot-widget />
+
+</div>

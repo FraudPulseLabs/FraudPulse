@@ -1,0 +1,135 @@
+.login {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.login-card {
+  border: 1px solid var(--fp-border);
+  background-color: var(--fp-surface);
+  border-radius: 2px;
+  padding: 2.5rem;
+}
+
+.login .type-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.login .fp-field-input {
+  font-weight: 500;
+}
+
+.login-card__header {
+  margin-bottom: 2rem;
+}
+
+.login-card__title {
+  margin-top: 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--fp-text);
+}
+
+.login-card__subtitle {
+  margin-top: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--fp-text-secondary);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Honeypot: hidden from real users, still visible to naive bots. */
+.login-honeypot {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input {
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--fp-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 0.15s ease;
+}
+
+.password-toggle:hover {
+  color: var(--fp-text-secondary);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--fp-focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.login-error {
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #fca5a5;
+  background-color: rgb(220 38 38 / 0.08);
+  border: 1px solid rgb(220 38 38 / 0.25);
+  border-radius: 2px;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+  min-height: 2.75rem;
+}
+
+.login-footer {
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--fp-border);
+  text-align: center;
+}
+
+.login-footer__link {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fp-text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.login-footer__link:hover {
+  color: var(--fp-text);
+}

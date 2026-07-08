@@ -1,15 +1,25 @@
 # Backend
 
-FastAPI backend for the payment fraud detection system. It exposes API routes for transactions, scoring, decisions, alerts, cases, watchlists, profiles, metrics, and admin operations. It also keeps the ML data pipeline code under `ml/`.
+FastAPI backend for the payment fraud detection system. It exposes API routes for transactions, scoring, decisions, alerts, cases, watchlists, profiles, and admin operations. It also keeps the ML data pipeline code under `ml/`.
 
 ## Quick Start
 
-Run these commands from the `backend/` directory:
+Run these commands from the `backend/` directory. Use **Python 3.11 or 3.12**
+(the RAG assistant depends on `torch`, which has no wheels for 3.14):
 
 ```bash
-pip install -r requirements.txt
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+# CPU-only torch first to avoid the large CUDA packages:
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt -r requirements-rag.txt
 python run.py
 ```
+
+`requirements-rag.txt` holds the assistant extras (embeddings, FAISS, Groq).
+If you don't need the assistant, you can skip the torch + `requirements-rag.txt`
+steps and just `pip install -r requirements.txt`.
 
 After the server starts:
 
@@ -49,15 +59,29 @@ The app is created in `src/main.py`. It includes the versioned router from `src/
 
 Current route modules:
 
-- `transactions.py` — transaction ingestion and listing.
+- `transactions.py` — `POST /transactions` runs the full ingest pipeline (merchant-blacklist short-circuit → card-history build → in-process scoring → threshold-mapped decision → persist `transactions` + `fraud_scores` + optional `score_reasons`). `?explain=true` returns SHAP contributions. `GET /transactions` lists the most recent rows. See `src/services/decision_service.py` for the wiring and `src/schemas/transaction_ingest.py` for the request/response shapes.
 - `scoring.py` — fraud score requests.
 - `decisions.py` — decision workflow stubs.
 - `alerts.py` — fraud alert endpoints.
 - `cases.py` — investigation case endpoints.
 - `watchlist.py` — watchlist endpoints.
 - `profiles.py` — profile endpoints.
-- `metrics.py` — dashboard metrics.
 - `admin.py` — admin/settings endpoints.
+- `assistant.py` — **public** `POST /assistant/chat`, the landing-page RAG assistant. It answers questions strictly from the FraudPulse docs corpus and refuses out-of-corpus questions. See `rag/README.md` (incl. where to put the `GROQ_API_KEY`).
+- `demo.py` and `access.py` — other **public** routes (model demo and access requests).
+
+### Public endpoint rate limiting
+
+Unauthenticated routes are rate-limited per client IP (`src/core/rate_limit.py`, `slowapi`). Protected JWT routes are exempt.
+
+| Route | Default limit |
+| --- | --- |
+| `POST /api/v1/assistant/chat` | 10 / minute |
+| `GET /api/v1/demo/transactions`, `POST /api/v1/demo/score` | 30 / minute |
+| `POST /api/v1/access/requests` | 5 / minute |
+| `GET /health` | 120 / minute |
+
+Override with `RATE_LIMIT_ASSISTANT`, `RATE_LIMIT_DEMO`, `RATE_LIMIT_ACCESS`, and `RATE_LIMIT_HEALTH` in `backend/.env`. When exceeded, the API returns HTTP `429` and `{"error": "Rate limit exceeded: ..."}`.
 
 ## Database
 
@@ -68,6 +92,15 @@ SQLAlchemy models live in `src/db/models/`. They are aligned with the Supabase `
 - UUID primary keys where Supabase uses `uuid`.
 - Matching table names such as `audit_log`, `watchlist`, and `transactions`.
 - PostgreSQL types such as `JSONB`, `Numeric`, `Date`, and timezone-aware timestamps.
+
+The `transactions` table was aligned with the data-science 20-column view on
+2026-05-31 by adding three nullable columns: `transaction_type`,
+`transaction_country`, and `is_fraud`. `is_fraud` is the **ground-truth label**
+and is intentionally never written by the ingest path — it is reserved for
+review/backfill workflows. The live routing decision lives in the separate
+`decision` column (`APPROVE` / `APPROVE_WITH_REVIEW` / `DECLINE`). The DDL
+script is `scripts/apply_alignment.py` (idempotent; uses `ADD COLUMN IF NOT
+EXISTS`). Verify drift with `scripts/verify_models_vs_db.py`.
 
 Pydantic schemas live in `src/schemas/` and describe the JSON shapes used by the API.
 
@@ -100,8 +133,11 @@ pytest
 
 Test layout:
 
-- `tests/unit/` — focused tests for ML preprocessing and feature engineering.
-- `tests/integration/` — app-level smoke tests such as `/health`.
+- `tests/conftest.py` — shared JWT auth fixtures for route integration tests
+- `tests/unit/` — service logic, ML preprocessing, scoring, decision ingest, alerts/cases/watchlist CRUD
+- `tests/integration/` — `/health`, auth gates, and ops API routes (alerts, cases, watchlist)
+
+Most tests mock the database and model artefacts, so the suite runs without a live Supabase connection.
 
 ## Useful Files
 
@@ -110,4 +146,5 @@ Test layout:
 - `src/core/config.py` — environment variables and project paths.
 - `src/db/session.py` — database engine/session setup.
 - `scripts/seed.py` — placeholder for future seed data.
+- `rag/` — the retrieval-augmented-generation assistant (corpus, index, pipeline). Build the index with `python -m rag.scripts.build_vector_db`; full guide in `rag/README.md`.
 - `BACKEND_FILES_EXPLAINED.txt` — beginner-friendly file-by-file backend guide.

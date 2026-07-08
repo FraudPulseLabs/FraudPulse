@@ -1,5 +1,5 @@
-node_modules
+# Secrets — never commit credentials or local env files
+.env
+*.key
 .claude
-/backend/ml/__pycache__
-/backend/ml/__pycache__
-/backend/src/__pycache__
+.vscode

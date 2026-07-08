@@ -5,6 +5,7 @@ from src.core.config import (
     DATA_DIR,
     PROJECT_ROOT,
     get_env,
+    ML_ARTEFACTS_DIR,
 )
 
-__all__ = ["BASE_DIR", "DATA_DIR", "PROJECT_ROOT", "get_env"]
+__all__ = ["BASE_DIR", "DATA_DIR", "PROJECT_ROOT", "get_env", "ML_ARTEFACTS_DIR"]

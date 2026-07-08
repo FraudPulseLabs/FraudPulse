@@ -1,12 +1,19 @@
+#pip install -r requirements.txt
+
 # Web framework
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
 httpx==0.27.2
+slowapi==0.1.9
 
 # Data validation / config
 pydantic==2.9.2
 pydantic-settings==2.6.1
+email-validator==2.2.0
 python-dotenv==1.0.1
+
+# Auth — verify Supabase-issued JWTs ([crypto] pulls cryptography for ES256/RS256)
+PyJWT[crypto]==2.10.1
 
 # Database
 SQLAlchemy==2.0.36
@@ -16,10 +23,17 @@ alembic==1.13.3
 # ML / data
 pandas==2.2.3
 numpy==2.1.3
-scikit-learn==1.5.2
-lightgbm==4.5.0
+scikit-learn==1.8.0
+lightgbm==4.6.0
 joblib==1.4.2
 
 # Visualisation (used by ml/data_exploration.py)
 matplotlib==3.9.2
 seaborn==0.13.2
+
+# RAG assistant extras (embeddings, vector store, LLM client) live in
+# requirements-rag.txt to keep the core/test install lightweight. The Docker
+# image installs both. See backend/rag/README.md.
+
+# Testing
+pytest==8.3.4

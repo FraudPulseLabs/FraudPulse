@@ -40,6 +40,7 @@ __screenshots__/
 /db-secrets.txt
 .codex-ng-serve.err.log
 .codex-ng-serve.log
+.claude
 
 # System files
 .DS_Store
@@ -49,5 +50,3 @@ Thumbs.db
 SETUP.md
 PROMPT.md
 db-secrets.txt
-
-

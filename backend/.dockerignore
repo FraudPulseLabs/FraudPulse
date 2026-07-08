@@ -1,0 +1,29 @@
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.cache
+**/.cache
+.env
+tests
+scripts
+# Exclude bulky training data, but keep the two artefacts the API needs at runtime:
+#   - ml/data/demo/demo_transactions.json   (GET /api/v1/demo/transactions)
+#   - ml/data/processed/encoding_maps.json  (scoring feature builder)
+ml/data/*
+!ml/data/demo
+!ml/data/processed
+ml/data/processed/*
+!ml/data/processed/encoding_maps.json
+*.md
+# Keep the RAG corpus in the image (overrides the *.md ignore above).
+!rag/docs/*.md
+rag/eval/results.json

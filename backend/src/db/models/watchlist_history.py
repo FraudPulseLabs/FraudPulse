@@ -1,35 +1,16 @@
+"""
+`watchlist_history` is defined canonically in `watchlist_model.py`, alongside the
+`Watchlist` relationship, and matches the live Supabase schema
+(watchlist_entity_type / watchlist_entity_id / action / watchlist_reason /
+risk_severity / is_blacklist / created_by / expires_at).
+
+This module previously declared a SECOND, divergent WatchlistHistory mapping
+(entity_type / entity_id / reason / actor) that did not exist in the database.
+It now re-exports the canonical class so existing imports keep working without a
+conflicting table definition.
+"""
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
+from src.db.models.watchlist_model import WatchlistHistory
 
-from sqlalchemy import DateTime, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
-
-from src.db.models.base import Base
-
-
-class WatchlistHistory(Base):
-    __tablename__ = "watchlist_history"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-
-    watchlist_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("watchlist.id"),
-        nullable=True,
-        index=True,
-    )
-    entity_type: Mapped[str] = mapped_column(Text, nullable=False)
-    entity_id: Mapped[str] = mapped_column(Text, nullable=False)
-    action: Mapped[str] = mapped_column(Text, nullable=False)
-    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    actor: Mapped[str] = mapped_column(Text, nullable=False)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-    )
+__all__ = ["WatchlistHistory"]

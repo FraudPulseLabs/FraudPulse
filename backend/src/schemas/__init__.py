@@ -1,8 +1,7 @@
-from src.schemas.alert import AlertRead
+#backend\src\schemas\__init__.py
+from src.schemas.alert_schemas import AlertRead
 from src.schemas.audit_log import AuditLogRead
-from src.schemas.case import CaseRead
-from src.schemas.case_event import CaseEventRead
-from src.schemas.case_note import CaseNoteRead
+from src.schemas.case_schemas import CaseRead, CaseNoteRead, CaseEventRead
 from src.schemas.fraud_score import FraudScoreRead
 from src.schemas.profile import ProfileRead
 from src.schemas.rejected_request import RejectedRequestRead
