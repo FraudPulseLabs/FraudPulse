@@ -18,7 +18,12 @@ I used Copilot and Codex mainly for in-editor completions and quick edits, and C
 
 ## Olalekan Erinoso
 
-_Entry pending._
+I used OpenAI (ChatGPT and Codex) as support tool during my work on the ML/model training and deployment parts of the FraudPulse project. For the ML work, I used Codex in writing and understanding scripts for Random Forest, LightGBM, calibrated LightGBM, inference testing, feature schema generation, threshold generation, and hyperparameter tuning.
+I used ChatGPT to interpret model evaluation results such as confusion matrices, precision, recall, F1-score, ROC-AUC, PR-AUC, feature importance, and decision threshold outputs.
+
+For deployment, I also used ChatGPT as a troubleshooting guide while setting up the backend environment on an Oracle Cloud Infrastructure VM. This included support with SSH access, environment variables, Nginx reverse proxy configuration, Let’s Encrypt SSL certificate setup, firewall/security rule debugging, and CORS configuration for frontend-backend communication.
+
+All project work, commands, code execution, testing, deployment steps, and final decisions were carried out by me. AI was used to explain concepts, suggest commands, debug errors, and help structure drafted documentation, but I reviewed and applied the work myself within the project context.
 
 ## James Kilonzo
 
