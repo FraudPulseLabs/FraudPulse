@@ -6,11 +6,25 @@ FraudPulse is a full-stack fraud detection platform for card payments. It ingest
 
 ## 2. Live Deployment
 
-| Service | URL |
-| --- | --- |
-| Frontend | [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/) |
-| Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs) |
-| Backend (health) | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
+| Service            | URL                                                                            |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Frontend           | [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/) |
+| Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs)     |
+| Backend (health)   | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
+
+### Frontend Administrator Access Credentials
+
+> [!WARNING]
+> **Sensitive Information**
+> This section contains administrator credentials. Do **not** share, copy, or expose this information outside of this private repository.
+
+- **URL:** [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
+- **Username:** `analyst@fraudpulse.io`
+- **Password:** `Rf9!mKx3Qz#7Tpv$Ln2Wb8Hd`
+
+---
+
+**Last Updated:** 2026-Jul-09
 
 ## 3. Architecture
 
@@ -70,15 +84,15 @@ A `backend/.env` file is **required** for full functionality. Copy the template:
 cp .env.example .env   # run from backend/
 ```
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Supabase/Postgres connection (`postgresql+psycopg://…`) |
-| `GROQ_API_KEY` | RAG assistant LLM (optional locally; required for chat responses) |
-| `GROQ_MODEL` | LLM override (default: `llama-3.3-70b-versatile`) |
+| Variable               | Purpose                                                               |
+| ---------------------- | --------------------------------------------------------------------- |
+| `DATABASE_URL`         | Supabase/Postgres connection (`postgresql+psycopg://…`)               |
+| `GROQ_API_KEY`         | RAG assistant LLM (optional locally; required for chat responses)     |
+| `GROQ_MODEL`           | LLM override (default: `llama-3.3-70b-versatile`)                     |
 | `RATE_LIMIT_ASSISTANT` | Per-IP limit for `POST /api/v1/assistant/chat` (default: `10/minute`) |
-| `RATE_LIMIT_DEMO` | Per-IP limit for demo routes (default: `30/minute`) |
-| `RATE_LIMIT_ACCESS` | Per-IP limit for `POST /api/v1/access/requests` (default: `5/minute`) |
-| `RATE_LIMIT_HEALTH` | Per-IP limit for `GET /health` (default: `120/minute`) |
+| `RATE_LIMIT_DEMO`      | Per-IP limit for demo routes (default: `30/minute`)                   |
+| `RATE_LIMIT_ACCESS`    | Per-IP limit for `POST /api/v1/access/requests` (default: `5/minute`) |
+| `RATE_LIMIT_HEALTH`    | Per-IP limit for `GET /health` (default: `120/minute`)                |
 
 Do not commit `.env`. Frontend env files hold **public** config only (`apiUrl`, etc.).
 
@@ -104,9 +118,9 @@ Do not commit `.env`. Frontend env files hold **public** config only (`apiUrl`, 
 
 ### CI/CD
 
-| Workflow | Trigger | Action |
-| --- | --- | --- |
-| `ci.yml` | Push to `main`, PRs | Backend pytest, frontend tests/lint, RAG smoke checks |
+| Workflow     | Trigger              | Action                                                  |
+| ------------ | -------------------- | ------------------------------------------------------- |
+| `ci.yml`     | Push to `main`, PRs  | Backend pytest, frontend tests/lint, RAG smoke checks   |
 | `deploy.yml` | CI success on `main` | Build/push backend image to GHCR; deploy to OCI via SSH |
 
 Render frontend deploys are configured separately via the Render dashboard / `render.yaml`.

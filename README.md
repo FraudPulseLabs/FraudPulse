@@ -31,19 +31,29 @@ FraudPulse is a modular fraud detection system that processes transactions, comp
 
 ## 2. Live Deployments
 
-| Service | URL |
-|---|---|
-| Frontend | [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/) |
-| Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs) |
-| Backend (health) | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
+| Service            | URL                                                                            |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Frontend           | [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/) |
+| Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs)     |
+| Backend (health)   | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
+
+### Frontend Administrator Access Credentials
+
+> [!WARNING]
+> **Sensitive Information**
+> This section contains administrator credentials. Do **not** share, copy, or expose this information outside of this private repository.
+
+- **URL:** [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
+- **Username:** `analyst@fraudpulse.io`
+- **Password:** `Rf9!mKx3Qz#7Tpv$Ln2Wb8Hd`
 
 ## 3. Agile Task Board
 
 All capstone planning, sprint tasks, and delivered features are tracked on our Trello Scrum board.
 
 | **Board** | [MSSE Capstone — Payment Card Fraud Detection System](https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system) |
-|---|---|
-| **URL** | https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **URL**   | https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system                                                        |
 
 The board documents user stories, work in progress, completed features, and backlog items across the FraudPulse delivery.
 
