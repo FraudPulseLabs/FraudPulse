@@ -174,6 +174,10 @@ A synthetic dataset was chosen because publicly available fraud datasets are typ
 - Full control over fraud patterns and class distribution.
 - No privacy or regulatory concerns.
 
+#### Exploratory Data Analysis (EDA)
+
+The exploratory data analysis results, including generated plots and visualizations, are available in the [`backend/ml/data/eda_outputs/`](backend/ml/data/eda_outputs/) directory.
+
 ---
 
 ### 3.2 Data Preparation
