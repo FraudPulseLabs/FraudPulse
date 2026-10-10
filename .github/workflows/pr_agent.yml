@@ -25,7 +25,7 @@ jobs:
           # IMPORTANT
           LITELLM_PROVIDER: gemini
 
-          CONFIG.MODEL: gemini/gemini-1.5-flash
+          CONFIG.MODEL: gemini/gemini-2.5-flash
 
           GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
