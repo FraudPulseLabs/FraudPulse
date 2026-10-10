@@ -12,19 +12,13 @@ FraudPulse is a full-stack fraud detection platform for card payments. It ingest
 | Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs)     |
 | Backend (health)   | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
 
-### Frontend Administrator Access Credentials
+### Access
 
-> [!WARNING]
-> **Sensitive Information**
-> This section contains administrator credentials. Do **not** share, copy, or expose this information outside of this private repository.
-
-- **URL:** [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
-- **Username:** `analyst@fraudpulse.io`
-- **Password:** `Rf9!mKx3Qz#7Tpv$Ln2Wb8Hd`
+The public landing page, model demo, and AI support assistant require no sign-in. The analyst dashboard is behind Supabase Auth — accounts are provisioned per user in the Supabase project, and credentials are never stored in this repository. Contact a maintainer for reviewer access.
 
 ---
 
-**Last Updated:** 2026-Jul-09
+**Last Updated:** 2026-Oct-09
 
 ## 3. Architecture
 

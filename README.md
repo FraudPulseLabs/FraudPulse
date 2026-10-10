@@ -6,7 +6,10 @@ FraudPulse is a modular fraud detection platform for card payments. It combines 
 
 - [1. Overview](#1-overview)
 - [2. Live Deployments](#2-live-deployments)
-- [3. Agile Task Board](#3-agile-task-board)
+- [3. Getting Started](#3-getting-started)
+  - [3.1 Backend](#31-backend)
+  - [3.2 Frontend](#32-frontend)
+  - [3.3 Tests](#33-tests)
 - [4. Architecture](#4-architecture)
   - [4.1 Platform components](#41-platform-components)
   - [4.2 End-to-end fraud operations flow](#42-end-to-end-fraud-operations-flow)
@@ -18,7 +21,7 @@ FraudPulse is a modular fraud detection platform for card payments. It combines 
   - [7.3 Investigation System](#73-investigation-system)
 - [8. Technology Stack](#8-technology-stack)
 - [9. Key Repository Structure](#9-key-repository-structure)
-- [10. Branch Protection Rules](#10-branch-protection-rules)
+- [10. Development Workflow](#10-development-workflow)
 - [11. Key Outputs](#11-key-outputs)
 - [12. Team](#12-team)
 - [13. License](#13-license)
@@ -27,7 +30,7 @@ FraudPulse is a modular fraud detection platform for card payments. It combines 
 
 FraudPulse is a modular fraud detection system that processes transactions, computes fraud risk scores, and classifies payments into **ALLOW**, **REVIEW**, or **BLOCK**. It is designed as an end-to-end workflow covering ingestion, scoring, decisioning, investigation, and monitoring.
 
-**Supplementary documentation:** [Agile task board (Trello)](https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system) · [deployed.md](deployed.md) · [design-and-evaluation.md](design-and-evaluation.md) · [ai-tooling.md](ai-tooling.md)
+**Supplementary documentation:** [deployed.md](deployed.md) (deployment guide) · [design-and-evaluation.md](design-and-evaluation.md) (architecture patterns and testing) · [ai-tooling.md](ai-tooling.md) (AI-assisted development notes) · [Requirement_Documents/](Requirement_Documents/) (SRS, functional and non-functional requirements, backlog)
 
 ## 2. Live Deployments
 
@@ -37,25 +40,57 @@ FraudPulse is a modular fraud detection system that processes transactions, comp
 | Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs)     |
 | Backend (health)   | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
 
-### Frontend Administrator Access Credentials
+The public landing page, the model demo, and the AI support assistant are open to anyone — no sign-in required. The analyst dashboard (cases, alerts, watchlist, back-office tools) is behind authentication; please contact a maintainer for reviewer access.
 
-> [!WARNING]
-> **Sensitive Information**
-> This section contains administrator credentials. Do **not** share, copy, or expose this information outside of this private repository.
+## 3. Getting Started
 
-- **URL:** [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
-- **Username:** `analyst@fraudpulse.io`
-- **Password:** `Rf9!mKx3Qz#7Tpv$Ln2Wb8Hd`
+```bash
+git clone https://github.com/FraudPulseLabs/FraudPulse.git
+cd FraudPulse
+```
 
-## 3. Agile Task Board
+### 3.1 Backend
 
-All capstone planning, sprint tasks, and delivered features are tracked on our Trello Scrum board.
+Run from the `backend/` directory. Use **Python 3.11 or 3.12** (the RAG assistant depends on `torch`, which has no wheels for 3.14).
 
-| **Board** | [MSSE Capstone — Payment Card Fraud Detection System](https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system) |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **URL**   | https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system                                                        |
+```bash
+cd backend
+python3.11 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
+cp .env.example .env               # then set DATABASE_URL
+python run.py
+```
 
-The board documents user stories, work in progress, completed features, and backlog items across the FraudPulse delivery.
+The API serves versioned routes under `/api/v1`, with docs at `http://localhost:8000/docs` and a health probe at `http://localhost:8000/health`. The app starts without `DATABASE_URL`, but routes that need Postgres will be unavailable.
+
+To enable the RAG assistant, also install the extras and build the index:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu   # CPU-only, avoids large CUDA packages
+pip install -r requirements-rag.txt
+python -m rag.scripts.build_vector_db
+```
+
+Full details: [backend/README.md](backend/README.md) · [backend/rag/README.md](backend/rag/README.md)
+
+### 3.2 Frontend
+
+```bash
+cd frontend
+npm install
+npm start                          # http://localhost:4200
+```
+
+Full details: [frontend/README.md](frontend/README.md)
+
+### 3.3 Tests
+
+```bash
+cd backend  && pytest              # 200+ unit and integration tests
+cd frontend && npm test            # Jest unit and component tests
+```
 
 ## 4. Architecture
 
@@ -69,13 +104,7 @@ FraudPulse architecture is described at two levels: **what the platform is built
 - **Analytics services**: trends, metrics, and back-office monitoring
 - **RAG-powered AI support assistant**: context retrieval and grounded natural-language responses
 
-```mermaid
-flowchart TD
-    A[Angular Frontend] --> B[FastAPI Backend]
-    B --> C["ML Engine (Primary)"]
-    B --> D[Analytics Services]
-    B --> E["RAG Assistant (Support)"]
-```
+![FraudPulse component architecture](.github/images/architecture-diagram.png)
 
 ### 4.2 End-to-end fraud operations flow
 
@@ -87,18 +116,7 @@ flowchart TD
 - **Case Management System**: supports investigation workflows
 - **Dashboard**: monitoring and analytics UI
 
-```mermaid
-flowchart TD
-    I[Transaction Ingestion API] --> S[Fraud Scoring Engine]
-    S --> D[Decision Engine]
-    D --> C[Case Management System]
-    C --> U[Dashboard]
-    I --> X[(Data Layer / Analytics)]
-    S --> X
-    D --> X
-    C --> X
-    U --> X
-```
+![FraudPulse transaction data flow](.github/images/data-flow-diagram.png)
 
 ## 5. Machine Learning
 
@@ -106,8 +124,13 @@ FraudPulse’s ML capabilities form the primary fraud intelligence layer for bot
 
 - **Fraud prediction**: estimates probability of fraudulent activity per transaction
 - **Risk scoring**: produces normalized fraud scores to support decision thresholds
+- **Explainability**: `POST /api/v1/transactions?explain=true` returns per-feature SHAP contributions for a score
 - **Pattern analysis**: identifies suspicious trends and recurring behavior across events
 - **Hybrid decisioning**: combines ML and rules for robust **ALLOW/REVIEW/BLOCK** outcomes
+
+The deployed model is a tuned, calibrated **LightGBM** classifier (32 features, 64,762 training rows) scoring **ROC-AUC 0.966 / PR-AUC 0.721** on a held-out test set at 3.3% fraud prevalence. Rather than a single cut-off, calibrated scores are mapped to three outcomes, which puts **89% of fraud in front of either an automatic decline or an analyst** while sending ~9.7% of traffic to review.
+
+Full metrics, hyperparameters, threshold analysis, and the earlier modelling iterations: [backend/ml/MODEL_EVALUATION.md](backend/ml/MODEL_EVALUATION.md)
 
 ## 6. AI Support Assistant
 
@@ -154,11 +177,11 @@ flowchart TD
 
 ## 8. Technology Stack
 
-- **Frontend**: Angular 21
-- **Backend**: FastAPI, Python REST services
-- **AI/RAG**: retrieval pipeline, vector index, LLM-based response generation
-- **Machine Learning**: fraud classification and risk-scoring models
-- **Data & Infrastructure**: Supabase, CI/CD with GitHub Actions, containerized services
+- **Frontend**: Angular 21 (zoneless, signal-based state), Jest
+- **Backend**: FastAPI, Python REST services, SQLAlchemy, pytest
+- **AI/RAG**: retrieval pipeline, FAISS vector index, LLM-based response generation
+- **Machine Learning**: fraud classification and risk-scoring models, SHAP explainability
+- **Data & Infrastructure**: Supabase Postgres, Supabase Auth (JWT), Docker, Nginx, CI/CD with GitHub Actions
 
 ## 9. Key Repository Structure
 
@@ -166,6 +189,7 @@ flowchart TD
 .
 ├── backend/                 -> FastAPI API, ML engine, RAG services, tests
 ├── frontend/                -> Angular application (UI, routing, feature modules)
+├── Requirement_Documents/   -> SRS, requirements, user stories and backlog
 ├── .github/                 -> CI workflows and project automation
 ├── ai-tooling.md            -> team AI tooling notes
 ├── deployed.md              -> deployment guide
@@ -174,7 +198,11 @@ flowchart TD
 └── README.md                -> project documentation
 ```
 
-## 10. Branch Protection Rules
+## 10. Development Workflow
+
+Planning, sprint tasks, and delivered features are tracked on the team's Trello Scrum board: [MSSE Capstone — Payment Card Fraud Detection System](https://trello.com/b/JOTRnC13/msse-capstone-project-payment-card-fraud-detection-system). The board documents user stories, work in progress, completed features, and backlog items across the FraudPulse delivery.
+
+Branch protection on `main`:
 
 - No direct pushes to `main`
 - All changes require Pull Requests
@@ -190,7 +218,7 @@ flowchart TD
 ## 12. Team
 
 - [**Macharia Kibandi**](https://github.com/KibandiMacharia "KibandiMacharia by GitHub") · Project Owner
-- [**Victor Asena**](https://github.com/namema1 "namema1 on GitHub") · Scrum Master
+- [**Victor Asena**](https://github.com/namema1 "namema1 on GitHub") · Technical Lead & Scrum Master
 - [**Olalekan Erinoso**](https://github.com/lagjracia "lagjracia on GitHub") · Team Member
 - [**James Kilonzo**](https://github.com/KilonzoJames "KilonzoJames on GitHub") · Team Member
 
@@ -198,6 +226,4 @@ For AI-assisted development notes, see [ai-tooling.md](ai-tooling.md).
 
 ## 13. License
 
-FraudPulse is licensed under the **MIT License**.
-
-You may use, modify, and distribute the software with minimal restrictions.
+FraudPulse is licensed under the **MIT License** — see [LICENSE](LICENSE). You may use, modify, and distribute the software with minimal restrictions.

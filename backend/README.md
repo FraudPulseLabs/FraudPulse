@@ -114,6 +114,7 @@ Important files:
 - `ml/feature_engineering.py` — transaction feature creation.
 - `ml/data_exploration.py` — exploratory analysis and exports.
 - `ml/dataset_generator.py` — dataset generation utilities.
+- `ml/MODEL_EVALUATION.md` — training results, hyperparameters, and decision-threshold analysis for the deployed model.
 
 ML modules continue to support:
 
