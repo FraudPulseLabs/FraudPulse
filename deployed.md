@@ -12,19 +12,13 @@ FraudPulse is a full-stack fraud detection platform for card payments. It ingest
 | Backend (API docs) | [https://fraudpulse.duckdns.org/docs](https://fraudpulse.duckdns.org/docs)     |
 | Backend (health)   | [https://fraudpulse.duckdns.org/health](https://fraudpulse.duckdns.org/health) |
 
-### Frontend Administrator Access Credentials
+### Access
 
-> [!WARNING]
-> **Sensitive Information**
-> This section contains administrator credentials. Do **not** share, copy, or expose this information outside of this private repository.
-
-- **URL:** [https://fraudpulse-u2va.onrender.com/](https://fraudpulse-u2va.onrender.com/)
-- **Username:** `analyst@fraudpulse.io`
-- **Password:** `Rf9!mKx3Qz#7Tpv$Ln2Wb8Hd`
+The public landing page, model demo, and AI support assistant require no sign-in. The analyst dashboard is behind Supabase Auth — accounts are provisioned per user in the Supabase project, and credentials are never stored in this repository. Contact a maintainer for reviewer access.
 
 ---
 
-**Last Updated:** 2026-Jul-09
+**Last Updated:** 2026-Oct-09
 
 ## 3. Architecture
 
@@ -125,7 +119,35 @@ Do not commit `.env`. Frontend env files hold **public** config only (`apiUrl`, 
 
 Render frontend deploys are configured separately via the Render dashboard / `render.yaml`.
 
-## 6. Notes
+## 6. Monitoring and Keep-Alive
+
+The Supabase free tier pauses a project after roughly 7 days without activity, which would take the live demo down silently. Two independent probes prevent that.
+
+### Health endpoints
+
+| Endpoint | Checks | Use |
+| --- | --- | --- |
+| `GET /health` | Process is up | Liveness — Docker health check, basic uptime |
+| `GET /health/db` | Process is up **and** Postgres answers `SELECT 1` | Readiness — keep-alive and monitoring |
+
+`/health/db` returns `{"status":"Running","database":"ok",...}` with HTTP 200, or HTTP 503 with `"database":"unreachable"` (connection failed) or `"not_configured"` (no `DATABASE_URL`). The distinction matters: a monitor watching only `/health` reports "up" while the database is paused, because that endpoint never touches Postgres.
+
+### Probes
+
+1. **UptimeRobot** (every 5 min) — a *keyword* monitor on `/health/db` asserting the response contains `"database":"ok"`. A plain HTTP monitor would only read the status code and miss a degraded database. This is the primary keep-alive and the alerting path.
+2. **`.github/workflows/keepalive.yml`** (every 2 days) — hits Supabase PostgREST directly, exercising the API gateway rather than a raw Postgres connection, then re-checks `/health/db`. Requires the `SUPABASE_URL` repository *variable* and the existing `BACKEND_SUPABASE_SERVICE_ROLE_KEY` secret. Also runnable on demand via **workflow_dispatch** as a manual wake-up button.
+
+> GitHub disables scheduled workflows after 60 days of repository inactivity, so the workflow is a backstop rather than the primary mechanism.
+
+`backend/scripts/keepalive.sh` is a cron-ready equivalent for the OCI VM, for a setup that depends on no third party:
+
+```bash
+chmod +x backend/scripts/keepalive.sh
+# crontab -e
+17 6 */2 * * /opt/fraudpulse/keepalive.sh /opt/fraudpulse/.env >> /var/log/fraudpulse-keepalive.log 2>&1
+```
+
+## 7. Notes
 
 - **Production-first** — treat `DATABASE_URL` and `GROQ_API_KEY` as secrets in all environments.
 - **Modular design** — frontend, API, ML engine, and RAG assistant are independently deployable components sharing a common API contract.
