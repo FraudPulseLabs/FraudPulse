@@ -23,7 +23,8 @@ steps and just `pip install -r requirements.txt`.
 
 After the server starts:
 
-- Health check: `GET http://localhost:8000/health`
+- Health check (liveness): `GET http://localhost:8000/health`
+- Readiness check (liveness + Postgres): `GET http://localhost:8000/health/db`
 - API docs: `http://localhost:8000/docs`
 - ReDoc docs: `http://localhost:8000/redoc`
 
@@ -79,7 +80,7 @@ Unauthenticated routes are rate-limited per client IP (`src/core/rate_limit.py`,
 | `POST /api/v1/assistant/chat` | 10 / minute |
 | `GET /api/v1/demo/transactions`, `POST /api/v1/demo/score` | 30 / minute |
 | `POST /api/v1/access/requests` | 5 / minute |
-| `GET /health` | 120 / minute |
+| `GET /health`, `GET /health/db` | 120 / minute |
 
 Override with `RATE_LIMIT_ASSISTANT`, `RATE_LIMIT_DEMO`, `RATE_LIMIT_ACCESS`, and `RATE_LIMIT_HEALTH` in `backend/.env`. When exceeded, the API returns HTTP `429` and `{"error": "Rate limit exceeded: ..."}`.
 
